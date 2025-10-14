@@ -1,2 +1,3 @@
-# Motivation-tracker-3
+# Motivation-tracker
 Motywacyjna aplikacja dla mnie
+Wiktoria Radomska

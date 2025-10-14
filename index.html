@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🌸 Kawaii Quest - Motivation Tracker</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Quicksand:wght@400;500;600;700&family=Fredoka+One&family=Baloo+2:wght@400;500;600;700&family=Bubblegum+Sans&family=Roboto:wght@300;400;500;700&family=Open+Sans:wght@300;400;600;700&family=Lato:wght@300;400;700&family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="theme-pink">
+    <header class="app-header">
+        <div class="header-content">
+            <h1 class="app-title">🌸 Kawaii Quest</h1>
+            <button class="hamburger-btn" aria-label="Menu">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+        <nav class="main-nav">
+            <a href="#" class="nav-link active" data-view="dashboard">🏠 Główna</a>
+            <a href="#" class="nav-link" data-view="calendar">📅 Kalendarz</a>
+            <a href="#" class="nav-link" data-view="stats">📊 Statystyki</a>
+            <a href="#" class="nav-link" data-view="gallery">🖼️ Galeria</a>
+            <a href="#" class="nav-link" data-view="badges">🏆 Odznaki</a>
+            <a href="#" class="nav-link" data-view="settings">⚙️ Ustawienia</a>
+        </nav>
+        <div class="theme-selector">
+            <button class="theme-btn active" data-theme="pink">🌸</button>
+            <button class="theme-btn" data-theme="ocean">🌊</button>
+            <button class="theme-btn" data-theme="mint">🍃</button>
+            <button class="theme-btn" data-theme="lavender">💜</button>
+            <button class="theme-btn" data-theme="strawberry">🍓</button>
+        </div>
+    </header>
+    
+    <main>
+        <!-- DASHBOARD VIEW -->
+        <div class="view active" id="view-dashboard">
+            <div class="dashboard-grid">
+                <!-- Wyzwanie Card -->
+                <section class="card card-challenge">
+                    <h2>🎯 Wyzwanie</h2>
+                    <div class="challenge-progress">
+                        <div class="progress-bar-large">
+                            <div class="progress-fill-large" id="challengeProgressBar" style="width: 0%"></div>
+                        </div>
+                        <div class="progress-info">
+                            <span class="progress-percent" id="challengePercent">0%</span>
+                            <span class="progress-days" id="challengeDays">0/75 dni</span>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Streak Card -->
+                <section class="card card-streak">
+                    <h2>🔥 Streak</h2>
+                    <div class="streak-display">
+                        <div class="streak-number" id="streakNumber">0</div>
+                        <p class="motivational-quote" id="motivationalQuote">"Jesteś silniejsza niż myślisz! 💖"</p>
+                    </div>
+                </section>
+
+                <!-- Kroki Card -->
+                <section class="card card-steps">
+                    <h2>👣 Dzisiejsze kroki</h2>
+                    <div class="steps-input-group">
+                        <input type="number" id="stepsInput" placeholder="0" min="0" max="100000">
+                        <button class="btn-primary" id="saveStepsBtn">Zapisz</button>
+                    </div>
+                    <div class="success-message" id="stepsSuccess">✅ Kroki zapisane!</div>
+                </section>
+
+                <!-- Samopoczucie Card -->
+                <section class="card card-mood">
+                    <h2>😊 Dziennik samopoczucia</h2>
+                    <div class="mood-selector">
+                        <button class="mood-btn" data-mood="1">😔</button>
+                        <button class="mood-btn" data-mood="2">🙁</button>
+                        <button class="mood-btn" data-mood="3">😐</button>
+                        <button class="mood-btn" data-mood="4">🙂</button>
+                        <button class="mood-btn" data-mood="5">😊</button>
+                    </div>
+                    <button class="btn-primary" id="saveMoodBtn">Zapisz nastrój</button>
+                    <div class="success-message" id="moodSuccess">✅ Nastrój zapisany!</div>
+                </section>
+
+                <!-- Nauka Card -->
+                <section class="card card-study">
+                    <h2>📚 Dzisiejsza nauka</h2>
+                    <div class="study-input-group">
+                        <label for="studyHoursInput">Liczba godzin:</label>
+                        <input type="number" id="studyHoursInput" min="0" step="0.5" value="0" placeholder="np. 1.5">
+                    </div>
+                    <button class="btn-primary" id="saveStudyBtn">Zapisz</button>
+                    <div class="success-message" id="studySuccess">Godziny nauki zapisane! 📖</div>
+                </section>
+
+                <!-- Zadania Card -->
+                <section class="card card-tasks">
+                    <div class="section-header">
+                        <h2>📝 Zadania na dziś</h2>
+                        <button class="icon-btn" id="editTasksBtn">✏️</button>
+                    </div>
+                    <div class="rest-day-message" id="restDayMessage" style="display: none;">
+                        <div class="rest-icon">😴</div>
+                        <h3>Dobra robota, odpocznij! 💖</h3>
+                        <p>Dziś jest Twój dzień odpoczynku</p>
+                    </div>
+                    <div class="tasks-list" id="tasksList">
+                        <label class="task-item">
+                            <input type="checkbox" class="task-checkbox">
+                            <span class="task-text">Rano: 5 minut stretchingu</span>
+                        </label>
+                        <label class="task-item">
+                            <input type="checkbox" class="task-checkbox">
+                            <span class="task-text">15 minut aktywności</span>
+                        </label>
+                        <label class="task-item">
+                            <input type="checkbox" class="task-checkbox">
+                            <span class="task-text">Wieczorny dziennik</span>
+                        </label>
+                    </div>
+                    <div class="task-actions">
+                        <button class="btn-secondary" id="resetTasksBtn">🔄 Resetuj</button>
+                        <button class="btn-primary" id="completeAllTasksBtn">✅ Ukończ wszystko</button>
+                    </div>
+                    <div class="task-edit-section" id="taskEditSection" style="display: none;">
+                        <h3>✏️ Edytuj zadania</h3>
+                        <div class="edit-tasks-list" id="editTasksList"></div>
+                        <div class="add-task-form">
+                            <input type="text" id="newTaskInput" placeholder="Nowe zadanie...">
+                            <button class="btn-primary" id="addTaskBtn">➕ Dodaj</button>
+                        </div>
+                        <button class="btn-secondary" id="saveTasksBtn">💾 Zapisz zmiany</button>
+                    </div>
+                </section>
+            </div>
+        </div>
+
+        <!-- CALENDAR VIEW -->
+        <div class="view" id="view-calendar">
+            <div class="calendar-container">
+                <div class="calendar-header">
+                    <button class="calendar-nav-btn" id="prevMonth">◀</button>
+                    <h2 class="calendar-title" id="calendarTitle">Styczeń 2025</h2>
+                    <button class="calendar-nav-btn" id="nextMonth">▶</button>
+                </div>
+                <div class="calendar-grid" id="calendarGrid">
+                    <!-- Calendar will be generated by JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- STATS VIEW -->
+        <div class="view" id="view-stats">
+            <div class="stats-grid">
+                <section class="card">
+                    <h2>👣 Postęp kroków</h2>
+                    <div class="chart-container">
+                        <svg class="circle-chart" viewBox="0 0 200 200">
+                            <circle class="circle-bg" cx="100" cy="100" r="80"></circle>
+                            <circle class="circle-progress" id="stepsCircle" cx="100" cy="100" r="80"></circle>
+                        </svg>
+                        <div class="chart-center-text">
+                            <span class="chart-percent" id="stepsPercent">0%</span>
+                            <span class="chart-label" id="stepsLabel">0/25,000</span>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="card">
+                    <h2>😊 Historia nastroju</h2>
+                    <div class="bar-chart" id="moodChart">
+                        <div class="bar-item">
+                            <div class="bar-value">0</div>
+                            <div class="bar-fill" style="height: 0%"></div>
+                            <div class="bar-label">😔</div>
+                        </div>
+                        <div class="bar-item">
+                            <div class="bar-value">0</div>
+                            <div class="bar-fill" style="height: 0%"></div>
+                            <div class="bar-label">🙁</div>
+                        </div>
+                        <div class="bar-item">
+                            <div class="bar-value">0</div>
+                            <div class="bar-fill" style="height: 0%"></div>
+                            <div class="bar-label">😐</div>
+                        </div>
+                        <div class="bar-item">
+                            <div class="bar-value">0</div>
+                            <div class="bar-fill" style="height: 0%"></div>
+                            <div class="bar-label">🙂</div>
+                        </div>
+                        <div class="bar-item">
+                            <div class="bar-value">0</div>
+                            <div class="bar-fill" style="height: 0%"></div>
+                            <div class="bar-label">😊</div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="card">
+                    <h2>📚 Postęp nauki</h2>
+                    <div class="chart-container">
+                        <svg class="circle-chart" viewBox="0 0 200 200">
+                            <circle class="circle-bg" cx="100" cy="100" r="80"></circle>
+                            <circle class="circle-progress" id="studyCircle" cx="100" cy="100" r="80"></circle>
+                        </svg>
+                        <div class="chart-center-text">
+                            <span class="chart-percent" id="studyPercent">0%</span>
+                            <span class="chart-label" id="studyLabel">0/100h</span>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+
+        <!-- GALLERY VIEW -->
+        <div class="view" id="view-gallery">
+            <div class="gallery-container">
+                <div class="upload-area">
+                    <input type="file" id="photoInput" accept="image/*" multiple style="display: none;">
+                    <button class="btn-upload" id="uploadBtn">📸 Wybierz zdjęcie</button>
+                </div>
+                <div class="gallery-grid" id="galleryGrid">
+                    <!-- Photos will be added by JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- BADGES VIEW -->
+        <div class="view" id="view-badges">
+            <div class="badges-grid">
+                <!-- Podstawowe -->
+                <div class="badge-card locked" data-badge="first-steps">
+                    <div class="badge-icon">👣</div>
+                    <h3>Pierwsze kroki</h3>
+                    <p>Zapisz pierwsze kroki</p>
+                </div>
+                <div class="badge-card locked" data-badge="first-mood">
+                    <div class="badge-icon">💭</div>
+                    <h3>Pierwsze wrażenie</h3>
+                    <p>Zapisz pierwszy nastrój</p>
+                </div>
+                <div class="badge-card locked" data-badge="first-photo">
+                    <div class="badge-icon">📷</div>
+                    <h3>Pierwsza chwila</h3>
+                    <p>Dodaj pierwsze zdjęcie</p>
+                </div>
+                
+                <!-- Streak -->
+                <div class="badge-card locked" data-badge="3-day-streak">
+                    <div class="badge-icon">🔥</div>
+                    <h3>Startowy ogień</h3>
+                    <p>Utrzymaj streak przez 3 dni</p>
+                </div>
+                <div class="badge-card locked" data-badge="7-day-streak">
+                    <div class="badge-icon">🔥🔥</div>
+                    <h3>Tygodniowy płomień</h3>
+                    <p>Utrzymaj streak przez 7 dni</p>
+                </div>
+                <div class="badge-card locked" data-badge="14-day-streak">
+                    <div class="badge-icon">🔥🔥🔥</div>
+                    <h3>Dwutygodniowa fala</h3>
+                    <p>Utrzymaj streak przez 14 dni</p>
+                </div>
+                <div class="badge-card locked" data-badge="30-day-streak">
+                    <div class="badge-icon">🔥✨</div>
+                    <h3>Miesięczny mistrz</h3>
+                    <p>Utrzymaj streak przez 30 dni</p>
+                </div>
+                
+                <!-- Zadania -->
+                <div class="badge-card locked" data-badge="task-beginner">
+                    <div class="badge-icon">✅</div>
+                    <h3>Początkujący</h3>
+                    <p>Ukończ wszystkie zadania raz</p>
+                </div>
+                <div class="badge-card locked" data-badge="task-master">
+                    <div class="badge-icon">✅✅</div>
+                    <h3>Mistrz zadań</h3>
+                    <p>Ukończ wszystkie zadania 10 razy</p>
+                </div>
+                <div class="badge-card locked" data-badge="task-legend">
+                    <div class="badge-icon">✅👑</div>
+                    <h3>Legendarny wykonawca</h3>
+                    <p>Ukończ wszystkie zadania 30 razy</p>
+                </div>
+                
+                <!-- Nastrój -->
+                <div class="badge-card locked" data-badge="mood-tracker">
+                    <div class="badge-icon">😊</div>
+                    <h3>Łowca nastrojów</h3>
+                    <p>Zapisz nastrój przez 5 dni</p>
+                </div>
+                <div class="badge-card locked" data-badge="mood-master">
+                    <div class="badge-icon">😊💖</div>
+                    <h3>Mistrz emocji</h3>
+                    <p>Zapisz nastrój przez 30 dni</p>
+                </div>
+                <div class="badge-card locked" data-badge="always-happy">
+                    <div class="badge-icon">🥰</div>
+                    <h3>Promyk słońca</h3>
+                    <p>Zapisz 5 dni z najlepszym nastrojem</p>
+                </div>
+                
+                <!-- Kroki -->
+                <div class="badge-card locked" data-badge="steps-5k">
+                    <div class="badge-icon">🚶</div>
+                    <h3>Pierwsze kroki</h3>
+                    <p>Przejdź 5,000 kroków w jednym dniu</p>
+                </div>
+                <div class="badge-card locked" data-badge="steps-10k">
+                    <div class="badge-icon">🏃</div>
+                    <h3>Aktywny</h3>
+                    <p>Przejdź 10,000 kroków w jednym dniu</p>
+                </div>
+                <div class="badge-card locked" data-badge="steps-50k">
+                    <div class="badge-icon">🏃‍♀️</div>
+                    <h3>Biegacz</h3>
+                    <p>Przejdź 50,000 kroków łącznie</p>
+                </div>
+                <div class="badge-card locked" data-badge="steps-100k">
+                    <div class="badge-icon">🏃‍♀️💨</div>
+                    <h3>Maratończyk</h3>
+                    <p>Przejdź 100,000 kroków łącznie</p>
+                </div>
+                <div class="badge-card locked" data-badge="steps-250k">
+                    <div class="badge-icon">👟⚡</div>
+                    <h3>Legenda kroków</h3>
+                    <p>Przejdź 250,000 kroków łącznie</p>
+                </div>
+                
+                <!-- Galeria -->
+                <div class="badge-card locked" data-badge="photographer">
+                    <div class="badge-icon">📸</div>
+                    <h3>Fotograf</h3>
+                    <p>Dodaj 10 zdjęć do galerii</p>
+                </div>
+                <div class="badge-card locked" data-badge="memory-keeper">
+                    <div class="badge-icon">📸✨</div>
+                    <h3>Strażnik wspomnień</h3>
+                    <p>Dodaj 50 zdjęć do galerii</p>
+                </div>
+                
+                <!-- Wyzwanie -->
+                <div class="badge-card locked" data-badge="15-day-warrior">
+                    <div class="badge-icon">🛡️</div>
+                    <h3>Początkujący wojownik</h3>
+                    <p>Ukończ 15 dni wyzwania</p>
+                </div>
+                <div class="badge-card locked" data-badge="30-day-warrior">
+                    <div class="badge-icon">⚔️</div>
+                    <h3>30-dniowy wojownik</h3>
+                    <p>Ukończ 30 dni wyzwania</p>
+                </div>
+                <div class="badge-card locked" data-badge="50-day-champion">
+                    <div class="badge-icon">🏆</div>
+                    <h3>Mistrz wyzwania</h3>
+                    <p>Ukończ 50 dni wyzwania</p>
+                </div>
+                <div class="badge-card locked" data-badge="75-day-legend">
+                    <div class="badge-icon">👑</div>
+                    <h3>Legenda 75 Hard</h3>
+                    <p>Ukończ wszystkie 75 dni!</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- SETTINGS VIEW -->
+        <div class="view" id="view-settings">
+            <div class="settings-container">
+                <section class="settings-section">
+                    <h2>🎨 Personalizacja</h2>
+                    <div class="setting-item">
+                        <label>Motyw:</label>
+                        <select id="themeSelect">
+                            <option value="pink">Kawaii Pink 🎀</option>
+                            <option value="ocean">Ocean Blue 🌊</option>
+                            <option value="mint">Mint Green 🍃</option>
+                            <option value="lavender">Lavender Purple 💜</option>
+                            <option value="strawberry">Strawberry 🍓</option>
+                        </select>
+                    </div>
+                    <div class="setting-item">
+                        <label>Kolor podstawowy:</label>
+                        <input type="color" id="customColor" value="#ff9ac2">
+                    </div>
+                    <div class="setting-item">
+                        <label>Czcionka:</label>
+                        <select id="fontSelect">
+                            <optgroup label="✨ Czcionki Kawaii">
+                                <option value="'Comic Sans MS', 'Chalkboard SE', 'Comic Neue', cursive">Comic Sans (Kawaii)</option>
+                                <option value="'Quicksand', sans-serif">Quicksand (Miękka)</option>
+                                <option value="'Fredoka One', cursive">Fredoka (Zaokrąglona)</option>
+                                <option value="'Baloo 2', cursive">Baloo (Przyjazna)</option>
+                                <option value="'Bubblegum Sans', cursive">Bubblegum (Bąbelkowa)</option>
+                            </optgroup>
+                            <optgroup label="📝 Czcionki Podstawowe">
+                                <option value="'Segoe UI', Tahoma, Geneva, Verdana, sans-serif" selected>Segoe UI (Domyślna)</option>
+                                <option value="Arial, Helvetica, sans-serif">Arial</option>
+                                <option value="'Helvetica Neue', Helvetica, sans-serif">Helvetica</option>
+                                <option value="'Roboto', sans-serif">Roboto</option>
+                                <option value="'Open Sans', sans-serif">Open Sans</option>
+                                <option value="'Lato', sans-serif">Lato</option>
+                                <option value="'Montserrat', sans-serif">Montserrat</option>
+                                <option value="'Poppins', sans-serif">Poppins</option>
+                                <option value="Georgia, serif">Georgia</option>
+                                <option value="'Times New Roman', Times, serif">Times New Roman</option>
+                            </optgroup>
+                        </select>
+                    </div>
+                </section>
+
+                <section class="settings-section">
+                    <h2>🎯 Konfiguracja wyzwania</h2>
+                    <div class="setting-item">
+                        <label>Długość wyzwania (dni):</label>
+                        <input type="number" id="challengeLength" value="75" min="1" max="365">
+                    </div>
+                    <div class="setting-item">
+                        <label>Cel kroków:</label>
+                        <input type="number" id="stepsGoal" value="25000" min="1000" step="1000">
+                    </div>
+                    <div class="setting-item">
+                        <label>Cel godzin nauki:</label>
+                        <input type="number" id="studyGoal" value="100" min="1" step="10">
+                        <small>Całkowity cel godzin nauki do osiągnięcia</small>
+                    </div>
+                    <div class="setting-item">
+                        <label>Dzień odpoczynku:</label>
+                        <select id="restDay">
+                            <option value="none">Brak</option>
+                            <option value="0">Niedziela</option>
+                            <option value="1">Poniedziałek</option>
+                            <option value="2">Wtorek</option>
+                            <option value="3">Środa</option>
+                            <option value="4">Czwartek</option>
+                            <option value="5">Piątek</option>
+                            <option value="6">Sobota</option>
+                        </select>
+                    </div>
+                    <div class="setting-item">
+                        <label>
+                            <input type="checkbox" id="countRestDays">
+                            Liczyć dni odpoczynku jako ukończone
+                        </label>
+                    </div>
+                </section>
+
+                <section class="settings-section">
+                    <h2>🔊 Dźwięki i efekty</h2>
+                    <div class="setting-item">
+                        <label>
+                            <input type="checkbox" id="soundToggle" checked>
+                            Dźwięki interfejsu
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <label>Głośność:</label>
+                        <input type="range" id="volumeSlider" min="0" max="100" value="70">
+                        <span id="volumeValue">70%</span>
+                    </div>
+                </section>
+
+                <section class="settings-section">
+                    <h2>📊 Eksport danych</h2>
+                    <div class="setting-item">
+                        <button class="btn-export" id="exportDataBtn">📥 Pobierz raport postępów (HTML)</button>
+                        <small>Pobierz pełny raport z wykresami i statystykami. Możesz go wydrukować do PDF z przeglądarki (Ctrl+P).</small>
+                    </div>
+                </section>
+
+                <section class="settings-section danger-zone">
+                    <h2>⚠️ Strefa niebezpieczna</h2>
+                    <button class="btn-danger" id="resetAllBtn">🗑️ Resetuj cały postęp</button>
+                </section>
+            </div>
+        </div>
+    </main>
+    
+    <!-- Confetti Container -->
+    <div id="confettiContainer" class="confetti-container"></div>
+    
+    <footer>
+        <p>Made with 💖</p>
+    </footer>
+    
+    <script src="app.js"></script>
+</body>
+</html>
