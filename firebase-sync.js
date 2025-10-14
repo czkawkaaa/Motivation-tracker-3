@@ -26,8 +26,15 @@ function setupAuthUI() {
     const loginBtn = document.getElementById('loginBtn');
     const logoutBtn = document.getElementById('logoutBtn');
     
+    console.log('🔧 Setting up auth UI...');
+    console.log('Login button:', loginBtn);
+    console.log('Logout button:', logoutBtn);
+    
     if (loginBtn) {
+        console.log('✅ Adding click listener to login button');
         loginBtn.addEventListener('click', loginWithGoogle);
+    } else {
+        console.error('❌ Login button not found!');
     }
     
     if (logoutBtn) {
@@ -285,7 +292,7 @@ window.saveDataToFirestore = saveDataToFirestore;
 // ======================
 
 // Inicjalizuj po załadowaniu DOM
-document.addEventListener('DOMContentLoaded', () => {
+function initFirebaseSync() {
     console.log('🚀 Initializing Firebase sync...');
     
     // Ustaw UI autoryzacji
@@ -301,4 +308,12 @@ document.addEventListener('DOMContentLoaded', () => {
             onUserLogout();
         }
     });
-});
+}
+
+// Wywołaj inicjalizację gdy DOM jest gotowy
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initFirebaseSync);
+} else {
+    // DOM już załadowany
+    initFirebaseSync();
+}
