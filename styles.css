@@ -1604,6 +1604,148 @@ footer p {
     }
 }
 
+/* Settings */
+.settings-container {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.settings-section {
+    background: var(--card-bg);
+    border-radius: var(--border-radius);
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: var(--shadow);
+}
+
+.settings-section h2 {
+    font-size: 1.4rem;
+    margin-bottom: 1.5rem;
+    color: var(--text-primary);
+}
+
+.setting-item {
+    margin-bottom: 1.5rem;
+}
+
+.setting-item:last-child {
+    margin-bottom: 0;
+}
+
+.setting-item label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.setting-item input[type="text"],
+.setting-item input[type="number"],
+.setting-item input[type="color"],
+.setting-item select {
+    width: 100%;
+    padding: 0.8rem;
+    border: 2px solid var(--progress-bg);
+    border-radius: 12px;
+    font-size: 1rem;
+    font-family: var(--font-family);
+    background: white;
+    transition: var(--transition);
+}
+
+.setting-item input[type="text"]:focus,
+.setting-item input[type="number"]:focus,
+.setting-item select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(255, 154, 194, 0.2);
+}
+
+.setting-item input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    margin-right: 0.5rem;
+    cursor: pointer;
+}
+
+.setting-item input[type="range"] {
+    width: 100%;
+    height: 8px;
+    border-radius: 4px;
+    background: var(--progress-bg);
+    outline: none;
+    -webkit-appearance: none;
+    margin: 0.5rem 0;
+}
+
+.setting-item input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--primary-color);
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    transition: var(--transition);
+}
+
+.setting-item input[type="range"]::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+}
+
+.setting-item input[type="range"]::-moz-range-thumb {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--primary-color);
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    border: none;
+    transition: var(--transition);
+}
+
+.setting-item input[type="range"]::-moz-range-thumb:hover {
+    transform: scale(1.2);
+}
+
+.danger-zone {
+    border: 2px solid #f44336;
+    background: linear-gradient(135deg, #fff5f5, #ffffff);
+}
+
+.btn-danger {
+    width: 100%;
+    padding: 1rem;
+    background: #f44336;
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-family: var(--font-family);
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+    box-shadow: 0 4px 8px rgba(244, 67, 54, 0.3);
+}
+
+.btn-danger:hover {
+    background: #d32f2f;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(244, 67, 54, 0.4);
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.section-header h2 {
+    margin: 0;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
     .completion-modal-content {
@@ -1627,4 +1769,579 @@ footer p {
     .banner-text {
         font-size: 0.9rem;
     }
+}
+
+/* ================================================== */
+/* RESPONSIVE DESIGN - MOBILE FIRST */
+/* ================================================== */
+
+/* Tablet and smaller (max-width: 1024px) */
+@media (max-width: 1024px) {
+    .app-title {
+        font-size: 1.5rem;
+    }
+    
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .badges-grid {
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    }
+}
+
+/* Mobile devices (max-width: 768px) */
+@media (max-width: 768px) {
+    /* Header */
+    .app-header {
+        padding: 1rem;
+    }
+    
+    .header-content {
+        margin-bottom: 0.5rem;
+    }
+    
+    .app-title {
+        font-size: 1.3rem;
+    }
+    
+    /* Hamburger menu visible on mobile */
+    .hamburger-btn {
+        display: flex;
+    }
+    
+    /* Navigation menu as dropdown */
+    .main-nav {
+        display: none;
+        flex-direction: column;
+        gap: 0.5rem;
+        margin-top: 1rem;
+        background: rgba(255, 255, 255, 0.95);
+        padding: 1rem;
+        border-radius: 12px;
+        box-shadow: var(--shadow);
+    }
+    
+    .main-nav.active {
+        display: flex;
+    }
+    
+    .nav-link {
+        width: 100%;
+        text-align: center;
+        padding: 0.8rem;
+        color: var(--primary-color);
+    }
+    
+    .nav-link.active {
+        background: var(--primary-color);
+        color: white;
+    }
+    
+    /* Theme selector */
+    .theme-selector {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    
+    .theme-btn {
+        width: 40px;
+        height: 40px;
+        font-size: 1.1rem;
+    }
+    
+    /* Main content */
+    main {
+        padding: 0 0.5rem 3rem;
+        margin: 1rem auto;
+    }
+    
+    /* Dashboard grid */
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    .card-challenge {
+        grid-column: span 1;
+    }
+    
+    .card {
+        padding: 1.2rem;
+    }
+    
+    .card h2 {
+        font-size: 1.1rem;
+        margin-bottom: 1rem;
+    }
+    
+    /* Progress bar */
+    .progress-bar-large {
+        height: 25px;
+    }
+    
+    .progress-percent {
+        font-size: 1.5rem;
+    }
+    
+    .progress-days {
+        font-size: 1rem;
+    }
+    
+    /* Streak */
+    .streak-number {
+        font-size: 3rem;
+    }
+    
+    .motivational-quote {
+        font-size: 0.9rem;
+    }
+    
+    /* Steps input */
+    .steps-input-group {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .steps-input-group input {
+        width: 100%;
+    }
+    
+    /* Buttons */
+    .btn-primary,
+    .btn-secondary {
+        padding: 0.7rem 1.2rem;
+        font-size: 0.95rem;
+    }
+    
+    /* Mood selector */
+    .mood-selector {
+        gap: 0.3rem;
+    }
+    
+    .mood-btn {
+        font-size: 1.5rem;
+    }
+    
+    /* Tasks */
+    .task-item {
+        padding: 0.7rem;
+        font-size: 0.95rem;
+    }
+    
+    .task-actions {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .task-actions button {
+        width: 100%;
+    }
+    
+    /* Calendar */
+    .calendar-container {
+        padding: 1rem;
+    }
+    
+    .calendar-header {
+        flex-direction: column;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .calendar-title {
+        font-size: 1.2rem;
+    }
+    
+    .calendar-nav-btn {
+        padding: 0.5rem 1rem;
+        font-size: 1rem;
+    }
+    
+    .calendar-grid {
+        gap: 0.3rem;
+    }
+    
+    .calendar-day {
+        font-size: 0.9rem;
+        border-radius: 8px;
+    }
+    
+    .calendar-day-header {
+        font-size: 0.8rem;
+        padding: 0.3rem;
+    }
+    
+    .calendar-day.completed::after {
+        font-size: 0.7rem;
+    }
+    
+    .calendar-day.rest::before {
+        font-size: 0.6rem;
+    }
+    
+    /* Stats */
+    .stats-grid {
+        gap: 1.5rem;
+        grid-template-columns: 1fr;
+    }
+    
+    .chart-container {
+        max-width: 250px;
+    }
+    
+    .chart-percent {
+        font-size: 2rem;
+    }
+    
+    .chart-label {
+        font-size: 0.9rem;
+    }
+    
+    .bar-chart {
+        height: 200px;
+        padding: 1.5rem 0.5rem;
+    }
+    
+    .bar-value {
+        font-size: 0.8rem;
+    }
+    
+    .bar-label {
+        font-size: 1.2rem;
+    }
+    
+    /* Gallery */
+    .gallery-container {
+        padding: 1rem;
+    }
+    
+    .gallery-grid {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 0.8rem;
+    }
+    
+    .delete-photo-btn {
+        opacity: 1;
+        width: 32px;
+        height: 32px;
+        font-size: 1rem;
+    }
+    
+    /* Badges */
+    .badges-grid {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 1rem;
+    }
+    
+    .badge-card {
+        padding: 1.5rem;
+    }
+    
+    .badge-icon {
+        font-size: 2.5rem;
+    }
+    
+    .badge-card h3 {
+        font-size: 0.95rem;
+    }
+    
+    .badge-card p {
+        font-size: 0.85rem;
+    }
+    
+    /* Settings */
+    .settings-container {
+        padding: 0;
+    }
+    
+    .settings-section {
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+    }
+    
+    .settings-section h2 {
+        font-size: 1.2rem;
+    }
+    
+    .setting-item {
+        margin-bottom: 1.2rem;
+    }
+    
+    .setting-item label {
+        font-size: 0.95rem;
+    }
+    
+    .setting-item input,
+    .setting-item select {
+        font-size: 0.95rem;
+        padding: 0.7rem;
+    }
+    
+    /* Lightbox mobile */
+    .lightbox-content {
+        max-width: 95vw;
+    }
+    
+    .lightbox-prev {
+        left: 10px;
+        width: 40px;
+        height: 40px;
+    }
+    
+    .lightbox-next {
+        right: 10px;
+        width: 40px;
+        height: 40px;
+    }
+    
+    .lightbox-close {
+        top: 10px;
+        right: 10px;
+        width: 35px;
+        height: 35px;
+    }
+    
+    .lightbox-counter {
+        bottom: 10px;
+        font-size: 0.9rem;
+        padding: 0.4rem 0.8rem;
+    }
+    
+    /* Rest day message */
+    .rest-day-message {
+        padding: 2rem 1rem;
+    }
+    
+    .rest-icon {
+        font-size: 3rem;
+    }
+    
+    .rest-day-message h3 {
+        font-size: 1.2rem;
+    }
+    
+    .rest-day-message p {
+        font-size: 0.9rem;
+    }
+    
+    /* Completion modal */
+    .completion-modal-content {
+        width: 95%;
+        max-width: none;
+    }
+    
+    .completion-header {
+        padding: 1.5rem;
+    }
+    
+    .completion-header h2 {
+        font-size: 1.5rem;
+    }
+    
+    .completion-title {
+        font-size: 1rem;
+    }
+    
+    .completion-body {
+        padding: 1.5rem;
+    }
+    
+    .completion-icon {
+        font-size: 4rem;
+    }
+    
+    .completion-message {
+        font-size: 1rem;
+    }
+    
+    .completion-warning {
+        padding: 1rem;
+    }
+    
+    .completion-warning p {
+        font-size: 0.9rem;
+    }
+    
+    .countdown-display {
+        font-size: 2.5rem;
+    }
+    
+    .btn-download-now,
+    .btn-close-modal {
+        font-size: 1rem;
+        padding: 1rem;
+    }
+    
+    /* Banner */
+    .reset-reminder-banner {
+        padding: 0.8rem;
+    }
+    
+    .banner-content {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .banner-icon {
+        font-size: 1.2rem;
+    }
+    
+    .banner-text {
+        font-size: 0.85rem;
+        text-align: center;
+    }
+    
+    .banner-text strong {
+        font-size: 1rem;
+        display: block;
+        margin-top: 0.3rem;
+    }
+    
+    .banner-download-btn {
+        font-size: 0.85rem;
+        padding: 0.5rem 1rem;
+    }
+}
+
+/* Small mobile devices (max-width: 480px) */
+@media (max-width: 480px) {
+    .app-title {
+        font-size: 1.1rem;
+    }
+    
+    .theme-btn {
+        width: 35px;
+        height: 35px;
+        font-size: 1rem;
+    }
+    
+    .card {
+        padding: 1rem;
+    }
+    
+    .card h2 {
+        font-size: 1rem;
+    }
+    
+    .progress-percent {
+        font-size: 1.3rem;
+    }
+    
+    .progress-days {
+        font-size: 0.9rem;
+    }
+    
+    .streak-number {
+        font-size: 2.5rem;
+    }
+    
+    .motivational-quote {
+        font-size: 0.85rem;
+    }
+    
+    .mood-btn {
+        font-size: 1.3rem;
+    }
+    
+    .calendar-day {
+        font-size: 0.85rem;
+    }
+    
+    .calendar-day-header {
+        font-size: 0.75rem;
+    }
+    
+    .badges-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .badge-card {
+        padding: 1.2rem;
+    }
+    
+    .badge-icon {
+        font-size: 2rem;
+    }
+    
+    .gallery-grid {
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    }
+    
+    .chart-container {
+        max-width: 200px;
+    }
+    
+    .chart-percent {
+        font-size: 1.8rem;
+    }
+    
+    .bar-chart {
+        height: 180px;
+        gap: 0.3rem;
+    }
+    
+    .completion-icon {
+        font-size: 3rem;
+    }
+    
+    .countdown-display {
+        font-size: 2rem;
+    }
+}
+
+/* Landscape mode for mobile */
+@media (max-height: 600px) and (orientation: landscape) {
+    .app-header {
+        position: relative;
+    }
+    
+    .calendar-grid {
+        gap: 0.2rem;
+    }
+    
+    .calendar-day {
+        font-size: 0.8rem;
+    }
+    
+    .completion-modal-content {
+        max-height: 95vh;
+    }
+    
+    .completion-icon {
+        font-size: 2.5rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .countdown-display {
+        font-size: 2rem;
+    }
+}
+
+/* Print styles */
+@media print {
+    .app-header,
+    .hamburger-btn,
+    .theme-selector,
+    .btn-primary,
+    .btn-secondary,
+    .btn-danger,
+    .icon-btn {
+        display: none !important;
+    }
+    
+    body {
+        background: white;
+    }
+    
+    .card {
+        page-break-inside: avoid;
+        box-shadow: none;
+        border: 1px solid #ddd;
+    }
+}
+
+/* Dark mode support (optional) */
+@media (prefers-color-scheme: dark) {
+    /* Możesz tutaj dodać style ciemnego motywu jeśli chcesz */
 }
