@@ -390,6 +390,15 @@ function initDashboard() {
         // Trigger confetti animation
         createConfetti();
     });
+
+    // Start Challenge button (new)
+    const startChallengeBtn = document.getElementById('startChallengeBtn');
+    if (startChallengeBtn) {
+        startChallengeBtn.addEventListener('click', () => {
+            playClickSound();
+            startChallenge();
+        });
+    }
 }
 
 function renderTasks() {
@@ -727,6 +736,104 @@ function updateAllDisplays() {
     updateTodayMood();
 }
 
+// ======================
+// CHALLENGE LIFECYCLE
+// ======================
+function isChallengeActive() {
+    return !!AppData.challenge.startDate && AppData.challenge.currentDay < AppData.challenge.totalDays;
+}
+
+function isDayInChallengeRange(dayKey) {
+    // Check if a given day is within the challenge range (between startDate and current progress)
+    if (!AppData.challenge.startDate) return false;
+    
+    const startDate = new Date(AppData.challenge.startDate + 'T00:00:00');
+    const checkDate = new Date(dayKey + 'T00:00:00');
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    // Day must be after or equal to start date
+    if (checkDate < startDate) return false;
+    
+    // Day must be before or equal to today (can't fail future days)
+    if (checkDate > today) return false;
+    
+    // Calculate how many days from start
+    const msPerDay = 24 * 60 * 60 * 1000;
+    const daysSinceStart = Math.floor((checkDate - startDate) / msPerDay);
+    
+    // Day must be within the current progress
+    return daysSinceStart < AppData.challenge.currentDay;
+}
+
+function startChallenge() {
+    const todayKey = getTodayKey();
+    if (!AppData.challenge.startDate) {
+        AppData.challenge.startDate = todayKey;
+        // Ensure totalDays is synced with settings
+        AppData.challenge.totalDays = AppData.settings.challengeLength || AppData.challenge.totalDays || 75;
+        // Reset progress when starting new challenge
+        AppData.challenge.currentDay = 0;
+        AppData.challenge.completedDays = AppData.challenge.completedDays || [];
+        saveData();
+    }
+    // Hide start button in UI
+    const startBtn = document.getElementById('startChallengeBtn');
+    if (startBtn) startBtn.style.display = 'none';
+    // Immediately sync progression (in case some days passed since start)
+    syncChallengeByDates();
+    showNotification('🚀 Wyzwanie rozpoczęte! Powodzenia!', 'success');
+}
+
+function syncChallengeByDates() {
+    // Ensure startDate exists
+    if (!AppData.challenge.startDate) return;
+
+    const start = new Date(AppData.challenge.startDate + 'T00:00:00');
+    const today = new Date();
+
+    // Calculate days passed including start day as day 1
+    const msPerDay = 24 * 60 * 60 * 1000;
+    const daysPassed = Math.floor((Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()) - Date.UTC(start.getFullYear(), start.getMonth(), start.getDate())) / msPerDay) + 1;
+
+    // Clamp to totalDays
+    const total = AppData.challenge.totalDays || AppData.settings.challengeLength || 75;
+    const newCurrentDay = Math.max(0, Math.min(daysPassed, total));
+
+    // If completedDays doesn't include days up to newCurrentDay, ensure it's consistent
+    // We'll keep completedDays as explicit days the user completed via tasks, but currentDay should reflect calendar progression
+    AppData.challenge.currentDay = newCurrentDay;
+
+    // If challenge finished, trigger completion handler
+    if (AppData.challenge.currentDay >= total && !AppData.challenge.completionTime) {
+        handleChallengeCompletion();
+    }
+
+    saveData();
+    updateAllDisplays();
+}
+
+// Periodic sync: run once every hour to catch day changes while the app is open
+setInterval(() => {
+    if (isChallengeActive()) {
+        syncChallengeByDates();
+    }
+}, 1000 * 60 * 60);
+
+// On load, hide start button when challenge active
+document.addEventListener('DOMContentLoaded', () => {
+    const startBtn = document.getElementById('startChallengeBtn');
+    if (startBtn) {
+        if (AppData.challenge && AppData.challenge.startDate && AppData.challenge.currentDay >= 0) {
+            startBtn.style.display = 'none';
+        }
+    }
+    // Sync immediately on app load
+    if (AppData.challenge && AppData.challenge.startDate) {
+        syncChallengeByDates();
+    }
+});
+
 function updateChallengeProgress() {
     const percent = (AppData.challenge.currentDay / AppData.challenge.totalDays) * 100;
     document.getElementById('challengeProgressBar').style.width = percent + '%';
@@ -853,8 +960,15 @@ function renderCalendar() {
             dayDiv.classList.add('today');
         }
         
-        if (AppData.challenge.completedDays.includes(dayKey)) {
+        // Check if day is in challenge range
+        const isInChallengeRange = isDayInChallengeRange(dayKey);
+        const isCompleted = AppData.challenge.completedDays.includes(dayKey);
+        
+        if (isCompleted) {
             dayDiv.classList.add('completed');
+        } else if (isInChallengeRange && !isRestDayForDate(dayKey)) {
+            // Day is in challenge range but not completed = failed
+            dayDiv.classList.add('failed');
         }
         
         // Add streak indicator

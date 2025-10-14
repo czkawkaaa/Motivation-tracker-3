@@ -638,6 +638,30 @@ main {
     border-color: var(--primary-color);
 }
 
+.calendar-day.failed {
+    background: linear-gradient(135deg, #ffebee, #ffcdd2);
+    color: #c62828;
+    font-weight: 600;
+    border: 2px solid #ef5350;
+    position: relative;
+}
+
+.calendar-day.failed::after {
+    content: '✗';
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    font-size: 0.8rem;
+    font-weight: bold;
+    color: #c62828;
+}
+
+.calendar-day.failed:hover {
+    background: linear-gradient(135deg, #ef5350, #e53935);
+    color: white;
+    border-color: #c62828;
+}
+
 .calendar-day.rest {
     background: linear-gradient(135deg, var(--progress-bg), rgba(255, 255, 255, 0.8));
     border: 2px dashed var(--primary-color);
