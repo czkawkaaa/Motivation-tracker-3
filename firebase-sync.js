@@ -234,24 +234,29 @@ function setupRealtimeSync() {
         if (docSnap.exists()) {
             const cloudData = docSnap.data();
             
-            // Sprawdź czy zmiana nie pochodzi z tego urządzenia
-            const localData = localStorage.getItem('kawaiiQuestData');
-            const local = localData ? JSON.parse(localData) : {};
+            console.log('🔄 Realtime update received from Firestore');
+            console.log('Cloud lastModified:', cloudData.lastModified);
             
-            // Jeśli dane się zmieniły na innym urządzeniu, załaduj je
-            if (cloudData.lastModified && cloudData.lastModified !== local.lastModified) {
-                console.log('🔄 Data changed on another device, syncing...');
-                if (typeof AppData !== 'undefined' && cloudData.data) {
-                    Object.assign(AppData, cloudData.data);
-                    AppData.lastModified = cloudData.lastModified;
-                    localStorage.setItem('kawaiiQuestData', JSON.stringify(AppData));
-                    if (typeof updateAllDisplays === 'function') {
-                        updateAllDisplays();
+            // Sprawdź czy zmiana nie pochodzi z tego urządzenia
+            if (typeof AppData !== 'undefined') {
+                console.log('Local lastModified:', AppData.lastModified);
+                
+                // Jeśli dane z chmury są nowsze niż lokalne, załaduj je
+                if (cloudData.lastModified && cloudData.lastModified > (AppData.lastModified || 0)) {
+                    console.log('🔄 Cloud data is newer, updating local...');
+                    if (cloudData.data) {
+                        Object.assign(AppData, cloudData.data);
+                        localStorage.setItem('kawaiiQuestData', JSON.stringify(AppData));
+                        if (typeof updateAllDisplays === 'function') {
+                            updateAllDisplays();
+                        }
+                        
+                        if (typeof showNotification === 'function') {
+                            showNotification('🔄 Dane zsynchronizowane z innego urządzenia', 'success');
+                        }
                     }
-                    
-                    if (typeof showNotification === 'function') {
-                        showNotification('🔄 Dane zsynchronizowane z innego urządzenia', 'success');
-                    }
+                } else {
+                    console.log('✓ Local data is up to date');
                 }
             }
         }
