@@ -114,7 +114,14 @@ function loadData() {
 }
 
 function saveData() {
+    AppData.lastModified = Date.now();
     localStorage.setItem('kawaiiQuestData', JSON.stringify(AppData));
+    
+    // Synchronizuj z Firebase jeśli dostępne
+    if (typeof window.saveDataToFirestore === 'function') {
+        window.saveDataToFirestore();
+    }
+    
     checkBadges();
 }
 
@@ -734,6 +741,14 @@ function updateAllDisplays() {
     updateStreakDisplay();
     updateTodaySteps();
     updateTodayMood();
+    
+    // Odśwież też inne elementy UI
+    if (typeof renderTasks === 'function') renderTasks();
+    if (typeof renderCalendar === 'function') renderCalendar();
+    if (typeof updateStats === 'function') updateStats();
+    if (typeof renderGallery === 'function') renderGallery();
+    if (typeof updateBadgesDisplay === 'function') updateBadgesDisplay();
+    if (typeof applySettings === 'function') applySettings();
 }
 
 // ======================

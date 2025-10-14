@@ -192,9 +192,14 @@ async function saveDataToFirestore() {
     try {
         const docRef = doc(db, 'users', currentUser.uid);
         
+        // Dodaj timestamp do AppData
+        if (typeof AppData !== 'undefined') {
+            AppData.lastModified = Date.now();
+        }
+        
         await setDoc(docRef, {
             data: AppData,
-            lastModified: Date.now(),
+            lastModified: AppData.lastModified,
             email: currentUser.email,
             updatedAt: serverTimestamp()
         }, { merge: true });
@@ -254,35 +259,6 @@ function setupRealtimeSync() {
         console.error('❌ Realtime sync error:', error);
     });
 }
-
-// ======================
-// OVERRIDE saveData
-// ======================
-
-// Nadpisz oryginalną funkcję saveData z app.js gdy będzie dostępna
-window.addEventListener('DOMContentLoaded', () => {
-    // Poczekaj aż app.js się załaduje
-    setTimeout(() => {
-        if (typeof window.saveData === 'function') {
-            const originalSaveData = window.saveData;
-            
-            window.saveData = function() {
-                // Dodaj timestamp
-                if (typeof AppData !== 'undefined') {
-                    AppData.lastModified = Date.now();
-                }
-                
-                // Zapisz do Firestore i localStorage
-                saveDataToFirestore();
-                
-                // Wywołaj oryginalne checkBadges
-                if (typeof checkBadges === 'function') {
-                    checkBadges();
-                }
-            };
-        }
-    }, 100);
-});
 
 // Eksportuj funkcję dla użycia w app.js
 window.saveDataToFirestore = saveDataToFirestore;
