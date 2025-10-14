@@ -148,6 +148,7 @@ function initNavigation() {
     navLinks.forEach(link => {
         link.addEventListener('click', (e) => {
             e.preventDefault();
+            playClickSound(); // Dźwięk kliknięcia
             const view = link.dataset.view;
             switchView(view);
             
@@ -195,6 +196,7 @@ function initThemeSystem() {
     
     themeButtons.forEach(button => {
         button.addEventListener('click', () => {
+            playClickSound(); // Dźwięk kliknięcia
             const theme = button.dataset.theme;
             setTheme(theme);
             AppData.settings.theme = theme;
@@ -226,6 +228,7 @@ function initDashboard() {
     const stepsSuccess = document.getElementById('stepsSuccess');
     
     saveStepsBtn.addEventListener('click', () => {
+        playSuccessSound(); // Dźwięk sukcesu
         const steps = parseInt(stepsInput.value) || 0;
         AppData.steps[getTodayKey()] = steps;
         saveData();
@@ -244,6 +247,7 @@ function initDashboard() {
     
     moodButtons.forEach(btn => {
         btn.addEventListener('click', () => {
+            playClickSound(); // Dźwięk kliknięcia
             moodButtons.forEach(b => b.classList.remove('selected'));
             btn.classList.add('selected');
             selectedMood = btn.dataset.mood;
@@ -252,6 +256,7 @@ function initDashboard() {
     
     saveMoodBtn.addEventListener('click', () => {
         if (selectedMood) {
+            playSuccessSound(); // Dźwięk sukcesu
             AppData.mood[getTodayKey()] = selectedMood;
             saveData();
             
@@ -274,6 +279,7 @@ function initDashboard() {
     }
     
     saveStudyBtn.addEventListener('click', () => {
+        playSuccessSound(); // Dźwięk sukcesu
         const hours = parseFloat(studyHoursInput.value) || 0;
         AppData.studyHours[getTodayKey()] = hours;
         saveData();
@@ -307,6 +313,7 @@ function initDashboard() {
     
     // Edit tasks button
     editTasksBtn.addEventListener('click', () => {
+        playClickSound(); // Dźwięk kliknięcia
         const isVisible = taskEditSection.style.display !== 'none';
         taskEditSection.style.display = isVisible ? 'none' : 'block';
         
@@ -317,6 +324,7 @@ function initDashboard() {
     
     // Save tasks
     saveTasksBtn.addEventListener('click', () => {
+        playSuccessSound(); // Dźwięk sukcesu
         const editItems = document.querySelectorAll('.edit-task-item input[type="text"]');
         AppData.tasks = Array.from(editItems).map(input => input.value).filter(val => val.trim());
         saveData();
@@ -327,6 +335,7 @@ function initDashboard() {
     
     // Add task
     addTaskBtn.addEventListener('click', () => {
+        playClickSound(); // Dźwięk kliknięcia
         const newTask = newTaskInput.value.trim();
         if (newTask) {
             AppData.tasks.push(newTask);
@@ -342,6 +351,7 @@ function initDashboard() {
     });
     
     resetTasksBtn.addEventListener('click', () => {
+        playClickSound(); // Dźwięk kliknięcia
         const today = getTodayKey();
         const wasCompleted = AppData.challenge.completedDays.includes(today);
         
@@ -368,6 +378,7 @@ function initDashboard() {
     });
     
     completeAllTasksBtn.addEventListener('click', () => {
+        playSuccessSound(); // Dźwięk sukcesu
         const taskCheckboxes = document.querySelectorAll('.task-checkbox');
         taskCheckboxes.forEach(cb => {
             cb.checked = true;
@@ -425,6 +436,7 @@ function renderTasks() {
         
         const checkbox = label.querySelector('.task-checkbox');
         checkbox.addEventListener('change', () => {
+            playCheckboxSound(); // Dźwięk checkboxa
             label.classList.toggle('completed', checkbox.checked);
             updateTasksData();
             if (checkbox.checked) {
@@ -450,6 +462,7 @@ function renderEditTasks() {
         
         const deleteBtn = div.querySelector('.delete-task-btn');
         deleteBtn.addEventListener('click', () => {
+            playClickSound(); // Dźwięk kliknięcia
             AppData.tasks.splice(index, 1);
             renderEditTasks();
         });
@@ -754,11 +767,13 @@ let currentCalendarDate = new Date();
 
 function initCalendar() {
     document.getElementById('prevMonth').addEventListener('click', () => {
+        playClickSound(); // Dźwięk kliknięcia
         currentCalendarDate.setMonth(currentCalendarDate.getMonth() - 1);
         renderCalendar();
     });
     
     document.getElementById('nextMonth').addEventListener('click', () => {
+        playClickSound(); // Dźwięk kliknięcia
         currentCalendarDate.setMonth(currentCalendarDate.getMonth() + 1);
         renderCalendar();
     });
@@ -928,6 +943,7 @@ function initGallery() {
     const photoInput = document.getElementById('photoInput');
     
     uploadBtn.addEventListener('click', () => {
+        playClickSound(); // Dźwięk kliknięcia
         photoInput.click();
     });
     
@@ -967,6 +983,7 @@ function renderGallery() {
         const deleteBtn = item.querySelector('.delete-photo-btn');
         deleteBtn.addEventListener('click', (e) => {
             e.stopPropagation();
+            playClickSound(); // Dźwięk kliknięcia
             deletePhoto(index);
         });
         
@@ -1312,6 +1329,10 @@ function initSettings() {
     soundToggle.addEventListener('change', (e) => {
         AppData.settings.soundEnabled = e.target.checked;
         saveData();
+        // Odtwórz dźwięk testowy jeśli włączono
+        if (e.target.checked) {
+            setTimeout(() => playClickSound(), 100);
+        }
     });
     
     // Volume slider
@@ -1319,15 +1340,24 @@ function initSettings() {
     const volumeValue = document.getElementById('volumeValue');
     volumeSlider.value = AppData.settings.volume;
     volumeValue.textContent = AppData.settings.volume + '%';
+    
+    let volumeTimeout = null;
     volumeSlider.addEventListener('input', (e) => {
         AppData.settings.volume = parseInt(e.target.value);
         volumeValue.textContent = e.target.value + '%';
         saveData();
+        
+        // Odtwórz dźwięk podglądu po zatrzymaniu przesuwania
+        clearTimeout(volumeTimeout);
+        volumeTimeout = setTimeout(() => {
+            playClickSound();
+        }, 150);
     });
     
     // Reset button
     const resetAllBtn = document.getElementById('resetAllBtn');
     resetAllBtn.addEventListener('click', () => {
+        playClickSound(); // Dźwięk kliknięcia
         if (confirm('⚠️ Czy na pewno chcesz zresetować cały postęp? Ta akcja jest nieodwracalna!')) {
             if (confirm('🚨 Ostatnie ostrzeżenie! Wszystkie dane zostaną usunięte bezpowrotnie!')) {
                 localStorage.clear();
@@ -1339,6 +1369,7 @@ function initSettings() {
     // Export data button
     const exportDataBtn = document.getElementById('exportDataBtn');
     exportDataBtn.addEventListener('click', () => {
+        playClickSound(); // Dźwięk kliknięcia
         exportDataAsHTML();
     });
 }
@@ -1351,6 +1382,113 @@ function applySettings() {
 
 function setFont(fontFamily) {
     document.documentElement.style.setProperty('--font-family', fontFamily);
+}
+
+// ======================
+// SOUND SYSTEM
+// ======================
+// Tworzenie dźwięków przy użyciu Web Audio API
+const AudioContext = window.AudioContext || window.webkitAudioContext;
+let audioContext = null;
+
+function initAudioContext() {
+    if (!audioContext) {
+        audioContext = new AudioContext();
+    }
+    return audioContext;
+}
+
+function playClickSound() {
+    if (!AppData.settings.soundEnabled) return;
+    
+    const ctx = initAudioContext();
+    const oscillator = ctx.createOscillator();
+    const gainNode = ctx.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(ctx.destination);
+    
+    // Ustawienia dźwięku
+    oscillator.frequency.value = 800;
+    oscillator.type = 'sine';
+    
+    // Głośność
+    const volume = AppData.settings.volume / 100;
+    gainNode.gain.setValueAtTime(volume * 0.3, ctx.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
+    
+    oscillator.start(ctx.currentTime);
+    oscillator.stop(ctx.currentTime + 0.1);
+}
+
+function playSuccessSound() {
+    if (!AppData.settings.soundEnabled) return;
+    
+    const ctx = initAudioContext();
+    const volume = AppData.settings.volume / 100;
+    
+    // Odtwórz 3 nuty (akord sukcesu)
+    const notes = [523.25, 659.25, 783.99]; // C5, E5, G5
+    
+    notes.forEach((freq, index) => {
+        const oscillator = ctx.createOscillator();
+        const gainNode = ctx.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(ctx.destination);
+        
+        oscillator.frequency.value = freq;
+        oscillator.type = 'sine';
+        
+        const startTime = ctx.currentTime + (index * 0.1);
+        gainNode.gain.setValueAtTime(volume * 0.2, startTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + 0.3);
+        
+        oscillator.start(startTime);
+        oscillator.stop(startTime + 0.3);
+    });
+}
+
+function playCheckboxSound() {
+    if (!AppData.settings.soundEnabled) return;
+    
+    const ctx = initAudioContext();
+    const oscillator = ctx.createOscillator();
+    const gainNode = ctx.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(ctx.destination);
+    
+    oscillator.frequency.value = 600;
+    oscillator.type = 'square';
+    
+    const volume = AppData.settings.volume / 100;
+    gainNode.gain.setValueAtTime(volume * 0.2, ctx.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.08);
+    
+    oscillator.start(ctx.currentTime);
+    oscillator.stop(ctx.currentTime + 0.08);
+}
+
+function playHoverSound() {
+    if (!AppData.settings.soundEnabled) return;
+    
+    const ctx = initAudioContext();
+    const oscillator = ctx.createOscillator();
+    const gainNode = ctx.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(ctx.destination);
+    
+    oscillator.frequency.value = 1000;
+    oscillator.type = 'sine';
+    
+    const volume = AppData.settings.volume / 100;
+    gainNode.gain.setValueAtTime(volume * 0.1, ctx.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.05);
+    
+    oscillator.start(ctx.currentTime);
+    oscillator.stop(ctx.currentTime + 0.05);
 }
 
 // ======================
