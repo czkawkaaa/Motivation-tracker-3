@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firebase Debug - Kawaii Quest</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            max-width: 900px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .console {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 20px;
+            border-radius: 8px;
+            min-height: 400px;
+            font-size: 14px;
+            line-height: 1.6;
+            overflow-x: auto;
+        }
+        .success { color: #4ec9b0; }
+        .error { color: #f48771; }
+        .warning { color: #dcdcaa; }
+        .info { color: #9cdcfe; }
+        button {
+            padding: 12px 24px;
+            margin: 10px 5px;
+            font-size: 16px;
+            cursor: pointer;
+            border: none;
+            border-radius: 6px;
+            background: #007acc;
+            color: white;
+            font-weight: bold;
+        }
+        button:hover {
+            background: #005a9e;
+        }
+        h1 {
+            text-align: center;
+            color: #ff9ac2;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔥 Firebase Debug Console</h1>
+    
+    <div style="text-align: center; margin: 20px 0;">
+        <button id="testLoginBtn">🔐 Test Google Login</button>
+        <button id="clearConsoleBtn">🗑️ Clear Console</button>
+    </div>
+    
+    <div class="console" id="debugConsole">
+        <div class="info">🚀 Initializing Firebase Debug Tool...</div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
+
+        const consoleEl = document.getElementById('debugConsole');
+        
+        function log(message, type = 'info') {
+            const line = document.createElement('div');
+            line.className = type;
+            line.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            consoleEl.appendChild(line);
+            consoleEl.scrollTop = consoleEl.scrollHeight;
+        }
+
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBLtdh-FELJEuzYPpKDF6OLuya55xRTjiY",
+            authDomain: "kawaii-quest.firebaseapp.com",
+            projectId: "kawaii-quest",
+            storageBucket: "kawaii-quest.firebasestorage.app",
+            messagingSenderId: "845447529375",
+            appId: "1:845447529375:web:9c6db3677504d72354f3aa"
+        };
+
+        try {
+            log("📦 Initializing Firebase...", "info");
+            const app = initializeApp(firebaseConfig);
+            log("✅ Firebase App initialized successfully!", "success");
+            
+            const auth = getAuth(app);
+            log("✅ Firebase Auth initialized", "success");
+            
+            const db = getFirestore(app);
+            log("✅ Firestore initialized", "success");
+            
+            // Monitor auth state
+            onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    log(`👤 User logged in: ${user.email}`, "success");
+                    log(`   - UID: ${user.uid}`, "info");
+                    log(`   - Display Name: ${user.displayName}`, "info");
+                    log(`   - Photo URL: ${user.photoURL}`, "info");
+                } else {
+                    log("👤 No user logged in", "warning");
+                }
+            });
+            
+            // Test login button
+            document.getElementById('testLoginBtn').addEventListener('click', async () => {
+                log("🔐 Starting Google Sign-In...", "info");
+                const provider = new GoogleAuthProvider();
+                
+                try {
+                    log("📱 Opening popup window...", "info");
+                    const result = await signInWithPopup(auth, provider);
+                    log("✅ LOGIN SUCCESS!", "success");
+                    log(`   - Email: ${result.user.email}`, "success");
+                    log(`   - UID: ${result.user.uid}`, "success");
+                    
+                    // Test Firestore write
+                    log("💾 Testing Firestore write...", "info");
+                    const testDocRef = doc(db, 'users', result.user.uid);
+                    await setDoc(testDocRef, {
+                        testData: "Hello from debug tool!",
+                        timestamp: new Date().toISOString()
+                    }, { merge: true });
+                    log("✅ Firestore write successful!", "success");
+                    
+                    // Test Firestore read
+                    log("📖 Testing Firestore read...", "info");
+                    const docSnap = await getDoc(testDocRef);
+                    if (docSnap.exists()) {
+                        log("✅ Firestore read successful!", "success");
+                        log(`   - Data: ${JSON.stringify(docSnap.data())}`, "info");
+                    }
+                    
+                } catch (error) {
+                    log("❌ LOGIN ERROR!", "error");
+                    log(`   - Code: ${error.code}`, "error");
+                    log(`   - Message: ${error.message}`, "error");
+                    
+                    if (error.code === 'auth/unauthorized-domain') {
+                        log("⚠️  SOLUTION: Add this domain to Firebase Console:", "warning");
+                        log("   Authentication → Settings → Authorized domains", "warning");
+                        log(`   Add: ${window.location.hostname}`, "warning");
+                    } else if (error.code === 'auth/popup-blocked') {
+                        log("⚠️  SOLUTION: Unblock popups for this site", "warning");
+                    } else if (error.code === 'permission-denied') {
+                        log("⚠️  SOLUTION: Check Firestore Rules", "warning");
+                        log("   Rules must allow authenticated users to read/write their data", "warning");
+                    }
+                }
+            });
+            
+            // Clear console button
+            document.getElementById('clearConsoleBtn').addEventListener('click', () => {
+                consoleEl.innerHTML = '<div class="info">🗑️ Console cleared</div>';
+            });
+            
+            log("✅ Debug tool ready! Click 'Test Google Login' to start", "success");
+            
+        } catch (error) {
+            log(`❌ INITIALIZATION ERROR: ${error.message}`, "error");
+        }
+    </script>
+</body>
+</html>
