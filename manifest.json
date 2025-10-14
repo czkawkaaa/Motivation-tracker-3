@@ -1,0 +1,30 @@
+{
+  "name": "Kawaii Quest - Motivation Tracker",
+  "short_name": "Kawaii Quest",
+  "description": "75-dniowe wyzwanie motywacyjne z synchronizacją w chmurze",
+  "start_url": "/Motivation-tracker-3/",
+  "display": "standalone",
+  "background_color": "#fff7ff",
+  "theme_color": "#ff9ac2",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
