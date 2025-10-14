@@ -109,12 +109,77 @@ body {
     align-items: center;
     max-width: 1200px;
     margin: 0 auto 1rem;
+    gap: 1rem;
 }
 
 .app-title {
     font-size: 2rem;
     font-weight: 700;
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* User Section */
+.user-section {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+    padding: 0.5rem 1rem;
+    border-radius: 25px;
+}
+
+.user-photo {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 2px solid white;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.user-name {
+    color: white;
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.btn-login,
+.btn-logout {
+    padding: 0.6rem 1.2rem;
+    background: rgba(255, 255, 255, 0.3);
+    backdrop-filter: blur(10px);
+    border: 2px solid white;
+    border-radius: 20px;
+    color: white;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: var(--transition);
+    font-family: var(--font-family);
+}
+
+.btn-login:hover,
+.btn-logout:hover {
+    background: rgba(255, 255, 255, 0.4);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.btn-logout {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.85rem;
+    background: rgba(244, 67, 54, 0.3);
+    border-color: rgba(255, 255, 255, 0.8);
+}
+
+.btn-logout:hover {
+    background: rgba(244, 67, 54, 0.5);
 }
 
 /* Hamburger menu */
@@ -1823,10 +1888,42 @@ footer p {
     
     .header-content {
         margin-bottom: 0.5rem;
+        flex-wrap: wrap;
     }
     
     .app-title {
         font-size: 1.3rem;
+    }
+    
+    /* User section on mobile */
+    .user-section {
+        order: 3;
+        width: 100%;
+        justify-content: center;
+        margin-top: 0.5rem;
+    }
+    
+    .user-info {
+        font-size: 0.85rem;
+        padding: 0.4rem 0.8rem;
+    }
+    
+    .user-photo {
+        width: 28px;
+        height: 28px;
+    }
+    
+    .user-name {
+        max-width: 120px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: 0.85rem;
+    }
+    
+    .btn-login {
+        font-size: 0.85rem;
+        padding: 0.5rem 1rem;
     }
     
     /* Hamburger menu visible on mobile */

@@ -8,11 +8,24 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Quicksand:wght@400;500;600;700&family=Fredoka+One&family=Baloo+2:wght@400;500;600;700&family=Bubblegum+Sans&family=Roboto:wght@300;400;500;700&family=Open+Sans:wght@300;400;600;700&family=Lato:wght@300;400;700&family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 </head>
 <body class="theme-pink">
     <header class="app-header">
         <div class="header-content">
             <h1 class="app-title">🌸 Kawaii Quest</h1>
+            <div class="user-section">
+                <div id="userInfo" class="user-info" style="display: none;">
+                    <img id="userPhoto" class="user-photo" alt="User photo">
+                    <span id="userName" class="user-name"></span>
+                    <button id="logoutBtn" class="btn-logout">Wyloguj</button>
+                </div>
+                <button id="loginBtn" class="btn-login">🔐 Zaloguj przez Google</button>
+            </div>
             <button class="hamburger-btn" aria-label="Menu">
                 <span></span>
                 <span></span>
@@ -492,6 +505,8 @@
         <p>Made with 💖</p>
     </footer>
     
+    <script src="firebase-config.js"></script>
+    <script src="firebase-sync.js"></script>
     <script src="app.js"></script>
 </body>
 </html>
