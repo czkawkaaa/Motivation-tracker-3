@@ -443,14 +443,19 @@ function renderTasks() {
     tasksList.innerHTML = '';
     
     const today = getTodayKey();
-    const completedTasksToday = AppData.completedTasks[today] || 0;
+    const completedTasksToday = AppData.completedTasks[today] || [];
+    
+    // Backward compatibility: jeśli to jest liczba zamiast tablicy, konwertuj
+    const completedIndices = Array.isArray(completedTasksToday) 
+        ? completedTasksToday 
+        : Array.from({length: completedTasksToday}, (_, i) => i);
     
     AppData.tasks.forEach((task, index) => {
         const label = document.createElement('label');
         label.className = 'task-item';
         
         // Sprawdź czy to zadanie jest ukończone
-        const isCompleted = index < completedTasksToday;
+        const isCompleted = completedIndices.includes(index);
         
         label.innerHTML = `
             <input type="checkbox" class="task-checkbox" data-index="${index}" ${isCompleted ? 'checked' : ''}>
@@ -500,8 +505,10 @@ function renderEditTasks() {
 
 function updateTasksData() {
     const taskCheckboxes = document.querySelectorAll('.task-checkbox');
-    const completed = Array.from(taskCheckboxes).filter(cb => cb.checked).length;
-    AppData.completedTasks[getTodayKey()] = completed;
+    const completedIndices = Array.from(taskCheckboxes)
+        .map((cb, index) => cb.checked ? index : -1)
+        .filter(index => index !== -1);
+    AppData.completedTasks[getTodayKey()] = completedIndices;
     saveData();
 }
 
@@ -1271,7 +1278,12 @@ function checkBadges() {
     }
     
     // === ZADANIA ===
-    const completedAllCount = Object.values(AppData.completedTasks).filter(count => count >= 3).length;
+    // Policz dni, w których ukończono wszystkie zadania (3 lub więcej)
+    const completedAllCount = Object.values(AppData.completedTasks).filter(tasks => {
+        // Wspieraj zarówno nowy format (tablica) jak i stary (liczba)
+        const count = Array.isArray(tasks) ? tasks.length : tasks;
+        return count >= 3;
+    }).length;
     if (completedAllCount >= 1) {
         unlockBadge('task-beginner');
     }
