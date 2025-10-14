@@ -442,13 +442,24 @@ function renderTasks() {
     
     tasksList.innerHTML = '';
     
+    const today = getTodayKey();
+    const completedTasksToday = AppData.completedTasks[today] || 0;
+    
     AppData.tasks.forEach((task, index) => {
         const label = document.createElement('label');
         label.className = 'task-item';
+        
+        // Sprawdź czy to zadanie jest ukończone
+        const isCompleted = index < completedTasksToday;
+        
         label.innerHTML = `
-            <input type="checkbox" class="task-checkbox" data-index="${index}">
+            <input type="checkbox" class="task-checkbox" data-index="${index}" ${isCompleted ? 'checked' : ''}>
             <span class="task-text">${task}</span>
         `;
+        
+        if (isCompleted) {
+            label.classList.add('completed');
+        }
         
         const checkbox = label.querySelector('.task-checkbox');
         checkbox.addEventListener('change', () => {
