@@ -1,42 +1,25 @@
-// 🔥 Firebase Configuration
-// INSTRUKCJA: Wklej tutaj swoją konfigurację z Firebase Console
-// Zobacz: FIREBASE_SETUP.md
+// 🔥 Firebase Configuration - Modular SDK
+// Import Firebase modules
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
+import { getFirestore } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
 
+// Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "TWÓJ_API_KEY",
-  authDomain: "TWÓJ_PROJECT.firebaseapp.com",
-  projectId: "TWÓJ_PROJECT_ID",
-  storageBucket: "TWÓJ_PROJECT.appspot.com",
-  messagingSenderId: "TWÓJ_SENDER_ID",
-  appId: "TWÓJ_APP_ID"
+  apiKey: "AIzaSyBLtdh-FELJEuzYPpKDF6OLuya55xRTjiY",
+  authDomain: "kawaii-quest.firebaseapp.com",
+  projectId: "kawaii-quest",
+  storageBucket: "kawaii-quest.firebasestorage.app",
+  messagingSenderId: "845447529375",
+  appId: "1:845447529375:web:9c6db3677504d72354f3aa"
 };
 
-// Nie edytuj poniżej tej linii
-// ================================
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
 
-// Inicjalizacja Firebase
-let app, auth, db;
+console.log('🔥 Firebase initialized successfully!');
 
-function initializeFirebase() {
-    try {
-        app = firebase.initializeApp(firebaseConfig);
-        auth = firebase.auth();
-        db = firebase.firestore();
-        
-        console.log('🔥 Firebase initialized successfully!');
-        
-        // Nasłuchuj zmian stanu autoryzacji
-        auth.onAuthStateChanged((user) => {
-            if (user) {
-                console.log('✅ User logged in:', user.email);
-                onUserLogin(user);
-            } else {
-                console.log('❌ User logged out');
-                onUserLogout();
-            }
-        });
-        
-    } catch (error) {
-        console.error('❌ Firebase initialization error:', error);
-    }
-}
+// Export dla innych modułów
+export { app, auth, db, onAuthStateChanged };

@@ -51,7 +51,10 @@ const firebaseConfig = {
 
 ## Krok 6: Ustaw reguły Firestore
 
-W zakładce "Rules" wklej następujące reguły bezpieczeństwa:
+1. W konsoli Firebase, w menu bocznym kliknij **"Firestore Database"**
+2. U góry strony zobaczysz zakładki: **"Data"**, **"Rules"**, **"Indexes"**, **"Usage"**
+3. Kliknij zakładkę **"Rules"** (druga od lewej)
+4. Usuń wszystko co tam jest i wklej następujące reguły bezpieczeństwa:
 
 ```javascript
 rules_version = '2';
@@ -65,7 +68,18 @@ service cloud.firestore {
 }
 ```
 
-Kliknij **"Publish"**
+Kliknij **"Publish"** (przycisk jest u góry po prawej stronie)
+
+**📍 Gdzie znaleźć Rules:**
+```
+Firebase Console → Menu boczne → Firestore Database → Górne zakładki → Rules
+```
+
+**Wygląda to tak:**
+- Klikniesz "Firestore Database" w menu po lewej stronie ⬅️
+- U góry zobaczysz zakładki: **Data | Rules | Indexes | Usage**
+- Kliknij **Rules** ⬅️ (druga zakładka)
+- Edytor kodu pojawi się na środku ekranu
 
 ## Krok 7: Dodaj domenę do autoryzacji
 
