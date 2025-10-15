@@ -197,9 +197,10 @@ async function loadDataFromFirestore() {
                 }
             }
             
-            if (typeof showNotification === 'function') {
-                showNotification('☁️ Dane załadowane z chmury', 'success');
-            }
+            // USUNIĘTE: Powiadomienie przy każdym wczytaniu (irytujące)
+            // if (typeof showNotification === 'function') {
+            //     showNotification('☁️ Dane załadowane z chmury', 'success');
+            // }
             return true;
         } else {
             console.log('📝 No cloud data found, creating new document');

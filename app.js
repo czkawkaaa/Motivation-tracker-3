@@ -101,7 +101,8 @@ document.addEventListener('DOMContentLoaded', function() {
     startQuoteRotation();
     
     // Sprawdź czy jest zaplanowany reset danych
-    checkScheduledReset();
+    // WYŁĄCZONE: checkScheduledReset() może powodować niechciane resety
+    // checkScheduledReset();
     
     // Zarejestruj Service Workera dla PWA / widgetów
     if ('serviceWorker' in navigator) {
@@ -133,6 +134,12 @@ function loadData() {
     if (saved) {
         const data = JSON.parse(saved);
         Object.assign(AppData, data);
+        
+        // CZYSZCZENIE: Usuń zaplanowany reset jeśli istnieje (nie używamy już tej funkcji)
+        if (AppData.challenge && AppData.challenge.resetScheduled) {
+            delete AppData.challenge.resetScheduled;
+            console.log('🧹 Wyczyszczono zaplanowany reset (feature wyłączony)');
+        }
     }
     applySettings();
 }
@@ -590,10 +597,11 @@ function updateTasksData() {
 function handleChallengeCompletion() {
     // Ustaw znacznik czasu ukończenia wyzwania
     const completionTime = Date.now();
-    const resetTime = completionTime + (60 * 60 * 1000); // 1 godzina później
     
     AppData.challenge.completionTime = completionTime;
-    AppData.challenge.resetScheduled = resetTime;
+    // USUNIĘTE: Automatyczny reset danych - użytkownik sam zdecyduje kiedy resetować
+    // const resetTime = completionTime + (60 * 60 * 1000); // 1 godzina później
+    // AppData.challenge.resetScheduled = resetTime;
     
     saveData();
     
@@ -605,8 +613,8 @@ function handleChallengeCompletion() {
     setTimeout(createConfetti, 300);
     setTimeout(createConfetti, 600);
     
-    // Ustaw timer na reset danych
-    scheduleDataReset();
+    // USUNIĘTE: Automatyczne planowanie resetu danych
+    // scheduleDataReset();
 }
 
 function showChallengeCompletionModal() {
@@ -721,7 +729,8 @@ function performDataReset() {
     saveData();
     updateAllDisplays();
     
-    showNotification('♻️ Historia danych i odznaki zostały zresetowane. Możesz rozpocząć nowy cykl!', 'success');
+    // USUNIĘTE: Powiadomienie - reset jest teraz tylko manualny
+    // showNotification('♻️ Historia danych i odznaki zostały zresetowane. Możesz rozpocząć nowy cykl!', 'success');
 }
 
 function checkScheduledReset() {
