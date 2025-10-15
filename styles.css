@@ -82,6 +82,84 @@
     --calendar-completed-check: #880e4f;
 }
 
+.theme-yellow {
+    --primary-color: #ffd54f;
+    --bg-gradient-start: #fffef5;
+    --bg-gradient-end: #fff9e6;
+    --card-bg: #ffffff;
+    --text-primary: #222222;
+    --text-secondary: #666666;
+    --progress-bg: #fff9c4;
+    --calendar-completed-bg: #fff59d;
+    --calendar-completed-text: #f57f17;
+    --calendar-completed-check: #f57f17;
+}
+
+.theme-peach {
+    --primary-color: #ffab91;
+    --bg-gradient-start: #fff8f5;
+    --bg-gradient-end: #fff0e8;
+    --card-bg: #ffffff;
+    --text-primary: #222222;
+    --text-secondary: #666666;
+    --progress-bg: #ffe0d4;
+    --calendar-completed-bg: #ffccbc;
+    --calendar-completed-text: #d84315;
+    --calendar-completed-check: #bf360c;
+}
+
+.theme-sunset {
+    --primary-color: #ff8a65;
+    --bg-gradient-start: #fff5f2;
+    --bg-gradient-end: #ffe8e0;
+    --card-bg: #ffffff;
+    --text-primary: #222222;
+    --text-secondary: #666666;
+    --progress-bg: #ffd4c4;
+    --calendar-completed-bg: #ffab91;
+    --calendar-completed-text: #d84315;
+    --calendar-completed-check: #bf360c;
+}
+
+.theme-sky {
+    --primary-color: #81d4fa;
+    --bg-gradient-start: #f0f9ff;
+    --bg-gradient-end: #e1f5fe;
+    --card-bg: #ffffff;
+    --text-primary: #222222;
+    --text-secondary: #666666;
+    --progress-bg: #b3e5fc;
+    --calendar-completed-bg: #81d4fa;
+    --calendar-completed-text: #01579b;
+    --calendar-completed-check: #01579b;
+}
+
+.theme-forest {
+    --primary-color: #66bb6a;
+    --bg-gradient-start: #f1f8f4;
+    --bg-gradient-end: #e8f5e9;
+    --card-bg: #ffffff;
+    --text-primary: #222222;
+    --text-secondary: #666666;
+    --progress-bg: #c8e6c9;
+    --calendar-completed-bg: #a5d6a7;
+    --calendar-completed-text: #2e7d32;
+    --calendar-completed-check: #1b5e20;
+}
+
+.theme-coral {
+    --primary-color: #ff7961;
+    --bg-gradient-start: #fff5f4;
+    --bg-gradient-end: #ffebe9;
+    --card-bg: #ffffff;
+    --text-primary: #222222;
+    --text-secondary: #666666;
+    --progress-bg: #ffcdd2;
+    --calendar-completed-bg: #ef9a9a;
+    --calendar-completed-text: #c62828;
+    --calendar-completed-check: #b71c1c;
+}
+
 /* Podstawowe style body */
 body {
     font-family: var(--font-family);

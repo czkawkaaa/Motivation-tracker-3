@@ -289,7 +289,7 @@ function initThemeSystem() {
 
 function setTheme(themeName) {
     const body = document.body;
-    const themeClasses = ['theme-pink', 'theme-ocean', 'theme-mint', 'theme-lavender', 'theme-strawberry'];
+    const themeClasses = ['theme-pink', 'theme-ocean', 'theme-mint', 'theme-lavender', 'theme-strawberry', 'theme-yellow', 'theme-peach', 'theme-sunset', 'theme-sky', 'theme-forest', 'theme-coral'];
     
     themeClasses.forEach(cls => body.classList.remove(cls));
     body.classList.add(`theme-${themeName}`);
@@ -1485,15 +1485,6 @@ function markBadgesAsViewed() {
 // SETTINGS
 // ======================
 function initSettings() {
-    // Theme select
-    const themeSelect = document.getElementById('themeSelect');
-    themeSelect.value = AppData.settings.theme;
-    themeSelect.addEventListener('change', (e) => {
-        setTheme(e.target.value);
-        AppData.settings.theme = e.target.value;
-        saveData();
-    });
-    
     // Font select
     const fontSelect = document.getElementById('fontSelect');
     fontSelect.value = AppData.settings.font;
