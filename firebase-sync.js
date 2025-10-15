@@ -167,9 +167,12 @@ async function loadDataFromFirestore() {
             if (cloudData.deleted === true || cloudData.data === null) {
                 console.log('🗑️ Dane zostały usunięte w chmurze - czyszczę lokalnie');
                 localStorage.removeItem('kawaiiQuestData');
-                if (typeof showNotification === 'function') {
-                    showNotification('🗑️ Dane zostały usunięte', 'info');
-                }
+                
+                // USUNIĘTE: Powiadomienie przy każdym wczytaniu (irytujące)
+                // if (typeof showNotification === 'function') {
+                //     showNotification('🗑️ Dane zostały usunięte', 'info');
+                // }
+                
                 // Zwróć false żeby caller wiedział, że pominięto ładowanie
                 return false;
             }
@@ -303,9 +306,10 @@ function setupRealtimeSync() {
                 // Ustaw flagę że przeładowujemy
                 sessionStorage.setItem('deletionReload', 'true');
                 
-                if (typeof showNotification === 'function') {
-                    showNotification('🗑️ Dane zostały usunięte', 'warning');
-                }
+                // USUNIĘTE: Powiadomienie przy realtime sync (irytujące)
+                // if (typeof showNotification === 'function') {
+                //     showNotification('🗑️ Dane zostały usunięte', 'warning');
+                // }
                 console.log('DEBUG: onSnapshot detected deletion. scheduling reload. uid=', currentUser && currentUser.uid);
                 
                 // Jednorazowe przeładowanie strony
