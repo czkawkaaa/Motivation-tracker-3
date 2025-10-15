@@ -237,6 +237,17 @@ function setupRealtimeSync() {
             console.log('🔄 Realtime update received from Firestore');
             console.log('Cloud lastModified:', cloudData.lastModified);
             
+            // Sprawdź czy dane zostały usunięte
+            if (cloudData.deleted === true || cloudData.data === null) {
+                console.log('🗑️ Dane zostały usunięte w chmurze - czyszczę lokalnie i przeładowuję');
+                localStorage.clear();
+                if (typeof showNotification === 'function') {
+                    showNotification('🗑️ Dane zostały usunięte na innym urządzeniu', 'warning');
+                }
+                setTimeout(() => location.reload(), 2000);
+                return;
+            }
+            
             // Sprawdź czy zmiana nie pochodzi z tego urządzenia
             if (typeof AppData !== 'undefined') {
                 console.log('Local lastModified:', AppData.lastModified);
@@ -267,6 +278,46 @@ function setupRealtimeSync() {
 
 // Eksportuj funkcję dla użycia w app.js
 window.saveDataToFirestore = saveDataToFirestore;
+
+// Funkcja do usuwania wszystkich danych z Firestore
+async function deleteDataFromFirestore() {
+    if (!currentUser) {
+        console.log('⚠️ Brak zalogowanego użytkownika - usuwam tylko lokalnie');
+        return;
+    }
+    
+    try {
+        const docRef = doc(db, 'users', currentUser.uid);
+        
+        // Usuń dokument z Firestore
+        await setDoc(docRef, {
+            data: null,
+            lastModified: Date.now(),
+            email: currentUser.email,
+            deleted: true,
+            updatedAt: serverTimestamp()
+        });
+        
+        console.log('🗑️ Dane usunięte z Firestore');
+        
+        if (typeof showNotification === 'function') {
+            showNotification('🗑️ Dane usunięte z chmury', 'success');
+        }
+    } catch (error) {
+        console.error('❌ Błąd usuwania z Firestore:', error);
+        
+        if (error.code === 'permission-denied') {
+            if (typeof showNotification === 'function') {
+                showNotification('⚠️ Brak uprawnień do usunięcia. Sprawdź reguły Firestore.', 'warning');
+            }
+        }
+        
+        throw error; // Rzuć błąd dalej, żeby app.js mógł go obsłużyć
+    }
+}
+
+// Eksportuj funkcję usuwania
+window.deleteDataFromFirestore = deleteDataFromFirestore;
 
 // ======================
 // INITIALIZATION
