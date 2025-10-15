@@ -1764,6 +1764,8 @@ footer p {
     background: var(--progress-bg);
     outline: none;
     -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
     margin: 0.5rem 0;
 }
 

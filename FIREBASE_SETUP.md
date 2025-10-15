@@ -89,25 +89,11 @@ Firebase Console → Menu boczne → Firestore Database → Górne zakładki →
    - `czkawkaaa.github.io`
 3. Kliknij **"Add domain"**
 
-## Krok 8: Wklej konfigurację do pliku
-
-Otwórz plik `firebase-config.js` w projekcie i wklej swoją konfigurację:
-
-```javascript
-// firebase-config.js
-const firebaseConfig = {
-  apiKey: "TWÓJ_API_KEY",
-  authDomain: "TWÓJ_PROJECT.firebaseapp.com",
-  projectId: "TWÓJ_PROJECT_ID",
-  storageBucket: "TWÓJ_PROJECT.appspot.com",
-  messagingSenderId: "TWÓJ_SENDER_ID",
-  appId: "TWÓJ_APP_ID"
-};
-```
-
 ## ✅ Gotowe!
 
-Teraz Twoja aplikacja będzie synchronizować dane między wszystkimi urządzeniami! 🎉
+Twoja konfiguracja Firebase jest już w pliku `firebase-config.js` - nic więcej nie musisz robić! 🎉
+
+**Aplikacja jest gotowa do użycia!**
 
 ### Jak to działa:
 - 📱 Logujesz się na telefonie → dane zapisują się w Firebase
