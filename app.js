@@ -1508,11 +1508,16 @@ function initSettings() {
     
     // Reset button
     const resetAllBtn = document.getElementById('resetAllBtn');
-    resetAllBtn.addEventListener('click', () => {
+    resetAllBtn.addEventListener('click', async () => {
         playClickSound(); // Dźwięk kliknięcia
         if (confirm('⚠️ Czy na pewno chcesz zresetować cały postęp? Ta akcja jest nieodwracalna!')) {
             if (confirm('🚨 Ostatnie ostrzeżenie! Wszystkie dane zostaną usunięte bezpowrotnie!')) {
-                localStorage.clear();
+                // Jeśli dostępna jest funkcja usuwania z Firebase, użyj jej
+                if (typeof window.deleteDataFromFirestore === 'function') {
+                    await window.deleteDataFromFirestore();
+                } else {
+                    localStorage.clear();
+                }
                 location.reload();
             }
         }
