@@ -516,5 +516,45 @@
     <script type="module" src="firebase-config.js"></script>
     <script type="module" src="firebase-sync.js"></script>
     <script src="app.js"></script>
+    
+    <!-- Service Worker Registration -->
+    <script>
+        // Rejestracja Service Worker dla PWA i widgetów
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', async () => {
+                try {
+                    const registration = await navigator.serviceWorker.register('/Motivation-tracker-3/sw.js', {
+                        scope: '/Motivation-tracker-3/'
+                    });
+                    console.log('✅ Service Worker registered:', registration.scope);
+                    
+                    // Nasłuchuj wiadomości od Service Worker
+                    navigator.serviceWorker.addEventListener('message', (event) => {
+                        if (event.data && event.data.type === 'GET_WIDGET_DATA') {
+                            // Wyślij dane widgetu do Service Worker
+                            const widgetData = localStorage.getItem('widgetData');
+                            if (widgetData) {
+                                event.ports[0].postMessage(JSON.parse(widgetData));
+                            }
+                        }
+                    });
+                    
+                    // Aktualizuj widgety gdy dane się zmienią
+                    if (registration.active) {
+                        window.addEventListener('storage', (e) => {
+                            if (e.key === 'widgetData') {
+                                registration.active.postMessage({
+                                    type: 'UPDATE_WIDGET',
+                                    widgetData: JSON.parse(e.newValue)
+                                });
+                            }
+                        });
+                    }
+                } catch (error) {
+                    console.error('❌ Service Worker registration failed:', error);
+                }
+            });
+        }
+    </script>
 </body>
 </html>

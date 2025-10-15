@@ -1,0 +1,13 @@
+{
+  "currentDay": 1,
+  "totalDays": 75,
+  "completedDays": 0,
+  "currentStreak": 0,
+  "todayCompleted": false,
+  "progressPercent": 0,
+  "tasksToday": {
+    "total": 3,
+    "completed": 0
+  },
+  "lastUpdated": "2025-01-01T00:00:00.000Z"
+}

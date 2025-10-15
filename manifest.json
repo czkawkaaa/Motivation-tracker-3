@@ -7,6 +7,7 @@
   "background_color": "#fff7ff",
   "theme_color": "#ff9ac2",
   "orientation": "portrait-primary",
+  "categories": ["health", "lifestyle", "productivity"],
   "icons": [
     {
       "src": "icon.svg",
@@ -25,6 +26,79 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Dodaj zadanie",
+      "short_name": "Zadanie",
+      "description": "Szybko dodaj nowe zadanie",
+      "url": "/Motivation-tracker-3/?action=add-task",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Dodaj nastrój",
+      "short_name": "Nastrój",
+      "description": "Zapisz swój nastrój",
+      "url": "/Motivation-tracker-3/?action=add-mood",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Statystyki",
+      "short_name": "Stats",
+      "description": "Zobacz swoje statystyki",
+      "url": "/Motivation-tracker-3/?view=stats",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
+    }
+  ],
+  "widgets": [
+    {
+      "name": "Dzisiejsze zadania",
+      "tag": "daily-tasks",
+      "description": "Zobacz swoje dzisiejsze zadania",
+      "template": "daily-tasks-template",
+      "ms_ac_template": "widget-tasks.json",
+      "data": "widget-data.json",
+      "type": "application/json",
+      "screenshots": [
+        {
+          "src": "widget-screenshot.png",
+          "sizes": "600x400",
+          "label": "Widget dziennych zadań"
+        }
+      ],
+      "icons": [
+        {
+          "src": "icon-192.png",
+          "sizes": "192x192"
+        }
+      ],
+      "auth": false,
+      "update": 300
+    },
+    {
+      "name": "Postęp wyzwania",
+      "tag": "challenge-progress",
+      "description": "Zobacz postęp w 75-dniowym wyzwaniu",
+      "template": "challenge-progress-template",
+      "ms_ac_template": "widget-progress.json",
+      "data": "widget-data.json",
+      "type": "application/json",
+      "screenshots": [
+        {
+          "src": "widget-screenshot-progress.png",
+          "sizes": "600x400",
+          "label": "Widget postępu wyzwania"
+        }
+      ],
+      "icons": [
+        {
+          "src": "icon-192.png",
+          "sizes": "192x192"
+        }
+      ],
+      "auth": false,
+      "update": 300
     }
   ]
 }

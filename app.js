@@ -122,6 +122,9 @@ function saveData() {
         window.saveDataToFirestore();
     }
     
+    // Aktualizuj dane widgetu PWA
+    updateWidgetData();
+    
     checkBadges();
 }
 
@@ -2139,3 +2142,56 @@ function exportDataAsHTML() {
     showNotification('📥 Raport został pobrany! Otwórz plik i naciśnij Ctrl+P aby zapisać jako PDF', 'success');
 }
 
+// ======================
+// PWA WIDGET SUPPORT
+// ======================
+async function updateWidgetData() {
+    try {
+        const today = getTodayKey();
+        const todayCompleted = AppData.challenge.completedDays.includes(today);
+        
+        // Oblicz ile zadań jest ukończonych dzisiaj
+        const completedTasksToday = AppData.completedTasks[today] || [];
+        const tasksCompletedCount = Array.isArray(completedTasksToday) ? completedTasksToday.length : 0;
+        const totalTasks = AppData.tasks.length;
+        
+        // Przygotuj dane dla widgetu
+        const widgetData = {
+            currentDay: AppData.challenge.currentDay,
+            totalDays: AppData.challenge.totalDays,
+            completedDays: AppData.challenge.completedDays.length,
+            currentStreak: AppData.challenge.currentStreak,
+            todayCompleted: todayCompleted,
+            progressPercent: Math.round((AppData.challenge.completedDays.length / AppData.challenge.totalDays) * 100),
+            tasksToday: {
+                total: totalTasks,
+                completed: tasksCompletedCount
+            },
+            lastUpdated: new Date().toISOString()
+        };
+        
+        // Zapisz do localStorage dla widgetu
+        localStorage.setItem('widgetData', JSON.stringify(widgetData));
+        
+        // Jeśli przeglądarka wspiera Periodic Background Sync dla widgetów
+        if ('periodicSync' in self.registration) {
+            const status = await navigator.permissions.query({
+                name: 'periodic-background-sync',
+            });
+            if (status.state === 'granted') {
+                await self.registration.periodicSync.register('update-widget', {
+                    minInterval: 5 * 60 * 1000 // 5 minut
+                });
+            }
+        }
+        
+        console.log('✅ Widget data updated:', widgetData);
+    } catch (error) {
+        console.error('❌ Error updating widget data:', error);
+    }
+}
+
+// Eksportuj dla użycia w service worker
+if (typeof window !== 'undefined') {
+    window.updateWidgetData = updateWidgetData;
+}

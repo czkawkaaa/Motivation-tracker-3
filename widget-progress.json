@@ -1,0 +1,133 @@
+{
+  "type": "AdaptiveCard",
+  "version": "1.5",
+  "body": [
+    {
+      "type": "Container",
+      "style": "emphasis",
+      "items": [
+        {
+          "type": "ColumnSet",
+          "columns": [
+            {
+              "type": "Column",
+              "width": "auto",
+              "items": [
+                {
+                  "type": "TextBlock",
+                  "text": "🌸",
+                  "size": "large",
+                  "weight": "bolder"
+                }
+              ]
+            },
+            {
+              "type": "Column",
+              "width": "stretch",
+              "items": [
+                {
+                  "type": "TextBlock",
+                  "text": "Kawaii Quest",
+                  "weight": "bolder",
+                  "size": "medium"
+                },
+                {
+                  "type": "TextBlock",
+                  "text": "75-dniowe wyzwanie",
+                  "size": "small",
+                  "color": "accent",
+                  "spacing": "none"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "Container",
+      "spacing": "medium",
+      "items": [
+        {
+          "type": "TextBlock",
+          "text": "Dzień ${currentDay} z ${totalDays}",
+          "weight": "bolder",
+          "size": "large",
+          "horizontalAlignment": "center"
+        },
+        {
+          "type": "Container",
+          "items": [
+            {
+              "type": "ProgressBar",
+              "title": "${progressPercent}% ukończone",
+              "value": "${progressPercent}",
+              "valueColor": "accent"
+            }
+          ]
+        },
+        {
+          "type": "ColumnSet",
+          "spacing": "medium",
+          "columns": [
+            {
+              "type": "Column",
+              "width": "stretch",
+              "items": [
+                {
+                  "type": "TextBlock",
+                  "text": "🔥 ${currentStreak}",
+                  "horizontalAlignment": "center",
+                  "size": "large",
+                  "weight": "bolder"
+                },
+                {
+                  "type": "TextBlock",
+                  "text": "Passa",
+                  "horizontalAlignment": "center",
+                  "size": "small",
+                  "color": "accent"
+                }
+              ]
+            },
+            {
+              "type": "Column",
+              "width": "stretch",
+              "items": [
+                {
+                  "type": "TextBlock",
+                  "text": "✅ ${completedDays}",
+                  "horizontalAlignment": "center",
+                  "size": "large",
+                  "weight": "bolder"
+                },
+                {
+                  "type": "TextBlock",
+                  "text": "Ukończone",
+                  "horizontalAlignment": "center",
+                  "size": "small",
+                  "color": "accent"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "TextBlock",
+          "text": "${todayCompleted ? '✨ Dzisiaj: Ukończone!' : '⏰ Dzisiaj: Do zrobienia'}",
+          "horizontalAlignment": "center",
+          "weight": "bolder",
+          "color": "${todayCompleted ? 'good' : 'warning'}",
+          "spacing": "medium"
+        }
+      ]
+    }
+  ],
+  "actions": [
+    {
+      "type": "Action.OpenUrl",
+      "title": "Otwórz aplikację",
+      "url": "/Motivation-tracker-3/"
+    }
+  ]
+}

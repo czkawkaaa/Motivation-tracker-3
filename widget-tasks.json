@@ -1,0 +1,71 @@
+{
+  "type": "AdaptiveCard",
+  "version": "1.5",
+  "body": [
+    {
+      "type": "Container",
+      "style": "emphasis",
+      "items": [
+        {
+          "type": "ColumnSet",
+          "columns": [
+            {
+              "type": "Column",
+              "width": "auto",
+              "items": [
+                {
+                  "type": "TextBlock",
+                  "text": "📝",
+                  "size": "large"
+                }
+              ]
+            },
+            {
+              "type": "Column",
+              "width": "stretch",
+              "items": [
+                {
+                  "type": "TextBlock",
+                  "text": "Dzisiejsze zadania",
+                  "weight": "bolder",
+                  "size": "medium"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "Container",
+      "spacing": "medium",
+      "items": [
+        {
+          "type": "TextBlock",
+          "text": "${tasksToday.completed} / ${tasksToday.total} ukończone",
+          "horizontalAlignment": "center",
+          "size": "large",
+          "weight": "bolder"
+        },
+        {
+          "type": "Container",
+          "items": [
+            {
+              "type": "ProgressBar",
+              "title": "Postęp dnia",
+              "value": "${Math.round((tasksToday.completed / tasksToday.total) * 100)}",
+              "valueColor": "accent"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "actions": [
+    {
+      "type": "Action.OpenUrl",
+      "title": "Zobacz zadania",
+      "url": "/Motivation-tracker-3/?view=tasks"
+    }
+  ]
+}
