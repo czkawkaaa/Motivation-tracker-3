@@ -879,13 +879,19 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function updateChallengeProgress() {
-    const percent = (AppData.challenge.currentDay / AppData.challenge.totalDays) * 100;
+    // Use completedDays length for accurate progress tracking
+    // This shows actual completed days, not just calendar days passed
+    const completedCount = AppData.challenge.completedDays ? AppData.challenge.completedDays.length : 0;
+    const percent = (completedCount / AppData.challenge.totalDays) * 100;
+    
     document.getElementById('challengeProgressBar').style.width = percent + '%';
     document.getElementById('challengePercent').textContent = Math.round(percent) + '%';
-    document.getElementById('challengeDays').textContent = `${AppData.challenge.currentDay}/${AppData.challenge.totalDays} dni`;
+    
+    // Show completed/total, not current day number
+    document.getElementById('challengeDays').textContent = `${completedCount}/${AppData.challenge.totalDays} dni`;
     
     // Update widget data for PWA widgets
-    updateWidgetData(AppData.challenge.currentDay, AppData.challenge.totalDays, percent);
+    updateWidgetData(completedCount, AppData.challenge.totalDays, percent);
 }
 
 function updateWidgetData(currentDay, totalDays, percent) {
