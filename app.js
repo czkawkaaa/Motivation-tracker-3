@@ -14,9 +14,12 @@ const AppData = {
     mood: {},
     studyHours: {},
     tasks: [
-        "Rano: 5 minut stretchingu",
         "15 minut aktywności",
-        "Wieczorny dziennik"
+        "Wpis w dzienniku",
+        "Sen - przynajmniej 6 godzin",
+        "Przynajmniej 10 minut czytania książki",
+        "Zjedz prawdziwe/nieprzetworzone jedzenie",
+        "Przynajmniej 1 litr wody"
     ],
     completedTasks: {},
     gallery: [],
@@ -310,9 +313,12 @@ function initDashboard() {
     // Load tasks from storage or use defaults
     if (!AppData.tasks || AppData.tasks.length === 0) {
         AppData.tasks = [
-            "Rano: 5 minut stretchingu",
             "15 minut aktywności",
-            "Wieczorny dziennik"
+            "Wpis w dzienniku",
+            "Sen - przynajmniej 6 godzin",
+            "Przynajmniej 10 minut czytania książki",
+            "Zjedz prawdziwe/nieprzetworzone jedzenie",
+            "Przynajmniej 1 litr wody"
         ];
     }
     
