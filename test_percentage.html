@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Obliczeń Procentów - Kawaii Quest</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #fff7ff 0%, #ffe5f5 100%);
+        }
+        h1 {
+            color: #ff9ac2;
+            text-align: center;
+        }
+        .comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 30px 0;
+        }
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(255, 154, 194, 0.2);
+        }
+        .card h2 {
+            margin-top: 0;
+            font-size: 18px;
+        }
+        .before h2 { color: #ff6b6b; }
+        .after h2 { color: #51cf66; }
+        .progress-bar {
+            width: 100%;
+            height: 30px;
+            background: #f0f0f0;
+            border-radius: 15px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff9ac2, #ff6b9d);
+            transition: width 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+        .test-case {
+            margin: 15px 0;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 4px solid #ff9ac2;
+        }
+        .test-case strong {
+            color: #ff9ac2;
+        }
+        button {
+            background: #ff9ac2;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 5px;
+            transition: all 0.3s;
+        }
+        button:hover {
+            background: #ff6b9d;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 154, 194, 0.3);
+        }
+        .controls {
+            text-align: center;
+            margin: 20px 0;
+        }
+        .result {
+            text-align: center;
+            font-size: 24px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎯 Test Obliczeń Procentów Wyzwania</h1>
+    
+    <div class="controls">
+        <p>Wybierz scenariusz testowy:</p>
+        <button onclick="testScenario(0, 75)">Start (0 dni)</button>
+        <button onclick="testScenario(1, 75)">Dzień 1 ukończony</button>
+        <button onclick="testScenario(5, 75)">5 dni ukończonych</button>
+        <button onclick="testScenario(37, 75)">37 dni (połowa)</button>
+        <button onclick="testScenario(75, 75)">Ukończone (75 dni)</button>
+    </div>
+
+    <div class="comparison">
+        <div class="card before">
+            <h2>❌ Przed (kalendarz)</h2>
+            <div id="before-scenario"></div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="before-progress" style="width: 0%">0%</div>
+            </div>
+            <div class="result" id="before-result"></div>
+        </div>
+
+        <div class="card after">
+            <h2>✅ Po (ukończone dni)</h2>
+            <div id="after-scenario"></div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="after-progress" style="width: 0%">0%</div>
+            </div>
+            <div class="result" id="after-result"></div>
+        </div>
+    </div>
+
+    <div style="background: white; padding: 20px; border-radius: 15px; box-shadow: 0 5px 15px rgba(255, 154, 194, 0.2);">
+        <h2>📊 Przykłady Różnic:</h2>
+        
+        <div class="test-case">
+            <strong>Scenariusz 1:</strong> Rozpoczynasz wyzwanie (Dzień 1, brak ukończonych zadań)
+            <br>Przed: 1/75 dni (1%) - pokazuje dzień kalendarzowy
+            <br>Po: 0/75 dni (0%) - pokazuje rzeczywisty postęp ✅
+        </div>
+
+        <div class="test-case">
+            <strong>Scenariusz 2:</strong> Dzień 10, ale ukończyłeś tylko 7 dni (3 dni opuściłeś)
+            <br>Przed: 10/75 dni (13%) - nieprawdziwy postęp
+            <br>Po: 7/75 dni (9%) - pokazuje prawdziwy postęp ✅
+        </div>
+
+        <div class="test-case">
+            <strong>Scenariusz 3:</strong> Ukończyłeś wszystkie 75 dni
+            <br>Przed: 75/75 dni (100%) ✓
+            <br>Po: 75/75 dni (100%) ✓ (bez zmian)
+        </div>
+
+        <div class="test-case">
+            <strong>Korzyść:</strong> Teraz procent pokazuje <u>rzeczywisty postęp</u>, nie tylko ile dni minęło od rozpoczęcia wyzwania. To motywuje do systematycznego wykonywania zadań każdego dnia!
+        </div>
+    </div>
+
+    <script>
+        function testScenario(completedDays, totalDays) {
+            // Symulacja "przed" - używa currentDay (dni kalendarzowe)
+            // Zakładamy że currentDay = completedDays dla uproszczenia
+            // W rzeczywistości currentDay byłby większy jeśli użytkownik opuścił dni
+            const beforePercent = (completedDays / totalDays) * 100;
+            
+            // Nowa logika "po" - używa completedDays.length
+            const afterPercent = (completedDays / totalDays) * 100;
+            
+            // W rzeczywistym scenariuszu, przed i po byłyby różne
+            // Pokazujemy różnicę gdy użytkownik jest np. na dniu 10 ale ukończył tylko 7
+            const daysElapsed = Math.max(completedDays, Math.ceil(completedDays * 1.3)); // Symulacja
+            const beforePercentReal = (daysElapsed / totalDays) * 100;
+            
+            // Aktualizacja UI - Przed
+            document.getElementById('before-scenario').innerHTML = 
+                `<p>Dni od startu: ${daysElapsed}<br>Obliczanie: (${daysElapsed} / ${totalDays}) × 100</p>`;
+            document.getElementById('before-progress').style.width = Math.min(beforePercentReal, 100) + '%';
+            document.getElementById('before-progress').textContent = Math.round(beforePercentReal) + '%';
+            document.getElementById('before-result').textContent = `${daysElapsed}/${totalDays} dni`;
+            
+            // Aktualizacja UI - Po
+            document.getElementById('after-scenario').innerHTML = 
+                `<p>Ukończone dni: ${completedDays}<br>Obliczanie: (${completedDays} / ${totalDays}) × 100</p>`;
+            document.getElementById('after-progress').style.width = afterPercent + '%';
+            document.getElementById('after-progress').textContent = Math.round(afterPercent) + '%';
+            document.getElementById('after-result').textContent = `${completedDays}/${totalDays} dni`;
+        }
+        
+        // Startowy test
+        testScenario(0, 75);
+    </script>
+</body>
+</html>

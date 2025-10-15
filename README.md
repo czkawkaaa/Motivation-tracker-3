@@ -45,6 +45,14 @@
 - Ustawienie dni odpoczynku
 - **Eksport danych do HTML/PDF**
 
+### 📱 Widget PWA
+- Instalacja aplikacji jako PWA (Progressive Web App)
+- Widget postępu wyzwania na ekranie głównym telefonu
+- Pokazuje pasek postępu i procent ukończenia
+- Automatyczna aktualizacja co godzinę
+- Obsługa offline przez Service Worker
+- [Szczegółowa dokumentacja widgetu](WIDGET_DOCS.md)
+
 ### 🎯 Ukończenie Wyzwania
 - Po ukończeniu 75 dni: modal gratulacyjny z licznikiem
 - **1 godzina** na pobranie raportu przed automatycznym resetem
@@ -58,6 +66,9 @@
 - CSS3 (z CSS Variables dla motywów)
 - Vanilla JavaScript
 - localStorage do przechowywania danych
+- PWA (Progressive Web App) z Service Worker
+- Firebase (synchronizacja w chmurze)
+- Adaptive Cards (widgety)
 - Google Fonts
 
 ---
