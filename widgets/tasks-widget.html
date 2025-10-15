@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dzisiejsze zadania</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #6dd5ed 0%, #2193b0 100%);
+            padding: 16px;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        
+        .widget-container {
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            max-width: 400px;
+            width: 100%;
+        }
+        
+        .widget-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+        
+        .widget-icon {
+            font-size: 32px;
+        }
+        
+        .widget-title {
+            font-size: 20px;
+            font-weight: 600;
+        }
+        
+        .tasks-list {
+            list-style: none;
+            padding: 0;
+            margin: 16px 0;
+        }
+        
+        .task-item {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: all 0.3s ease;
+        }
+        
+        .task-item:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateX(4px);
+        }
+        
+        .task-checkbox {
+            width: 24px;
+            height: 24px;
+            min-width: 24px;
+            border: 2px solid #fff;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+        
+        .task-item.completed {
+            opacity: 0.7;
+        }
+        
+        .task-item.completed .task-checkbox {
+            background: rgba(255, 255, 255, 0.5);
+        }
+        
+        .task-text {
+            flex: 1;
+            font-size: 15px;
+            line-height: 1.4;
+        }
+        
+        .task-item.completed .task-text {
+            text-decoration: line-through;
+        }
+        
+        .progress-summary {
+            text-align: center;
+            margin: 16px 0;
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        .open-app {
+            display: block;
+            width: 100%;
+            margin-top: 16px;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.9);
+            color: #2193b0;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        
+        .open-app:hover {
+            background: #fff;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 32px 16px;
+            opacity: 0.9;
+        }
+        
+        .empty-icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="widget-container">
+        <div class="widget-header">
+            <span class="widget-icon">✅</span>
+            <h1 class="widget-title">Dzisiejsze zadania</h1>
+        </div>
+        
+        <ul class="tasks-list" id="tasksList">
+            <!-- Tasks will be loaded here -->
+        </ul>
+        
+        <div class="progress-summary" id="progressSummary"></div>
+        
+        <a href="/Motivation-tracker-3/" class="open-app">
+            Otwórz aplikację
+        </a>
+    </div>
+    
+    <script>
+        function loadWidgetData() {
+            try {
+                // Try to get data from parent window if available
+                if (window.parent && window.parent !== window) {
+                    const parentData = window.parent.localStorage.getItem('kawaiiQuestData');
+                    if (parentData) {
+                        updateWidget(JSON.parse(parentData));
+                        return;
+                    }
+                }
+                
+                // Fallback to fetching from data endpoint
+                fetch('tasks-data.json')
+                    .then(response => response.json())
+                    .then(data => updateWidget(data))
+                    .catch(err => {
+                        console.error('Failed to load widget data:', err);
+                        showEmptyState();
+                    });
+            } catch (err) {
+                console.error('Error loading widget data:', err);
+                showEmptyState();
+            }
+        }
+        
+        function updateWidget(data) {
+            const tasksList = document.getElementById('tasksList');
+            const progressSummary = document.getElementById('progressSummary');
+            
+            const tasks = data.tasks || [
+                "Rano: 5 minut stretchingu",
+                "15 minut aktywności",
+                "Wieczorny dziennik"
+            ];
+            
+            const today = new Date().toDateString();
+            const completedTasks = data.completedTasks?.[today] || [];
+            
+            tasksList.innerHTML = '';
+            
+            tasks.forEach((task, index) => {
+                const isCompleted = completedTasks.includes(index);
+                const li = document.createElement('li');
+                li.className = 'task-item' + (isCompleted ? ' completed' : '');
+                li.innerHTML = `
+                    <div class="task-checkbox">${isCompleted ? '✓' : ''}</div>
+                    <div class="task-text">${task}</div>
+                `;
+                tasksList.appendChild(li);
+            });
+            
+            const completedCount = completedTasks.length;
+            const totalCount = tasks.length;
+            progressSummary.textContent = `Ukończono ${completedCount} z ${totalCount} zadań`;
+        }
+        
+        function showEmptyState() {
+            const tasksList = document.getElementById('tasksList');
+            tasksList.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-icon">📋</div>
+                    <div>Otwórz aplikację, aby zobaczyć swoje zadania</div>
+                </div>
+            `;
+            document.getElementById('progressSummary').textContent = '';
+        }
+        
+        // Load data on page load
+        loadWidgetData();
+        
+        // Refresh every 5 minutes
+        setInterval(loadWidgetData, 300000);
+    </script>
+</body>
+</html>

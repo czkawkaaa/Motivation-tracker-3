@@ -1,0 +1,41 @@
+{
+  "type": "AdaptiveCard",
+  "version": "1.5",
+  "body": [
+    {
+      "type": "Container",
+      "items": [
+        {
+          "type": "TextBlock",
+          "text": "✨",
+          "size": "extraLarge",
+          "horizontalAlignment": "center"
+        },
+        {
+          "type": "TextBlock",
+          "text": "${quote}",
+          "size": "large",
+          "weight": "bolder",
+          "wrap": true,
+          "horizontalAlignment": "center",
+          "spacing": "medium"
+        },
+        {
+          "type": "TextBlock",
+          "text": "Dzień ${currentDay} z ${totalDays}",
+          "size": "small",
+          "horizontalAlignment": "center",
+          "spacing": "medium",
+          "color": "accent"
+        }
+      ]
+    }
+  ],
+  "actions": [
+    {
+      "type": "Action.OpenUrl",
+      "title": "Otwórz aplikację",
+      "url": "/Motivation-tracker-3/"
+    }
+  ]
+}

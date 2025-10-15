@@ -26,5 +26,82 @@
       "type": "image/png",
       "purpose": "any maskable"
     }
+  ],
+  "widgets": [
+    {
+      "name": "Postęp wyzwania",
+      "short_name": "Postęp",
+      "description": "Zobacz swój postęp w 75-dniowym wyzwaniu",
+      "tag": "progress",
+      "template": "widgets/progress-widget.html",
+      "ms_ac_template": "widgets/progress-widget-adaptive.json",
+      "data": "widgets/progress-data.json",
+      "type": "application/json",
+      "screenshots": [
+        {
+          "src": "widgets/screenshots/progress-widget.png",
+          "sizes": "600x400",
+          "label": "Widget postępu wyzwania"
+        }
+      ],
+      "icons": [
+        {
+          "src": "icon.svg",
+          "sizes": "any"
+        }
+      ],
+      "auth": false,
+      "update": 3600
+    },
+    {
+      "name": "Dzisiejsze zadania",
+      "short_name": "Zadania",
+      "description": "Szybki dostęp do dzisiejszych zadań",
+      "tag": "tasks",
+      "template": "widgets/tasks-widget.html",
+      "ms_ac_template": "widgets/tasks-widget-adaptive.json",
+      "data": "widgets/tasks-data.json",
+      "type": "application/json",
+      "screenshots": [
+        {
+          "src": "widgets/screenshots/tasks-widget.png",
+          "sizes": "600x400",
+          "label": "Widget dziennych zadań"
+        }
+      ],
+      "icons": [
+        {
+          "src": "icon.svg",
+          "sizes": "any"
+        }
+      ],
+      "auth": false,
+      "update": 1800
+    },
+    {
+      "name": "Motywacja dnia",
+      "short_name": "Motywacja",
+      "description": "Inspirujący cytat motywacyjny",
+      "tag": "motivation",
+      "template": "widgets/motivation-widget.html",
+      "ms_ac_template": "widgets/motivation-widget-adaptive.json",
+      "data": "widgets/motivation-data.json",
+      "type": "application/json",
+      "screenshots": [
+        {
+          "src": "widgets/screenshots/motivation-widget.png",
+          "sizes": "600x400",
+          "label": "Widget motywacyjny"
+        }
+      ],
+      "icons": [
+        {
+          "src": "icon.svg",
+          "sizes": "any"
+        }
+      ],
+      "auth": false,
+      "update": 86400
+    }
   ]
 }

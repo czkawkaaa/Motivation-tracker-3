@@ -1,0 +1,107 @@
+{
+  "type": "AdaptiveCard",
+  "version": "1.5",
+  "body": [
+    {
+      "type": "Container",
+      "items": [
+        {
+          "type": "ColumnSet",
+          "columns": [
+            {
+              "type": "Column",
+              "width": "auto",
+              "items": [
+                {
+                  "type": "TextBlock",
+                  "text": "✅",
+                  "size": "large"
+                }
+              ]
+            },
+            {
+              "type": "Column",
+              "width": "stretch",
+              "items": [
+                {
+                  "type": "TextBlock",
+                  "text": "Dzisiejsze zadania",
+                  "weight": "bolder",
+                  "size": "medium"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "Container",
+          "items": [
+            {
+              "type": "TextBlock",
+              "text": "${task1}",
+              "wrap": true,
+              "spacing": "small"
+            },
+            {
+              "type": "TextBlock",
+              "text": "${task1Completed}",
+              "size": "small",
+              "color": "good",
+              "isVisible": "${task1Done}"
+            }
+          ]
+        },
+        {
+          "type": "Container",
+          "items": [
+            {
+              "type": "TextBlock",
+              "text": "${task2}",
+              "wrap": true,
+              "spacing": "small"
+            },
+            {
+              "type": "TextBlock",
+              "text": "${task2Completed}",
+              "size": "small",
+              "color": "good",
+              "isVisible": "${task2Done}"
+            }
+          ]
+        },
+        {
+          "type": "Container",
+          "items": [
+            {
+              "type": "TextBlock",
+              "text": "${task3}",
+              "wrap": true,
+              "spacing": "small"
+            },
+            {
+              "type": "TextBlock",
+              "text": "${task3Completed}",
+              "size": "small",
+              "color": "good",
+              "isVisible": "${task3Done}"
+            }
+          ]
+        },
+        {
+          "type": "TextBlock",
+          "text": "Ukończono ${completedCount} z ${totalCount} zadań",
+          "size": "small",
+          "horizontalAlignment": "center",
+          "spacing": "medium"
+        }
+      ]
+    }
+  ],
+  "actions": [
+    {
+      "type": "Action.OpenUrl",
+      "title": "Otwórz aplikację",
+      "url": "/Motivation-tracker-3/"
+    }
+  ]
+}

@@ -122,7 +122,32 @@ function saveData() {
         window.saveDataToFirestore();
     }
     
+    // Update widget data for PWA widgets
+    updateWidgetData();
+    
     checkBadges();
+}
+
+// Update widget data files (for PWA widgets)
+function updateWidgetData() {
+    try {
+        // This function prepares data that widgets can access
+        // Widgets will read from localStorage or fetch from data endpoints
+        const widgetData = {
+            challenge: AppData.challenge,
+            currentDay: AppData.challenge.currentDay,
+            totalDays: AppData.challenge.totalDays,
+            streak: AppData.streak,
+            badges: AppData.badges,
+            tasks: AppData.tasks,
+            completedTasks: AppData.completedTasks
+        };
+        
+        // Store widget data separately for widget access
+        localStorage.setItem('kawaiiQuestWidgetData', JSON.stringify(widgetData));
+    } catch (err) {
+        console.error('Failed to update widget data:', err);
+    }
 }
 
 function getTodayKey() {
