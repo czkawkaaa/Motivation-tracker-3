@@ -122,6 +122,11 @@ function saveData() {
         window.saveDataToFirestore();
     }
     
+    // Aktualizuj dane widgetu PWA
+    if (typeof updateWidgetData === 'function') {
+        updateWidgetData();
+    }
+    
     checkBadges();
 }
 
@@ -868,10 +873,14 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function updateChallengeProgress() {
-    const percent = (AppData.challenge.currentDay / AppData.challenge.totalDays) * 100;
+    // Używamy completedDays.length zamiast currentDay dla poprawnego % ukończenia
+    const completedDays = AppData.challenge.completedDays.length;
+    const totalDays = AppData.challenge.totalDays;
+    const percent = (completedDays / totalDays) * 100;
+    
     document.getElementById('challengeProgressBar').style.width = percent + '%';
     document.getElementById('challengePercent').textContent = Math.round(percent) + '%';
-    document.getElementById('challengeDays').textContent = `${AppData.challenge.currentDay}/${AppData.challenge.totalDays} dni`;
+    document.getElementById('challengeDays').textContent = `${AppData.challenge.currentDay}/${totalDays} dni`;
 }
 
 function updateStreakDisplay() {
@@ -2139,3 +2148,56 @@ function exportDataAsHTML() {
     showNotification('📥 Raport został pobrany! Otwórz plik i naciśnij Ctrl+P aby zapisać jako PDF', 'success');
 }
 
+// ======================
+// PWA WIDGET SUPPORT
+// ======================
+async function updateWidgetData() {
+    try {
+        const today = getTodayKey();
+        const todayCompleted = AppData.challenge.completedDays.includes(today);
+        
+        // Oblicz ile zadań jest ukończonych dzisiaj
+        const completedTasksToday = AppData.completedTasks[today] || [];
+        const tasksCompletedCount = Array.isArray(completedTasksToday) ? completedTasksToday.length : 0;
+        const totalTasks = AppData.tasks.length;
+        
+        // POPRAWKA: Używamy completedDays.length zamiast currentDay dla poprawnego %
+        const completedDays = AppData.challenge.completedDays.length;
+        const totalDays = AppData.challenge.totalDays;
+        
+        // Przygotuj dane dla widgetu
+        const widgetData = {
+            currentDay: AppData.challenge.currentDay,
+            totalDays: totalDays,
+            completedDays: completedDays,
+            currentStreak: AppData.challenge.currentStreak,
+            todayCompleted: todayCompleted,
+            progressPercent: Math.round((completedDays / totalDays) * 100),
+            tasksToday: {
+                total: totalTasks,
+                completed: tasksCompletedCount
+            },
+            lastUpdated: new Date().toISOString()
+        };
+        
+        // Zapisz do localStorage dla widgetu
+        localStorage.setItem('widgetData', JSON.stringify(widgetData));
+        
+        // Jeśli przeglądarka wspiera Periodic Background Sync dla widgetów
+        if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+            navigator.serviceWorker.controller.postMessage({
+                type: 'UPDATE_WIDGET',
+                widgetData: widgetData
+            });
+        }
+        
+        console.log('✅ Widget data updated:', widgetData);
+    } catch (error) {
+        console.error('❌ Error updating widget data:', error);
+    }
+}
+
+// Eksportuj dla użycia w innych miejscach
+if (typeof window !== 'undefined') {
+    window.updateWidgetData = updateWidgetData;
+}
