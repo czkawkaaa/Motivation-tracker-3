@@ -289,7 +289,7 @@ function initThemeSystem() {
 
 function setTheme(themeName) {
     const body = document.body;
-    const themeClasses = ['theme-pink', 'theme-ocean', 'theme-mint', 'theme-lavender', 'theme-strawberry'];
+    const themeClasses = ['theme-pink', 'theme-ocean', 'theme-mint', 'theme-lavender', 'theme-strawberry', 'theme-sunset', 'theme-galaxy', 'theme-peach'];
     
     themeClasses.forEach(cls => body.classList.remove(cls));
     body.classList.add(`theme-${themeName}`);

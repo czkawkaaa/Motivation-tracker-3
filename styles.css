@@ -82,6 +82,45 @@
     --calendar-completed-check: #880e4f;
 }
 
+.theme-sunset {
+    --primary-color: #ff9966;
+    --bg-gradient-start: #fff9f5;
+    --bg-gradient-end: #fff3e8;
+    --card-bg: #ffffff;
+    --text-primary: #222222;
+    --text-secondary: #666666;
+    --progress-bg: #ffe8dc;
+    --calendar-completed-bg: #ffccbc;
+    --calendar-completed-text: #e64a19;
+    --calendar-completed-check: #bf360c;
+}
+
+.theme-galaxy {
+    --primary-color: #9c7fff;
+    --bg-gradient-start: #f8f5ff;
+    --bg-gradient-end: #f0e8ff;
+    --card-bg: #ffffff;
+    --text-primary: #222222;
+    --text-secondary: #666666;
+    --progress-bg: #e8dcff;
+    --calendar-completed-bg: #d1c4e9;
+    --calendar-completed-text: #5e35b1;
+    --calendar-completed-check: #311b92;
+}
+
+.theme-peach {
+    --primary-color: #ffb399;
+    --bg-gradient-start: #fffaf8;
+    --bg-gradient-end: #fff5f0;
+    --card-bg: #ffffff;
+    --text-primary: #222222;
+    --text-secondary: #666666;
+    --progress-bg: #ffe8dc;
+    --calendar-completed-bg: #ffccbc;
+    --calendar-completed-text: #d84315;
+    --calendar-completed-check: #bf360c;
+}
+
 /* Podstawowe style body */
 body {
     font-family: var(--font-family);
