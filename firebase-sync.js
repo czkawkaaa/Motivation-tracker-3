@@ -133,6 +133,14 @@ function onUserLogout() {
 async function loadDataFromFirestore() {
     if (!currentUser) return;
     
+    // Sprawdź czy właśnie usunęliśmy dane (zapobiega pętli)
+    const justDeleted = sessionStorage.getItem('deletionReload');
+    if (justDeleted) {
+        console.log('⚠️ Skipping load after deletion to prevent loop');
+        sessionStorage.removeItem('deletionReload');
+        return;
+    }
+    
     try {
         const docRef = doc(db, 'users', currentUser.uid);
         const docSnap = await getDoc(docRef);
@@ -140,6 +148,16 @@ async function loadDataFromFirestore() {
         if (docSnap.exists()) {
             const cloudData = docSnap.data();
             console.log('☁️ Loaded data from cloud:', cloudData);
+            
+            // Sprawdź czy dane nie zostały usunięte
+            if (cloudData.deleted === true || cloudData.data === null) {
+                console.log('🗑️ Dane zostały usunięte w chmurze - czyszczę lokalnie');
+                localStorage.removeItem('kawaiiQuestData');
+                if (typeof showNotification === 'function') {
+                    showNotification('🗑️ Dane zostały usunięte', 'info');
+                }
+                return;
+            }
             
             // Merge z lokalnymi danymi (na wypadek offline changes)
             const localData = localStorage.getItem('kawaiiQuestData');
@@ -239,14 +257,46 @@ function setupRealtimeSync() {
             
             // Sprawdź czy dane zostały usunięte
             if (cloudData.deleted === true || cloudData.data === null) {
-                console.log('🗑️ Dane zostały usunięte w chmurze - czyszczę lokalnie i przeładowuję');
-                localStorage.clear();
-                if (typeof showNotification === 'function') {
-                    showNotification('🗑️ Dane zostały usunięte na innym urządzeniu', 'warning');
+                console.log('🗑️ Dane zostały usunięte w chmurze - czyszczę lokalnie');
+                
+                // Sprawdź czy już przeładowaliśmy z powodu usunięcia
+                const alreadyReloaded = sessionStorage.getItem('deletionReload');
+                if (alreadyReloaded) {
+                    console.log('⚠️ Already reloaded for deletion, skipping...');
+                    // Wyłącz listener żeby zapobiec dalszym przeładowaniom
+                    if (unsubscribeSnapshot) {
+                        unsubscribeSnapshot();
+                        unsubscribeSnapshot = null;
+                    }
+                    return;
                 }
-                setTimeout(() => location.reload(), 2000);
+                
+                // Wyłącz listener żeby zapobiec pętli
+                if (unsubscribeSnapshot) {
+                    unsubscribeSnapshot();
+                    unsubscribeSnapshot = null;
+                }
+                
+                // Wyczyść dane lokalne
+                localStorage.clear();
+                
+                // Ustaw flagę że przeładowujemy
+                sessionStorage.setItem('deletionReload', 'true');
+                
+                if (typeof showNotification === 'function') {
+                    showNotification('🗑️ Dane zostały usunięte', 'warning');
+                }
+                
+                // Jednorazowe przeładowanie strony
+                setTimeout(() => {
+                    location.reload();
+                }, 1000);
+                
                 return;
             }
+            
+            // Wyczyść flagę deletionReload jeśli dane są OK
+            sessionStorage.removeItem('deletionReload');
             
             // Sprawdź czy zmiana nie pochodzi z tego urządzenia
             if (typeof AppData !== 'undefined') {
