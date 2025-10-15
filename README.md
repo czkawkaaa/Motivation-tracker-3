@@ -5,6 +5,9 @@
 ## 🚀 Demo Online
 **Link do działającej strony:** https://czkawkaaa.github.io/Motivation-tracker-3/
 
+💡 **Wskazówka:** Zainstaluj aplikację na telefonie (PWA), aby korzystać z widgetów na ekranie głównym! 
+[Dowiedz się jak →](WIDGETS.md)
+
 ---
 
 ## ✨ Funkcje
@@ -45,6 +48,14 @@
 - Ustawienie dni odpoczynku
 - **Eksport danych do HTML/PDF**
 
+### 📱 Widgety PWA
+- **3 rodzaje widgetów** dostępnych po zainstalowaniu na telefonie
+- Widget postępu wyzwania (dzień, seria, odznaki)
+- Widget dziennych zadań
+- Widget z motywacyjnym cytatem
+- Automatyczna synchronizacja danych
+- **[Więcej o widgetach →](WIDGETS.md)**
+
 ### 🎯 Ukończenie Wyzwania
 - Po ukończeniu 75 dni: modal gratulacyjny z licznikiem
 - **1 godzina** na pobranie raportu przed automatycznym resetem
@@ -59,6 +70,8 @@
 - Vanilla JavaScript
 - localStorage do przechowywania danych
 - Google Fonts
+- **PWA (Progressive Web App)** z obsługą widgetów
+- **Manifest.json** z definicjami widgetów
 
 ---
 

@@ -1,0 +1,103 @@
+{
+  "type": "AdaptiveCard",
+  "version": "1.5",
+  "body": [
+    {
+      "type": "Container",
+      "items": [
+        {
+          "type": "ColumnSet",
+          "columns": [
+            {
+              "type": "Column",
+              "width": "auto",
+              "items": [
+                {
+                  "type": "TextBlock",
+                  "text": "🌸",
+                  "size": "large"
+                }
+              ]
+            },
+            {
+              "type": "Column",
+              "width": "stretch",
+              "items": [
+                {
+                  "type": "TextBlock",
+                  "text": "Kawaii Quest",
+                  "weight": "bolder",
+                  "size": "medium"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "TextBlock",
+          "text": "${currentDay} / ${totalDays} dni",
+          "size": "extraLarge",
+          "weight": "bolder",
+          "horizontalAlignment": "center",
+          "spacing": "medium"
+        },
+        {
+          "type": "ProgressBar",
+          "value": "${progress}",
+          "spacing": "small"
+        },
+        {
+          "type": "ColumnSet",
+          "columns": [
+            {
+              "type": "Column",
+              "width": "stretch",
+              "items": [
+                {
+                  "type": "TextBlock",
+                  "text": "🔥 Seria",
+                  "size": "small",
+                  "horizontalAlignment": "center"
+                },
+                {
+                  "type": "TextBlock",
+                  "text": "${streak}",
+                  "size": "large",
+                  "weight": "bolder",
+                  "horizontalAlignment": "center"
+                }
+              ]
+            },
+            {
+              "type": "Column",
+              "width": "stretch",
+              "items": [
+                {
+                  "type": "TextBlock",
+                  "text": "🏆 Odznaki",
+                  "size": "small",
+                  "horizontalAlignment": "center"
+                },
+                {
+                  "type": "TextBlock",
+                  "text": "${badges}",
+                  "size": "large",
+                  "weight": "bolder",
+                  "horizontalAlignment": "center"
+                }
+              ]
+            }
+          ],
+          "spacing": "medium"
+        }
+      ]
+    }
+  ],
+  "actions": [
+    {
+      "type": "Action.OpenUrl",
+      "title": "Otwórz aplikację",
+      "url": "/Motivation-tracker-3/"
+    }
+  ]
+}

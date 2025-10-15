@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Motywacja dnia</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            padding: 16px;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        
+        .widget-container {
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 24px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            max-width: 400px;
+            width: 100%;
+            text-align: center;
+        }
+        
+        .widget-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+            animation: float 3s ease-in-out infinite;
+        }
+        
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+        
+        .quote-text {
+            font-size: 24px;
+            font-weight: 600;
+            line-height: 1.5;
+            margin-bottom: 24px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .quote-divider {
+            width: 50px;
+            height: 3px;
+            background: rgba(255, 255, 255, 0.5);
+            margin: 0 auto 20px;
+            border-radius: 2px;
+        }
+        
+        .day-info {
+            font-size: 16px;
+            opacity: 0.9;
+            margin-bottom: 24px;
+        }
+        
+        .refresh-btn {
+            background: rgba(255, 255, 255, 0.3);
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 16px;
+        }
+        
+        .refresh-btn:hover {
+            background: rgba(255, 255, 255, 0.4);
+            transform: scale(1.05);
+        }
+        
+        .open-app {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.9);
+            color: #f5576c;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        
+        .open-app:hover {
+            background: #fff;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+    </style>
+</head>
+<body>
+    <div class="widget-container">
+        <div class="widget-icon">✨</div>
+        
+        <div class="quote-text" id="quoteText">
+            Ładowanie...
+        </div>
+        
+        <div class="quote-divider"></div>
+        
+        <div class="day-info" id="dayInfo">
+            Dzień <span id="currentDay">0</span> z <span id="totalDays">75</span>
+        </div>
+        
+        <button class="refresh-btn" onclick="getNewQuote()">
+            🔄 Nowa motywacja
+        </button>
+        
+        <a href="/Motivation-tracker-3/" class="open-app">
+            Otwórz aplikację
+        </a>
+    </div>
+    
+    <script>
+        const motivationalQuotes = [
+            "Jesteś silniejsza niż myślisz! 💖",
+            "Każdy krok to postęp! ✨",
+            "Wierzę w Ciebie! 🌸",
+            "Możesz wszystko! 💪",
+            "Dziś jest Twój dzień! ☀️",
+            "Dumna z Ciebie! 🎀",
+            "Keep going, Queen! 👑",
+            "You're doing amazing! 💕",
+            "Never give up! 🦋",
+            "Sparkle every day! ✨",
+            "Nie jutro, a DZIŚ! ⚡",
+            "Musisz w siebie zainwestować! 💎",
+            "Przestań gadać, zacznij działać! 🔥",
+            "Twoja przyszłość zależy od tego, co robisz TERAZ! ⏰",
+            "Nikt nie zrobi tego za Ciebie! 💪",
+            "Wymówki nie budują marzeń! 🚫",
+            "Albo teraz, albo nigdy! ⚡",
+            "Jesteś mocniejsza niż Twoje wymówki! 🦁",
+            "Sukces wymaga poświęceń! 🏆",
+            "Twoja wygoda = Twoja granica! 🔓",
+            "Każda sekunda się liczy! ⏳",
+            "Nie czekaj na idealny moment - stwórz go! 🌟",
+            "Zmęczenie jest tymczasowe, duma jest wieczna! 👑",
+            "Twoje ciało osiągnie to, w co uwierzy Twój umysł! 🧠",
+            "Nieudane próby to lekcje, nie porażki! 📚",
+            "Bądź silniejsza niż Twoje najsilniejsze wymówki! 💥",
+            "Dzisiaj to dobry dzień, żeby kopnąć tyłek celom! 🎯",
+            "Komfortowa strefa to pułapka! 🚀",
+            "Każdy dzień bez działania to stracona szansa! 💫",
+            "Nie mów, że nie masz czasu - masz dokładnie tyle samo co wszyscy! ⏰",
+            "Albo znajdziesz sposób, albo znajdziesz wymówkę! 🛤️",
+            "Twoje marzenia nie pracują, dopóki Ty nie pracujesz! 💼",
+            "Słabe momenty budują silnych ludzi! 🏋️",
+            "Przestań planować, zacznij robić! ✅",
+            "Nikt nie pamięta tych, którzy się poddali! 🔝",
+            "Twój jedyny przeciwnik to Ty z wczoraj! 🥊",
+            "Ból dzisiaj = Siła jutro! 💪",
+            "Nie bój się porażki, bój się braku prób! 🎲",
+            "Jeśli to było łatwe, każdy by to robił! 🔥",
+            "Jesteś JEDNĄ decyzją od zmiany życia! 🔄"
+        ];
+        
+        let currentQuoteIndex = 0;
+        
+        function getNewQuote() {
+            currentQuoteIndex = Math.floor(Math.random() * motivationalQuotes.length);
+            document.getElementById('quoteText').textContent = motivationalQuotes[currentQuoteIndex];
+        }
+        
+        function loadWidgetData() {
+            try {
+                // Try to get data from parent window if available
+                if (window.parent && window.parent !== window) {
+                    const parentData = window.parent.localStorage.getItem('kawaiiQuestData');
+                    if (parentData) {
+                        updateWidget(JSON.parse(parentData));
+                        return;
+                    }
+                }
+                
+                // Fallback to fetching from data endpoint
+                fetch('motivation-data.json')
+                    .then(response => response.json())
+                    .then(data => updateWidget(data))
+                    .catch(err => {
+                        console.error('Failed to load widget data:', err);
+                        updateWidget({
+                            currentDay: 0,
+                            totalDays: 75
+                        });
+                    });
+            } catch (err) {
+                console.error('Error loading widget data:', err);
+            }
+            
+            // Show a random quote
+            getNewQuote();
+        }
+        
+        function updateWidget(data) {
+            const currentDay = data.challenge?.currentDay || data.currentDay || 0;
+            const totalDays = data.challenge?.totalDays || data.totalDays || 75;
+            
+            document.getElementById('currentDay').textContent = currentDay;
+            document.getElementById('totalDays').textContent = totalDays;
+        }
+        
+        // Load data on page load
+        loadWidgetData();
+        
+        // Change quote every hour
+        setInterval(getNewQuote, 3600000);
+    </script>
+</body>
+</html>
