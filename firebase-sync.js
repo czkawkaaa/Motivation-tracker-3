@@ -337,9 +337,10 @@ function setupRealtimeSync() {
                             updateAllDisplays();
                         }
                         
-                        if (typeof showNotification === 'function') {
-                            showNotification('🔄 Dane zsynchronizowane z innego urządzenia', 'success');
-                        }
+                        // USUNIĘTE: Powiadomienie o synchronizacji (irytujące)
+                        // if (typeof showNotification === 'function') {
+                        //     showNotification('🔄 Dane zsynchronizowane z innego urządzenia', 'success');
+                        // }
                     }
                 } else {
                     console.log('✓ Local data is up to date');
