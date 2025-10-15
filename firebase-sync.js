@@ -148,12 +148,6 @@ async function loadDataFromFirestore() {
     
     // Sprawdź czy właśnie usunęliśmy dane (zapobiega pętli)
     const justDeleted = sessionStorage.getItem('deletionReload');
-    if (justDeleted) {
-        console.log('⚠️ Skipping load after deletion to prevent loop');
-        // Nie usuwamy jeszcze flagi — zostanie usunięta dopiero gdy
-        // realtime sync zobaczy, że dane nie są usunięte (lub po bezpiecznym czasie).
-        return false;
-    }
     
     try {
         const docRef = doc(db, 'users', currentUser.uid);
@@ -167,11 +161,28 @@ async function loadDataFromFirestore() {
             if (cloudData.deleted === true || cloudData.data === null) {
                 console.log('🗑️ Dane zostały usunięte w chmurze - czyszczę lokalnie');
                 localStorage.removeItem('kawaiiQuestData');
-                if (typeof showNotification === 'function') {
-                    showNotification('🗑️ Dane zostały usunięte', 'info');
+                
+                // Jeśli to pierwsze przeładowanie po usunięciu, usuń flagę i zakończ
+                if (justDeleted) {
+                    console.log('⚠️ First reload after deletion - clearing flag');
+                    sessionStorage.removeItem('deletionReload');
+                    // Nie pokazuj powiadomienia przy pierwszym przeładowaniu
+                    // (zostało już pokazane przed reload)
+                } else {
+                    // Manualne odświeżenie gdy dane wciąż są usunięte
+                    if (typeof showNotification === 'function') {
+                        showNotification('🗑️ Dane zostały usunięte', 'info');
+                    }
                 }
+                
                 // Zwróć false żeby caller wiedział, że pominięto ładowanie
                 return false;
+            }
+            
+            // Dane są OK - wyczyść flagę deletionReload jeśli istnieje
+            if (justDeleted) {
+                console.log('✅ Data restored - clearing deletion flag');
+                sessionStorage.removeItem('deletionReload');
             }
             
             // Merge z lokalnymi danymi (na wypadek offline changes)
@@ -203,12 +214,27 @@ async function loadDataFromFirestore() {
             return true;
         } else {
             console.log('📝 No cloud data found, creating new document');
+            
+            // Wyczyść flagę deletionReload jeśli istnieje (nowy dokument = dane zostały zresetowane)
+            if (justDeleted) {
+                console.log('✅ New document - clearing deletion flag');
+                sessionStorage.removeItem('deletionReload');
+            }
+            
             // Pierwsza synchronizacja - zapisz lokalne dane do chmury
             await saveDataToFirestore();
             return true;
         }
     } catch (error) {
         console.error('❌ Error loading from Firestore:', error);
+        
+        // W przypadku błędu, wyczyść flagę deletionReload po pierwszej próbie
+        // aby nie blokować kolejnych prób ładowania
+        if (justDeleted) {
+            console.log('⚠️ Error during load after deletion - clearing flag to allow retry');
+            sessionStorage.removeItem('deletionReload');
+        }
+        
         if (typeof showNotification === 'function') {
             showNotification('⚠️ Błąd ładowania danych z chmury', 'warning');
         }
