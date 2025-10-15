@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Naprawa Firestore - Kawaii Quest</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #fff7ff 0%, #ffe8f5 100%);
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        h1 { color: #ff69b4; margin-top: 0; }
+        button {
+            background: #ff69b4;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        button:hover { background: #ff1493; }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .status {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 8px;
+            background: #f0f0f0;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        pre {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            max-height: 400px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Naprawa Firestore - Usuń flagę "deleted"</h1>
+        
+        <p><strong>Problem:</strong> Twój dokument w Firestore ma flagę <code>deleted: true</code>, przez co przy każdym wczytaniu pokazuje się powiadomienie "Dane zostały usunięte".</p>
+        
+        <p><strong>Rozwiązanie:</strong> Ten skrypt usunie flagę <code>deleted</code> z Twojego dokumentu.</p>
+        
+        <div id="status" class="status info">
+            Kliknij "Zaloguj się" żeby rozpocząć...
+        </div>
+        
+        <div id="buttons">
+            <button id="loginBtn">🔐 Zaloguj się przez Google</button>
+            <button id="fixBtn" disabled>🔧 Napraw dokument</button>
+            <button id="checkBtn" disabled>🔍 Sprawdź dokument</button>
+        </div>
+        
+        <div id="output"></div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js';
+        import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js';
+        import { getFirestore, doc, getDoc, setDoc, updateDoc } from 'https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js';
+
+        // Importuj config z głównego pliku
+        const response = await fetch('./firebase-config.js');
+        const configText = await response.text();
+        
+        // Wyciągnij firebaseConfig z modułu
+        const configMatch = configText.match(/const firebaseConfig = ({[\s\S]*?});/);
+        const firebaseConfig = eval('(' + configMatch[1] + ')');
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let currentUser = null;
+
+        const statusDiv = document.getElementById('status');
+        const outputDiv = document.getElementById('output');
+        const loginBtn = document.getElementById('loginBtn');
+        const fixBtn = document.getElementById('fixBtn');
+        const checkBtn = document.getElementById('checkBtn');
+
+        function showStatus(message, type = 'info') {
+            statusDiv.className = `status ${type}`;
+            statusDiv.innerHTML = message;
+        }
+
+        function showOutput(title, data) {
+            outputDiv.innerHTML = `
+                <h3>${title}</h3>
+                <pre>${JSON.stringify(data, null, 2)}</pre>
+            `;
+        }
+
+        loginBtn.addEventListener('click', async () => {
+            const provider = new GoogleAuthProvider();
+            try {
+                const result = await signInWithPopup(auth, provider);
+                showStatus(`✅ Zalogowano jako: ${result.user.email}`, 'success');
+            } catch (error) {
+                showStatus(`❌ Błąd logowania: ${error.message}`, 'error');
+            }
+        });
+
+        checkBtn.addEventListener('click', async () => {
+            if (!currentUser) {
+                showStatus('⚠️ Najpierw zaloguj się!', 'error');
+                return;
+            }
+
+            try {
+                const docRef = doc(db, 'users', currentUser.uid);
+                const docSnap = await getDoc(docRef);
+
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    showOutput('📄 Twój dokument w Firestore:', data);
+                    
+                    if (data.deleted === true) {
+                        showStatus('⚠️ PROBLEM ZNALEZIONY: Dokument ma flagę deleted: true', 'error');
+                    } else {
+                        showStatus('✅ OK: Dokument NIE ma flagi deleted', 'success');
+                    }
+                } else {
+                    showStatus('⚠️ Dokument nie istnieje', 'error');
+                }
+            } catch (error) {
+                showStatus(`❌ Błąd odczytu: ${error.message}`, 'error');
+            }
+        });
+
+        fixBtn.addEventListener('click', async () => {
+            if (!currentUser) {
+                showStatus('⚠️ Najpierw zaloguj się!', 'error');
+                return;
+            }
+
+            if (!confirm('Czy na pewno chcesz naprawić dokument?\n\nTo usunie flagę "deleted" i pozwoli normalnie korzystać z aplikacji.')) {
+                return;
+            }
+
+            try {
+                const docRef = doc(db, 'users', currentUser.uid);
+                const docSnap = await getDoc(docRef);
+
+                if (docSnap.exists()) {
+                    const currentData = docSnap.data();
+                    
+                    // Usuń flagę deleted i zapisz normalne dane
+                    const newData = {
+                        data: currentData.data || {},
+                        lastModified: Date.now(),
+                        email: currentUser.email
+                        // NIE ma pola 'deleted'
+                    };
+
+                    await setDoc(docRef, newData);
+                    
+                    showStatus('✅ NAPRAWIONE! Dokument został zaktualizowany. Flaga "deleted" usunięta.', 'success');
+                    showOutput('📄 Nowy dokument:', newData);
+                    
+                    setTimeout(() => {
+                        showStatus('✅ Możesz teraz wrócić do aplikacji i odświeżyć stronę!', 'success');
+                    }, 2000);
+                } else {
+                    showStatus('⚠️ Dokument nie istnieje - tworzę nowy...', 'info');
+                    
+                    const newData = {
+                        data: {},
+                        lastModified: Date.now(),
+                        email: currentUser.email
+                    };
+                    
+                    await setDoc(docRef, newData);
+                    showStatus('✅ Utworzono nowy dokument!', 'success');
+                }
+            } catch (error) {
+                showStatus(`❌ Błąd naprawy: ${error.message}`, 'error');
+            }
+        });
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+                loginBtn.disabled = true;
+                fixBtn.disabled = false;
+                checkBtn.disabled = false;
+                loginBtn.textContent = `✅ Zalogowany: ${user.email}`;
+                showStatus(`✅ Zalogowany jako: ${user.email}`, 'success');
+            } else {
+                currentUser = null;
+                loginBtn.disabled = false;
+                fixBtn.disabled = true;
+                checkBtn.disabled = true;
+                loginBtn.textContent = '🔐 Zaloguj się przez Google';
+            }
+        });
+    </script>
+</body>
+</html>
