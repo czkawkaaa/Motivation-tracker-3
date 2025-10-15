@@ -102,11 +102,24 @@ function onUserLogin(user) {
     if (userName) userName.textContent = user.displayName || user.email;
     if (userPhoto) userPhoto.src = user.photoURL || 'https://via.placeholder.com/36';
     
-    // Załaduj dane z Firestore
-    loadDataFromFirestore();
-    
-    // Nasłuchuj zmian w czasie rzeczywistym
-    setupRealtimeSync();
+    // Załaduj dane z Firestore. Jeśli ładowanie zostało pominięte z powodu
+    // niedawnego usunięcia (flaga deletionReload), nie zakładaj nasłuchu realtime
+    // — to zapobiega pętli przeładowań/logowania.
+    (async () => {
+        try {
+            const loaded = await loadDataFromFirestore();
+            if (loaded) {
+                // Nasłuchuj zmian w czasie rzeczywistym tylko gdy załadowaliśmy dane
+                setupRealtimeSync();
+            } else {
+                console.log('⚠️ Skipping realtime sync because load was skipped (recent deletion)');
+            }
+        } catch (err) {
+            console.error('❌ Error during initial cloud load:', err);
+            // Wciąż próbuj ustawić realtime sync jako fallback
+            try { setupRealtimeSync(); } catch (e) {}
+        }
+    })();
 }
 
 function onUserLogout() {
@@ -137,8 +150,9 @@ async function loadDataFromFirestore() {
     const justDeleted = sessionStorage.getItem('deletionReload');
     if (justDeleted) {
         console.log('⚠️ Skipping load after deletion to prevent loop');
-        sessionStorage.removeItem('deletionReload');
-        return;
+        // Nie usuwamy jeszcze flagi — zostanie usunięta dopiero gdy
+        // realtime sync zobaczy, że dane nie są usunięte (lub po bezpiecznym czasie).
+        return false;
     }
     
     try {
@@ -156,7 +170,8 @@ async function loadDataFromFirestore() {
                 if (typeof showNotification === 'function') {
                     showNotification('🗑️ Dane zostały usunięte', 'info');
                 }
-                return;
+                // Zwróć false żeby caller wiedział, że pominięto ładowanie
+                return false;
             }
             
             // Merge z lokalnymi danymi (na wypadek offline changes)
@@ -185,16 +200,19 @@ async function loadDataFromFirestore() {
             if (typeof showNotification === 'function') {
                 showNotification('☁️ Dane załadowane z chmury', 'success');
             }
+            return true;
         } else {
             console.log('📝 No cloud data found, creating new document');
             // Pierwsza synchronizacja - zapisz lokalne dane do chmury
             await saveDataToFirestore();
+            return true;
         }
     } catch (error) {
         console.error('❌ Error loading from Firestore:', error);
         if (typeof showNotification === 'function') {
             showNotification('⚠️ Błąd ładowania danych z chmury', 'warning');
         }
+        return false;
     }
 }
 
@@ -263,6 +281,7 @@ function setupRealtimeSync() {
                 const alreadyReloaded = sessionStorage.getItem('deletionReload');
                 if (alreadyReloaded) {
                     console.log('⚠️ Already reloaded for deletion, skipping...');
+                    console.log('DEBUG: onSnapshot skip. session deletionReload=', alreadyReloaded);
                     // Wyłącz listener żeby zapobiec dalszym przeładowaniom
                     if (unsubscribeSnapshot) {
                         unsubscribeSnapshot();
@@ -286,6 +305,7 @@ function setupRealtimeSync() {
                 if (typeof showNotification === 'function') {
                     showNotification('🗑️ Dane zostały usunięte', 'warning');
                 }
+                console.log('DEBUG: onSnapshot detected deletion. scheduling reload. uid=', currentUser && currentUser.uid);
                 
                 // Jednorazowe przeładowanie strony
                 setTimeout(() => {
