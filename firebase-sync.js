@@ -152,6 +152,13 @@ async function loadDataFromFirestore() {
         console.log('⚠️ Skipping load after deletion to prevent loop');
         // Nie usuwamy jeszcze flagi — zostanie usunięta dopiero gdy
         // realtime sync zobaczy, że dane nie są usunięte (lub po bezpiecznym czasie).
+        // Jednak dla bezpieczeństwa, jeśli użytkownik odświeży stronę ponownie
+        // (np. manualnie), wyczyść flagę po pewnym czasie aby nie blokować ładowania na zawsze.
+        // Zaplanuj czyszczenie flagi po 5 sekundach (użytkownik nie powinien odświeżać tak szybko)
+        setTimeout(() => {
+            sessionStorage.removeItem('deletionReload');
+            console.log('⏰ Cleared deletionReload flag after timeout');
+        }, 5000);
         return false;
     }
     
@@ -167,9 +174,9 @@ async function loadDataFromFirestore() {
             if (cloudData.deleted === true || cloudData.data === null) {
                 console.log('🗑️ Dane zostały usunięte w chmurze - czyszczę lokalnie');
                 localStorage.removeItem('kawaiiQuestData');
-                if (typeof showNotification === 'function') {
-                    showNotification('🗑️ Dane zostały usunięte', 'info');
-                }
+                // Nie pokazuj notyfikacji tutaj - użytkownik już ją widział podczas usuwania
+                // lub dane zostały usunięte wcześniej. Pokazywanie notyfikacji przy każdym
+                // odświeżeniu strony (szczególnie na telefonie) jest irytujące.
                 // Zwróć false żeby caller wiedział, że pominięto ładowanie
                 return false;
             }
