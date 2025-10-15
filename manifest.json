@@ -3,6 +3,7 @@
   "short_name": "Kawaii Quest",
   "description": "75-dniowe wyzwanie motywacyjne z synchronizacją w chmurze",
   "start_url": "/Motivation-tracker-3/",
+  "scope": "/Motivation-tracker-3/",
   "display": "standalone",
   "background_color": "#fff7ff",
   "theme_color": "#ff9ac2",
@@ -25,6 +26,42 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
+    }
+  ],
+  "widgets": [
+    {
+      "name": "Challenge Progress",
+      "short_name": "Progress",
+      "description": "75-day challenge progress tracker",
+      "tag": "challenge-progress",
+      "template": "widget-progress.json",
+      "data": "widget-data.json",
+      "type": "application/json+adaptive-card",
+      "screenshots": [
+        {
+          "src": "icon-192.png",
+          "sizes": "192x192",
+          "label": "Challenge progress widget"
+        }
+      ],
+      "update": 900
+    },
+    {
+      "name": "Daily Tasks",
+      "short_name": "Tasks",
+      "description": "Today's task completion status",
+      "tag": "daily-tasks",
+      "template": "widget-tasks.json",
+      "data": "widget-data.json",
+      "type": "application/json+adaptive-card",
+      "screenshots": [
+        {
+          "src": "icon-192.png",
+          "sizes": "192x192",
+          "label": "Daily tasks widget"
+        }
+      ],
+      "update": 900
     }
   ]
 }

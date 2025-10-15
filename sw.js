@@ -1,7 +1,7 @@
 // 🌸 Kawaii Quest - Service Worker
 // Obsługuje PWA, cache, i widgety
 
-const CACHE_NAME = 'kawaii-quest-v1';
+const CACHE_NAME = 'kawaii-quest-v2';
 const urlsToCache = [
   '/Motivation-tracker-3/',
   '/Motivation-tracker-3/index.html',
@@ -10,7 +10,13 @@ const urlsToCache = [
   '/Motivation-tracker-3/script.js',
   '/Motivation-tracker-3/firebase-config.js',
   '/Motivation-tracker-3/firebase-sync.js',
-  '/Motivation-tracker-3/icon.svg'
+  '/Motivation-tracker-3/icon.svg',
+  '/Motivation-tracker-3/icon-192.png',
+  '/Motivation-tracker-3/icon-512.png',
+  '/Motivation-tracker-3/manifest.json',
+  '/Motivation-tracker-3/widget-progress.json',
+  '/Motivation-tracker-3/widget-tasks.json',
+  '/Motivation-tracker-3/widget-data.json'
 ];
 
 // Instalacja Service Worker
@@ -84,6 +90,30 @@ self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'UPDATE_WIDGET') {
     console.log('📨 Received widget update request');
     updateWidgetContent(event.data.widgetData);
+    return;
+  }
+
+  // Obsłuż zapytanie o dane widgetu przesłane przez MessageChannel
+  if (event.data && event.data.type === 'GET_WIDGET_DATA') {
+    if (event.ports && event.ports[0]) {
+      caches.open(CACHE_NAME).then(async (cache) => {
+        try {
+          const resp = await cache.match('/Motivation-tracker-3/widget-data.json');
+          if (resp) {
+            const json = await resp.json();
+            event.ports[0].postMessage(json);
+            return;
+          }
+        } catch (e) {
+          console.warn('Błąd odczytu widget-data z cache:', e);
+        }
+        event.ports[0].postMessage(null);
+      });
+    } else if (event.source) {
+      // fallback
+      event.source.postMessage({ type: 'NO_WIDGET_PORT' });
+    }
+    return;
   }
 });
 
@@ -114,14 +144,16 @@ async function updateWidgetContent(widgetData) {
       headers: { 'Content-Type': 'application/json' }
     });
     
-    await cache.put('/Motivation-tracker-3/widget-data.json', widgetDataResponse);
+  await cache.put('widget-data.json', widgetDataResponse);
     
-    console.log('✅ Widget data updated in cache:', widgetData);
-
-    if (self.widgets) {
-      await self.widgets.updateByTag('challenge-progress', { data: widgetData });
-      await self.widgets.updateByTag('daily-tasks', { data: widgetData });
-      console.log('🎨 Widgets refreshed');
+    console.log('✅ Widget data updated in cache:', widgetData);    if (self.widgets && typeof self.widgets.updateByTag === 'function') {
+      try {
+        await self.widgets.updateByTag('challenge-progress', { data: widgetData });
+        await self.widgets.updateByTag('daily-tasks', { data: widgetData });
+        console.log('🎨 Widgets refreshed');
+      } catch (err) {
+        console.warn('Widgets API error:', err);
+      }
     }
   } catch (error) {
     console.error('❌ Error updating widget:', error);

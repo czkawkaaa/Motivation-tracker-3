@@ -102,6 +102,27 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Sprawdź czy jest zaplanowany reset danych
     checkScheduledReset();
+    
+    // Zarejestruj Service Workera dla PWA / widgetów
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/Motivation-tracker-3/sw.js', { scope: '/Motivation-tracker-3/' })
+            .then((reg) => console.log('✅ Service Worker zarejestrowany', reg))
+            .catch((err) => console.error('❌ Rejestracja Service Workera nie powiodła się', err));
+
+        // Odbieraj zapytania od SW o dane widgetu (MessageChannel z portem)
+        navigator.serviceWorker.addEventListener('message', (event) => {
+            try {
+                if (event.data && event.data.type === 'GET_WIDGET_DATA') {
+                    // Jeśli port jest dostarczony przez MessageChannel, odeślij dane
+                    if (event.ports && event.ports[0]) {
+                        event.ports[0].postMessage(gatherWidgetData());
+                    }
+                }
+            } catch (e) {
+                console.error('Błąd w handlerze message od SW:', e);
+            }
+        });
+    }
 });
 
 // ======================
@@ -126,6 +147,57 @@ function saveData() {
     }
     
     checkBadges();
+
+    // Wyślij aktualizację do Service Workera aby odświeżyć widgety
+    try {
+        sendWidgetUpdateToSW();
+    } catch (e) {
+        // Nie blokujemy zapisu jeśli wysyłka widgetu się nie powiedzie
+        console.warn('Nie udało się wysłać aktualizacji widgetu:', e);
+    }
+}
+
+// Przygotowuje obiekt danych dla widgetów na podstawie AppData
+function gatherWidgetData() {
+    const totalDays = (AppData.challenge && (AppData.challenge.totalDays || AppData.settings?.challengeLength)) || 75;
+    const completed = Array.isArray(AppData.challenge?.completedDays) ? AppData.challenge.completedDays.length : (AppData.challenge?.completedDays || 0);
+    const todayKey = getTodayKey();
+    const tasksToday = (AppData.completedTasks && AppData.completedTasks[todayKey]) || [];
+    const tasksTotal = AppData.tasks ? AppData.tasks.length : 0;
+    const tasksCompleted = Array.isArray(tasksToday) ? tasksToday.length : (tasksToday || 0);
+    const percent = totalDays > 0 ? Math.round((completed / totalDays) * 100) : 0;
+
+    return {
+        currentDay: AppData.challenge?.currentDay || 0,
+        totalDays: totalDays,
+        completedDays: completed,
+        currentStreak: AppData.streak || 0,
+        todayCompleted: !!(AppData.challenge && AppData.challenge.completedDays && AppData.challenge.completedDays.includes(todayKey)),
+        progressPercent: percent,
+        tasksToday: {
+            total: tasksTotal,
+            completed: tasksCompleted
+        },
+        lastUpdated: new Date().toISOString()
+    };
+}
+
+// Wyślij aktualizację do aktywnego Service Workera
+function sendWidgetUpdateToSW() {
+    if (!('serviceWorker' in navigator)) return;
+    const data = gatherWidgetData();
+    // PostMessage do aktywnego SW (jeśli jest)
+    navigator.serviceWorker.ready.then((reg) => {
+        if (reg && reg.active) {
+            try {
+                reg.active.postMessage({ type: 'UPDATE_WIDGET', widgetData: data });
+            } catch (e) {
+                console.warn('Nie udało się wysłać postMessage do SW:', e);
+            }
+        }
+    }).catch((e) => {
+        console.warn('navigator.serviceWorker.ready error:', e);
+    });
 }
 
 function getTodayKey() {
