@@ -870,7 +870,7 @@ document.addEventListener('DOMContentLoaded', () => {
 function updateChallengeProgress() {
     const percent = (AppData.challenge.currentDay / AppData.challenge.totalDays) * 100;
     document.getElementById('challengeProgressBar').style.width = percent + '%';
-    document.getElementById('challengePercent').textContent = Math.round(percent) + '%';
+    document.getElementById('challengePercent').textContent = percent.toFixed(1) + '%';
     document.getElementById('challengeDays').textContent = `${AppData.challenge.currentDay}/${AppData.challenge.totalDays} dni`;
 }
 
@@ -1036,7 +1036,7 @@ function updateStepsChart() {
     const offset = circumference - (percent / 100) * circumference;
     circle.style.strokeDashoffset = offset;
     
-    document.getElementById('stepsPercent').textContent = Math.round(percent) + '%';
+    document.getElementById('stepsPercent').textContent = percent.toFixed(1) + '%';
     document.getElementById('stepsLabel').textContent = `${todaySteps.toLocaleString()}/${goal.toLocaleString()}`;
 }
 
@@ -1078,7 +1078,7 @@ function updateStudyChart() {
     const offset = circumference - (percent / 100) * circumference;
     circle.style.strokeDashoffset = offset;
     
-    document.getElementById('studyPercent').textContent = Math.round(percent) + '%';
+    document.getElementById('studyPercent').textContent = percent.toFixed(1) + '%';
     document.getElementById('studyLabel').textContent = `${totalHours.toFixed(1)}/${goal}h`;
 }
 
