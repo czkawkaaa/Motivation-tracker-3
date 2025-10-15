@@ -584,6 +584,17 @@ function updateTasksData() {
         .map((cb, index) => cb.checked ? index : -1)
         .filter(index => index !== -1);
     AppData.completedTasks[getTodayKey()] = completedIndices;
+    
+    // Sprawdź czy wszystkie zadania są ukończone
+    const allCompleted = completedIndices.length === taskCheckboxes.length && taskCheckboxes.length > 0;
+    
+    if (allCompleted) {
+        // Triggeruj confetti gdy wszystkie zadania ukończone!
+        if (typeof window.triggerConfetti === 'function') {
+            window.triggerConfetti();
+        }
+    }
+    
     saveData();
 }
 
@@ -826,7 +837,17 @@ function calculateStreak() {
         }
     }
     
+    const previousStreak = AppData.streak;
     AppData.streak = streak;
+    
+    // Sprawdź milestone (7, 14, 30, 50, 75)
+    const milestones = [7, 14, 30, 50, 75];
+    if (streak > previousStreak && milestones.includes(streak)) {
+        // Triggeruj celebration dla milestone!
+        if (typeof window.celebrateMilestone === 'function') {
+            window.celebrateMilestone(streak);
+        }
+    }
 }
 
 function updateAllDisplays() {
@@ -834,6 +855,32 @@ function updateAllDisplays() {
     updateStreakDisplay();
     updateTodaySteps();
     updateTodayMood();
+    
+    // Dodaj glow effect dla kart z ważnymi osiągnięciami
+    if (typeof window.addCardGlow === 'function' && typeof window.removeCardGlow === 'function') {
+        const challengeCard = document.querySelector('.card-challenge');
+        const streakCard = document.querySelector('.card-streak');
+        
+        // Glow dla challenge card gdy > 50% ukończone
+        const totalDays = AppData.challenge.totalDays || 75;
+        const completedDays = Array.isArray(AppData.challenge.completedDays) 
+            ? AppData.challenge.completedDays.length 
+            : 0;
+        const percent = (completedDays / totalDays) * 100;
+        
+        if (percent > 50 && challengeCard) {
+            window.addCardGlow(challengeCard);
+        } else if (challengeCard) {
+            window.removeCardGlow(challengeCard);
+        }
+        
+        // Glow dla streak card gdy streak >= 7
+        if (AppData.streak >= 7 && streakCard) {
+            window.addCardGlow(streakCard);
+        } else if (streakCard) {
+            window.removeCardGlow(streakCard);
+        }
+    }
     
     // Odśwież też inne elementy UI
     if (typeof renderTasks === 'function') renderTasks();
@@ -943,14 +990,38 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function updateChallengeProgress() {
-    const percent = (AppData.challenge.currentDay / AppData.challenge.totalDays) * 100;
-    document.getElementById('challengeProgressBar').style.width = percent + '%';
+    const totalDays = AppData.challenge.totalDays || AppData.settings.challengeLength || 75;
+    const completedDays = Array.isArray(AppData.challenge.completedDays) 
+        ? AppData.challenge.completedDays.length 
+        : (AppData.challenge.completedDays || 0);
+    
+    const percent = totalDays > 0 ? (completedDays / totalDays) * 100 : 0;
+    
+    const progressBar = document.getElementById('challengeProgressBar');
+    if (progressBar && typeof window.animateProgressBar === 'function') {
+        // Użyj animowanego progress bara
+        window.animateProgressBar(progressBar, percent, 1000);
+    } else {
+        // Fallback bez animacji
+        progressBar.style.width = percent + '%';
+    }
+    
     document.getElementById('challengePercent').textContent = Math.round(percent) + '%';
-    document.getElementById('challengeDays').textContent = `${AppData.challenge.currentDay}/${AppData.challenge.totalDays} dni`;
+    document.getElementById('challengeDays').textContent = `${completedDays}/${totalDays} dni`;
 }
 
 function updateStreakDisplay() {
-    document.getElementById('streakNumber').textContent = AppData.streak;
+    const streakNumber = AppData.streak;
+    const streakElement = document.getElementById('streakNumber');
+    
+    if (streakElement) {
+        streakElement.textContent = streakNumber;
+        
+        // Dodaj animację flame
+        if (typeof window.animateStreakFlame === 'function') {
+            window.animateStreakFlame(streakNumber);
+        }
+    }
 }
 
 function updateTodaySteps() {
