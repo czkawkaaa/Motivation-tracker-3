@@ -1508,10 +1508,16 @@ function initSettings() {
     
     // Reset button
     const resetAllBtn = document.getElementById('resetAllBtn');
-    resetAllBtn.addEventListener('click', () => {
+    resetAllBtn.addEventListener('click', async () => {
         playClickSound(); // Dźwięk kliknięcia
         if (confirm('⚠️ Czy na pewno chcesz zresetować cały postęp? Ta akcja jest nieodwracalna!')) {
             if (confirm('🚨 Ostatnie ostrzeżenie! Wszystkie dane zostaną usunięte bezpowrotnie!')) {
+                // Usuń dane z chmury jeśli użytkownik jest zalogowany
+                if (typeof window.deleteCloudData === 'function') {
+                    await window.deleteCloudData();
+                }
+                
+                // Usuń lokalne dane
                 localStorage.clear();
                 location.reload();
             }
