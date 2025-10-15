@@ -909,25 +909,30 @@ function syncChallengeByDates() {
     const start = new Date(AppData.challenge.startDate + 'T00:00:00');
     const today = new Date();
 
-    // Calculate days passed including start day as day 1
+    // Calculate days passed since start (start day = day 0)
     const msPerDay = 24 * 60 * 60 * 1000;
-    const daysPassed = Math.floor((Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()) - Date.UTC(start.getFullYear(), start.getMonth(), start.getDate())) / msPerDay) + 1;
+    const daysPassed = Math.floor((Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()) - Date.UTC(start.getFullYear(), start.getMonth(), start.getDate())) / msPerDay);
 
     // Clamp to totalDays
     const total = AppData.challenge.totalDays || AppData.settings.challengeLength || 75;
-    const newCurrentDay = Math.max(0, Math.min(daysPassed, total));
-
-    // If completedDays doesn't include days up to newCurrentDay, ensure it's consistent
-    // We'll keep completedDays as explicit days the user completed via tasks, but currentDay should reflect calendar progression
-    AppData.challenge.currentDay = newCurrentDay;
+    
+    // IMPORTANT: Only update currentDay if more calendar days have passed than user's progress
+    // This prevents overwriting progress made by completing tasks
+    // User completes tasks -> currentDay increases
+    // Days pass without completing tasks -> currentDay should catch up to calendar
+    const minCurrentDay = Math.max(0, Math.min(daysPassed, total));
+    
+    // Only increase currentDay, never decrease (preserve user's task completion progress)
+    if (minCurrentDay > AppData.challenge.currentDay) {
+        AppData.challenge.currentDay = minCurrentDay;
+        saveData();
+        updateAllDisplays();
+    }
 
     // If challenge finished, trigger completion handler
     if (AppData.challenge.currentDay >= total && !AppData.challenge.completionTime) {
         handleChallengeCompletion();
     }
-
-    saveData();
-    updateAllDisplays();
 }
 
 // Periodic sync: run once every hour to catch day changes while the app is open
