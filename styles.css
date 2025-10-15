@@ -611,6 +611,7 @@ main {
     width: 20px;
     height: 20px;
     cursor: pointer;
+    accent-color: var(--primary-color);
 }
 
 .task-item.completed {
@@ -1798,6 +1799,7 @@ footer p {
     height: 20px;
     margin-right: 0.5rem;
     cursor: pointer;
+    accent-color: var(--primary-color);
 }
 
 .setting-item input[type="range"] {
