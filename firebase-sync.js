@@ -11,6 +11,7 @@ import {
     doc, 
     getDoc, 
     setDoc, 
+    deleteDoc,
     onSnapshot,
     serverTimestamp 
 } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
@@ -224,6 +225,28 @@ async function saveDataToFirestore() {
     }
 }
 
+async function deleteCloudData() {
+    if (!currentUser) {
+        console.log('⚠️ No user logged in, skipping cloud deletion');
+        return;
+    }
+    
+    try {
+        const docRef = doc(db, 'users', currentUser.uid);
+        await deleteDoc(docRef);
+        console.log('🗑️ Cloud data deleted successfully');
+        
+        if (typeof showNotification === 'function') {
+            showNotification('☁️ Dane w chmurze zostały usunięte', 'success');
+        }
+    } catch (error) {
+        console.error('❌ Error deleting cloud data:', error);
+        if (typeof showNotification === 'function') {
+            showNotification('⚠️ Błąd usuwania danych z chmury', 'warning');
+        }
+    }
+}
+
 function setupRealtimeSync() {
     if (!currentUser || unsubscribeSnapshot) return;
     
@@ -267,6 +290,7 @@ function setupRealtimeSync() {
 
 // Eksportuj funkcję dla użycia w app.js
 window.saveDataToFirestore = saveDataToFirestore;
+window.deleteCloudData = deleteCloudData;
 
 // ======================
 // INITIALIZATION
