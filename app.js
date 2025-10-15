@@ -1600,8 +1600,9 @@ function initSettings() {
                     }
                 }
                 
-                // Następnie usuń lokalnie
+                // Następnie usuń lokalnie i ustaw flagę przed reload
                 localStorage.clear();
+                sessionStorage.setItem('deletionReload', 'true');
                 location.reload();
             }
         }

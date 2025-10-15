@@ -358,17 +358,19 @@ async function deleteDataFromFirestore() {
     
     try {
         const docRef = doc(db, 'users', currentUser.uid);
+        const timestamp = Date.now();
         
         // Usuń dokument z Firestore
         await setDoc(docRef, {
             data: null,
-            lastModified: Date.now(),
+            lastModified: timestamp,
             email: currentUser.email,
             deleted: true,
             updatedAt: serverTimestamp()
         });
         
         console.log('🗑️ Dane usunięte z Firestore');
+        console.log('DEBUG: deleteDataFromFirestore -> uid=', currentUser.uid, 'time=', timestamp);
         
         if (typeof showNotification === 'function') {
             showNotification('🗑️ Dane usunięte z chmury', 'success');
