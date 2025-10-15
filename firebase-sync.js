@@ -147,12 +147,21 @@ async function loadDataFromFirestore() {
     if (!currentUser) return;
     
     // Sprawdź czy właśnie usunęliśmy dane (zapobiega pętli)
-    const justDeleted = sessionStorage.getItem('deletionReload');
-    if (justDeleted) {
-        console.log('⚠️ Skipping load after deletion to prevent loop');
-        // Nie usuwamy jeszcze flagi — zostanie usunięta dopiero gdy
-        // realtime sync zobaczy, że dane nie są usunięte (lub po bezpiecznym czasie).
-        return false;
+    const justDeletedTimestamp = sessionStorage.getItem('deletionReload');
+    if (justDeletedTimestamp) {
+        const deletionTime = parseInt(justDeletedTimestamp);
+        const timeSinceDeletion = Date.now() - deletionTime;
+        
+        // Honoruj flagę tylko jeśli usunięcie było w ciągu ostatnich 5 sekund
+        // To zapobiega pętli ale nie blokuje normalnych refreshów
+        if (timeSinceDeletion < 5000) {
+            console.log('⚠️ Skipping load after deletion to prevent loop');
+            return false;
+        } else {
+            // Flaga jest stara, wyczyść ją
+            console.log('⚠️ Clearing old deletionReload flag');
+            sessionStorage.removeItem('deletionReload');
+        }
     }
     
     try {
@@ -299,8 +308,8 @@ function setupRealtimeSync() {
                 // Wyczyść dane lokalne
                 localStorage.clear();
                 
-                // Ustaw flagę że przeładowujemy
-                sessionStorage.setItem('deletionReload', 'true');
+                // Ustaw flagę że przeładowujemy (z timestampem)
+                sessionStorage.setItem('deletionReload', Date.now().toString());
                 
                 if (typeof showNotification === 'function') {
                     showNotification('🗑️ Dane zostały usunięte', 'warning');
