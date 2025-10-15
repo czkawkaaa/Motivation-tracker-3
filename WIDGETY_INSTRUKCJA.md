@@ -41,6 +41,7 @@
 **❌ iOS / Safari**
 - **Brak wsparcia** - iOS nie obsługuje PWA widgets w ogóle
 - Zamiast tego można użyć Web Clips lub Shortcuts (ale to nie są widgety z tej implementacji)
+- **Instrukcja instalacji PWA na iOS:** Zobacz [IOS_PWA_INSTRUKCJA.md](IOS_PWA_INSTRUKCJA.md)
 
 **❌ Desktop (Windows/Mac/Linux)**
 - Ograniczone lub brak wsparcia (zależy od systemu i przeglądarki)

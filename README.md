@@ -5,6 +5,11 @@
 ## 🚀 Demo Online
 **Link do działającej strony:** https://czkawkaaa.github.io/Motivation-tracker-3/
 
+### 📱 Instalacja jako aplikacja
+
+- **Android:** Sprawdź [WIDGETY_INSTRUKCJA.md](WIDGETY_INSTRUKCJA.md) - pełna instrukcja instalacji PWA z widgetami
+- **iOS (iPhone/iPad):** Sprawdź [IOS_PWA_INSTRUKCJA.md](IOS_PWA_INSTRUKCJA.md) - instrukcja instalacji przez Safari
+
 ---
 
 ## ✨ Funkcje
@@ -44,6 +49,25 @@
 - Konfiguracja wyzwania (długość, cele)
 - Ustawienie dni odpoczynku
 - **Eksport danych do HTML/PDF**
+
+### 📱 PWA (Progressive Web App)
+- **Instalacja na ekranie głównym** (iOS i Android)
+- **Tryb offline** - działa bez internetu
+- **Synchronizacja w chmurze** - dane dostępne na wszystkich urządzeniach
+- **Widgety** (tylko Android 12+) - postęp wyzwania na ekranie głównym
+- **Automatyczne aktualizacje** - zawsze najnowsza wersja
+
+---
+
+## 📱 Wsparcie platformowe
+
+| Funkcja | iOS | Android | Desktop |
+|---------|-----|---------|---------|
+| Instalacja PWA | ✅ Safari | ✅ Chrome | ✅ Chrome/Edge |
+| Praca offline | ✅ | ✅ | ✅ |
+| Synchronizacja | ✅ | ✅ | ✅ |
+| Widgety PWA | ❌ | ✅ (12+) | ❌ |
+| Push Notifications | ⚠️ | ✅ | ✅ |
 
 ### 🎯 Ukończenie Wyzwania
 - Po ukończeniu 75 dni: modal gratulacyjny z licznikiem
