@@ -1,0 +1,98 @@
+{
+  "type": "AdaptiveCard",
+  "version": "1.5",
+  "body": [
+    {
+      "type": "Container",
+      "style": "emphasis",
+      "items": [
+        {
+          "type": "TextBlock",
+          "text": "🌸 Kawaii Quest",
+          "weight": "bolder",
+          "size": "large"
+        },
+        {
+          "type": "TextBlock",
+          "text": "75-dniowe wyzwanie",
+          "size": "small",
+          "color": "accent",
+          "spacing": "none"
+        }
+      ]
+    },
+    {
+      "type": "Container",
+      "spacing": "medium",
+      "items": [
+        {
+          "type": "TextBlock",
+          "text": "Dzień ${currentDay} z ${totalDays}",
+          "weight": "bolder",
+          "size": "large",
+          "horizontalAlignment": "center"
+        },
+        {
+          "type": "TextBlock",
+          "text": "${progressPercent}% ukończone",
+          "horizontalAlignment": "center",
+          "size": "medium",
+          "spacing": "small"
+        },
+        {
+          "type": "ColumnSet",
+          "spacing": "medium",
+          "columns": [
+            {
+              "type": "Column",
+              "width": "stretch",
+              "items": [
+                {
+                  "type": "TextBlock",
+                  "text": "🔥 ${currentStreak}",
+                  "horizontalAlignment": "center",
+                  "size": "large",
+                  "weight": "bolder"
+                },
+                {
+                  "type": "TextBlock",
+                  "text": "Passa",
+                  "horizontalAlignment": "center",
+                  "size": "small",
+                  "color": "accent"
+                }
+              ]
+            },
+            {
+              "type": "Column",
+              "width": "stretch",
+              "items": [
+                {
+                  "type": "TextBlock",
+                  "text": "✅ ${completedDays}",
+                  "horizontalAlignment": "center",
+                  "size": "large",
+                  "weight": "bolder"
+                },
+                {
+                  "type": "TextBlock",
+                  "text": "Ukończone",
+                  "horizontalAlignment": "center",
+                  "size": "small",
+                  "color": "accent"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "actions": [
+    {
+      "type": "Action.OpenUrl",
+      "title": "Otwórz aplikację",
+      "url": "/Motivation-tracker-3/"
+    }
+  ]
+}
