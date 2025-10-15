@@ -26,5 +26,25 @@
       "type": "image/png",
       "purpose": "any maskable"
     }
+  ],
+  "widgets": [
+    {
+      "name": "Challenge Progress",
+      "short_name": "Progress",
+      "description": "Wyświetla pasek postępu wyzwania 75-dniowego",
+      "tag": "challenge-progress",
+      "template": "challenge-progress-template",
+      "ms_ac_template": "widget-template.json",
+      "data": "widget-data.json",
+      "type": "application/json",
+      "screenshots": [
+        {
+          "src": "icon-192.png",
+          "sizes": "192x192",
+          "label": "Widget postępu wyzwania"
+        }
+      ],
+      "update": 3600
+    }
   ]
 }

@@ -99,6 +99,17 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Sprawdź czy jest zaplanowany reset danych
     checkScheduledReset();
+    
+    // Register service worker for PWA and widgets
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/Motivation-tracker-3/service-worker.js')
+            .then((registration) => {
+                console.log('Service Worker registered:', registration);
+            })
+            .catch((error) => {
+                console.log('Service Worker registration failed:', error);
+            });
+    }
 });
 
 // ======================
@@ -872,6 +883,33 @@ function updateChallengeProgress() {
     document.getElementById('challengeProgressBar').style.width = percent + '%';
     document.getElementById('challengePercent').textContent = Math.round(percent) + '%';
     document.getElementById('challengeDays').textContent = `${AppData.challenge.currentDay}/${AppData.challenge.totalDays} dni`;
+    
+    // Update widget data for PWA widgets
+    updateWidgetData(AppData.challenge.currentDay, AppData.challenge.totalDays, percent);
+}
+
+function updateWidgetData(currentDay, totalDays, percent) {
+    // Update widget data file for PWA widgets
+    const widgetData = {
+        challengeDays: `${currentDay}/${totalDays} dni`,
+        progressValue: Math.min(percent / 100, 1), // 0-1 range for progress bar
+        progressPercent: Math.round(percent) + '%'
+    };
+    
+    // Store widget data in localStorage for service worker access
+    try {
+        localStorage.setItem('widgetData', JSON.stringify(widgetData));
+        
+        // Update service worker cache if available
+        if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+            navigator.serviceWorker.controller.postMessage({
+                type: 'UPDATE_WIDGET',
+                data: widgetData
+            });
+        }
+    } catch (e) {
+        console.error('Failed to update widget data:', e);
+    }
 }
 
 function updateStreakDisplay() {

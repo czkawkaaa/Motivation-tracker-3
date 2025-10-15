@@ -1,0 +1,45 @@
+{
+  "type": "AdaptiveCard",
+  "version": "1.5",
+  "body": [
+    {
+      "type": "TextBlock",
+      "text": "🎯 Wyzwanie",
+      "size": "medium",
+      "weight": "bolder",
+      "color": "accent"
+    },
+    {
+      "type": "TextBlock",
+      "text": "${challengeDays}",
+      "size": "default",
+      "spacing": "small"
+    },
+    {
+      "type": "Container",
+      "items": [
+        {
+          "type": "ProgressBar",
+          "value": "${progressValue}",
+          "valueColor": "accent"
+        }
+      ],
+      "spacing": "small"
+    },
+    {
+      "type": "TextBlock",
+      "text": "${progressPercent}",
+      "size": "large",
+      "weight": "bolder",
+      "horizontalAlignment": "center",
+      "color": "accent"
+    }
+  ],
+  "actions": [
+    {
+      "type": "Action.OpenUrl",
+      "title": "Otwórz aplikację",
+      "url": "/Motivation-tracker-3/"
+    }
+  ]
+}
