@@ -102,17 +102,17 @@ function onUserLogin(user) {
     if (userName) userName.textContent = user.displayName || user.email;
     if (userPhoto) userPhoto.src = user.photoURL || 'https://via.placeholder.com/36';
     
-    // Załaduj dane z Firestore. Jeśli ładowanie zostało pominięte z powodu
-    // niedawnego usunięcia (flaga deletionReload), nie zakładaj nasłuchu realtime
-    // — to zapobiega pętli przeładowań/logowania.
+    // Załaduj dane z Firestore i zawsze ustaw realtime sync
     (async () => {
         try {
             const loaded = await loadDataFromFirestore();
-            if (loaded) {
-                // Nasłuchuj zmian w czasie rzeczywistym tylko gdy załadowaliśmy dane
-                setupRealtimeSync();
-            } else {
-                console.log('⚠️ Skipping realtime sync because load was skipped (recent deletion)');
+            // Zawsze ustaw realtime sync, nawet jeśli dane nie zostały załadowane
+            // (np. z powodu niedawnego usunięcia). Realtime sync wyczyści flagę
+            // deletionReload gdy zobaczy że dane są OK.
+            setupRealtimeSync();
+            
+            if (!loaded) {
+                console.log('⚠️ Data load was skipped (recent deletion), but realtime sync is active');
             }
         } catch (err) {
             console.error('❌ Error during initial cloud load:', err);
@@ -147,12 +147,40 @@ async function loadDataFromFirestore() {
     if (!currentUser) return;
     
     // Sprawdź czy właśnie usunęliśmy dane (zapobiega pętli)
-    const justDeleted = sessionStorage.getItem('deletionReload');
-    if (justDeleted) {
-        console.log('⚠️ Skipping load after deletion to prevent loop');
-        // Nie usuwamy jeszcze flagi — zostanie usunięta dopiero gdy
-        // realtime sync zobaczy, że dane nie są usunięte (lub po bezpiecznym czasie).
-        return false;
+    const deletionReloadFlag = sessionStorage.getItem('deletionReload');
+    if (deletionReloadFlag) {
+        // Sprawdź czy flaga nie jest zbyt stara (maksymalnie 30 sekund)
+        const deletionTimestamp = sessionStorage.getItem('deletionReloadTimestamp');
+        const now = Date.now();
+        
+        if (deletionTimestamp) {
+            const timeSinceReload = now - parseInt(deletionTimestamp);
+            
+            // Jeśli minęło więcej niż 30 sekund, usuń flagę i kontynuuj normalnie
+            if (timeSinceReload > 30000) {
+                console.log('⚠️ Deletion flag expired (>30s), clearing and loading normally');
+                sessionStorage.removeItem('deletionReload');
+                sessionStorage.removeItem('deletionReloadTimestamp');
+                // Kontynuuj normalne ładowanie poniżej
+            } else {
+                // Flaga jest świeża, pomiń ładowanie
+                console.log('⚠️ Skipping load after deletion to prevent loop (age: ' + timeSinceReload + 'ms)');
+                
+                // Ustaw timeout aby usunąć flagę po 30 sekundach
+                setTimeout(() => {
+                    sessionStorage.removeItem('deletionReload');
+                    sessionStorage.removeItem('deletionReloadTimestamp');
+                    console.log('✓ Deletion flag cleared after timeout');
+                }, 30000 - timeSinceReload);
+                
+                return false;
+            }
+        } else {
+            // Brak timestampu - stara wersja flagi, usuń ją
+            console.log('⚠️ Old deletion flag found without timestamp, clearing');
+            sessionStorage.removeItem('deletionReload');
+            // Kontynuuj normalne ładowanie poniżej
+        }
     }
     
     try {
@@ -277,17 +305,42 @@ function setupRealtimeSync() {
             if (cloudData.deleted === true || cloudData.data === null) {
                 console.log('🗑️ Dane zostały usunięte w chmurze - czyszczę lokalnie');
                 
-                // Sprawdź czy już przeładowaliśmy z powodu usunięcia
+                // Sprawdź czy już przeładowaliśmy z powodu usunięcia (z timestampem)
                 const alreadyReloaded = sessionStorage.getItem('deletionReload');
+                const deletionTimestamp = sessionStorage.getItem('deletionReloadTimestamp');
+                
                 if (alreadyReloaded) {
-                    console.log('⚠️ Already reloaded for deletion, skipping...');
-                    console.log('DEBUG: onSnapshot skip. session deletionReload=', alreadyReloaded);
-                    // Wyłącz listener żeby zapobiec dalszym przeładowaniom
-                    if (unsubscribeSnapshot) {
-                        unsubscribeSnapshot();
-                        unsubscribeSnapshot = null;
+                    // Sprawdź wiek flagi
+                    if (deletionTimestamp) {
+                        const timeSinceReload = Date.now() - parseInt(deletionTimestamp);
+                        
+                        // Jeśli minęło więcej niż 30 sekund od usunięcia, pozwól na kolejne działania
+                        if (timeSinceReload > 30000) {
+                            console.log('⚠️ Deletion flag expired, clearing flags');
+                            sessionStorage.removeItem('deletionReload');
+                            sessionStorage.removeItem('deletionReloadTimestamp');
+                            // Pozwól na dalsze przetwarzanie usunięcia
+                        } else {
+                            console.log('⚠️ Already reloaded for deletion, skipping... (age: ' + timeSinceReload + 'ms)');
+                            console.log('DEBUG: onSnapshot skip. session deletionReload=', alreadyReloaded);
+                            // Wyłącz listener żeby zapobiec dalszym przeładowaniom
+                            if (unsubscribeSnapshot) {
+                                unsubscribeSnapshot();
+                                unsubscribeSnapshot = null;
+                            }
+                            return;
+                        }
+                    } else {
+                        // Stara flaga bez timestampu, zachowaj poprzednie zachowanie
+                        console.log('⚠️ Already reloaded for deletion, skipping...');
+                        console.log('DEBUG: onSnapshot skip. session deletionReload=', alreadyReloaded);
+                        // Wyłącz listener żeby zapobiec dalszym przeładowaniom
+                        if (unsubscribeSnapshot) {
+                            unsubscribeSnapshot();
+                            unsubscribeSnapshot = null;
+                        }
+                        return;
                     }
-                    return;
                 }
                 
                 // Wyłącz listener żeby zapobiec pętli
@@ -299,8 +352,9 @@ function setupRealtimeSync() {
                 // Wyczyść dane lokalne
                 localStorage.clear();
                 
-                // Ustaw flagę że przeładowujemy
+                // Ustaw flagę że przeładowujemy wraz z timestampem
                 sessionStorage.setItem('deletionReload', 'true');
+                sessionStorage.setItem('deletionReloadTimestamp', Date.now().toString());
                 
                 if (typeof showNotification === 'function') {
                     showNotification('🗑️ Dane zostały usunięte', 'warning');
@@ -317,6 +371,7 @@ function setupRealtimeSync() {
             
             // Wyczyść flagę deletionReload jeśli dane są OK
             sessionStorage.removeItem('deletionReload');
+            sessionStorage.removeItem('deletionReloadTimestamp');
             
             // Sprawdź czy zmiana nie pochodzi z tego urządzenia
             if (typeof AppData !== 'undefined') {
