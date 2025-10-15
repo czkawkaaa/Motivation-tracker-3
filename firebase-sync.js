@@ -11,6 +11,7 @@ import {
     doc, 
     getDoc, 
     setDoc, 
+    deleteDoc,
     onSnapshot,
     serverTimestamp 
 } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
@@ -102,18 +103,11 @@ function onUserLogin(user) {
     if (userName) userName.textContent = user.displayName || user.email;
     if (userPhoto) userPhoto.src = user.photoURL || 'https://via.placeholder.com/36';
     
-    // Załaduj dane z Firestore. Jeśli ładowanie zostało pominięte z powodu
-    // niedawnego usunięcia (flaga deletionReload), nie zakładaj nasłuchu realtime
-    // — to zapobiega pętli przeładowań/logowania.
+    // Załaduj dane z Firestore i uruchom realtime sync
     (async () => {
         try {
-            const loaded = await loadDataFromFirestore();
-            if (loaded) {
-                // Nasłuchuj zmian w czasie rzeczywistym tylko gdy załadowaliśmy dane
-                setupRealtimeSync();
-            } else {
-                console.log('⚠️ Skipping realtime sync because load was skipped (recent deletion)');
-            }
+            await loadDataFromFirestore();
+            setupRealtimeSync();
         } catch (err) {
             console.error('❌ Error during initial cloud load:', err);
             // Wciąż próbuj ustawić realtime sync jako fallback
@@ -144,16 +138,7 @@ function onUserLogout() {
 // ======================
 
 async function loadDataFromFirestore() {
-    if (!currentUser) return;
-    
-    // Sprawdź czy właśnie usunęliśmy dane (zapobiega pętli)
-    const justDeleted = sessionStorage.getItem('deletionReload');
-    if (justDeleted) {
-        console.log('⚠️ Skipping load after deletion to prevent loop');
-        // Nie usuwamy jeszcze flagi — zostanie usunięta dopiero gdy
-        // realtime sync zobaczy, że dane nie są usunięte (lub po bezpiecznym czasie).
-        return false;
-    }
+    if (!currentUser) return false;
     
     try {
         const docRef = doc(db, 'users', currentUser.uid);
@@ -162,17 +147,6 @@ async function loadDataFromFirestore() {
         if (docSnap.exists()) {
             const cloudData = docSnap.data();
             console.log('☁️ Loaded data from cloud:', cloudData);
-            
-            // Sprawdź czy dane nie zostały usunięte
-            if (cloudData.deleted === true || cloudData.data === null) {
-                console.log('🗑️ Dane zostały usunięte w chmurze - czyszczę lokalnie');
-                localStorage.removeItem('kawaiiQuestData');
-                if (typeof showNotification === 'function') {
-                    showNotification('🗑️ Dane zostały usunięte', 'info');
-                }
-                // Zwróć false żeby caller wiedział, że pominięto ładowanie
-                return false;
-            }
             
             // Merge z lokalnymi danymi (na wypadek offline changes)
             const localData = localStorage.getItem('kawaiiQuestData');
@@ -183,7 +157,7 @@ async function loadDataFromFirestore() {
                     if (local.lastModified > cloudData.lastModified) {
                         console.log('📱 Local data is newer, syncing to cloud...');
                         await saveDataToFirestore();
-                        return;
+                        return true;
                     }
                 }
             }
@@ -273,51 +247,6 @@ function setupRealtimeSync() {
             console.log('🔄 Realtime update received from Firestore');
             console.log('Cloud lastModified:', cloudData.lastModified);
             
-            // Sprawdź czy dane zostały usunięte
-            if (cloudData.deleted === true || cloudData.data === null) {
-                console.log('🗑️ Dane zostały usunięte w chmurze - czyszczę lokalnie');
-                
-                // Sprawdź czy już przeładowaliśmy z powodu usunięcia
-                const alreadyReloaded = sessionStorage.getItem('deletionReload');
-                if (alreadyReloaded) {
-                    console.log('⚠️ Already reloaded for deletion, skipping...');
-                    console.log('DEBUG: onSnapshot skip. session deletionReload=', alreadyReloaded);
-                    // Wyłącz listener żeby zapobiec dalszym przeładowaniom
-                    if (unsubscribeSnapshot) {
-                        unsubscribeSnapshot();
-                        unsubscribeSnapshot = null;
-                    }
-                    return;
-                }
-                
-                // Wyłącz listener żeby zapobiec pętli
-                if (unsubscribeSnapshot) {
-                    unsubscribeSnapshot();
-                    unsubscribeSnapshot = null;
-                }
-                
-                // Wyczyść dane lokalne
-                localStorage.clear();
-                
-                // Ustaw flagę że przeładowujemy
-                sessionStorage.setItem('deletionReload', 'true');
-                
-                if (typeof showNotification === 'function') {
-                    showNotification('🗑️ Dane zostały usunięte', 'warning');
-                }
-                console.log('DEBUG: onSnapshot detected deletion. scheduling reload. uid=', currentUser && currentUser.uid);
-                
-                // Jednorazowe przeładowanie strony
-                setTimeout(() => {
-                    location.reload();
-                }, 1000);
-                
-                return;
-            }
-            
-            // Wyczyść flagę deletionReload jeśli dane są OK
-            sessionStorage.removeItem('deletionReload');
-            
             // Sprawdź czy zmiana nie pochodzi z tego urządzenia
             if (typeof AppData !== 'undefined') {
                 console.log('Local lastModified:', AppData.lastModified);
@@ -340,6 +269,10 @@ function setupRealtimeSync() {
                     console.log('✓ Local data is up to date');
                 }
             }
+        } else {
+            // Dokument nie istnieje - został usunięty
+            console.log('📭 Document deleted from cloud');
+            // Nie rób nic - użytkownik właśnie usunął dane przez przycisk w ustawieniach
         }
     }, (error) => {
         console.error('❌ Realtime sync error:', error);
@@ -359,16 +292,10 @@ async function deleteDataFromFirestore() {
     try {
         const docRef = doc(db, 'users', currentUser.uid);
         
-        // Usuń dokument z Firestore
-        await setDoc(docRef, {
-            data: null,
-            lastModified: Date.now(),
-            email: currentUser.email,
-            deleted: true,
-            updatedAt: serverTimestamp()
-        });
+        // CAŁKOWICIE usuń dokument z Firestore (nie tylko oznacz jako deleted)
+        await deleteDoc(docRef);
         
-        console.log('🗑️ Dane usunięte z Firestore');
+        console.log('🗑️ Dokument całkowicie usunięty z Firestore');
         
         if (typeof showNotification === 'function') {
             showNotification('🗑️ Dane usunięte z chmury', 'success');
