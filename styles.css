@@ -82,6 +82,84 @@
     --calendar-completed-check: #880e4f;
 }
 
+.theme-yellow {
+    --primary-color: #ffd54f;
+    --bg-gradient-start: #fffef7;
+    --bg-gradient-end: #fffaeb;
+    --card-bg: #ffffff;
+    --text-primary: #222222;
+    --text-secondary: #666666;
+    --progress-bg: #fff9e0;
+    --calendar-completed-bg: #fff9c4;
+    --calendar-completed-text: #f57f17;
+    --calendar-completed-check: #e65100;
+}
+
+.theme-orange {
+    --primary-color: #ff9800;
+    --bg-gradient-start: #fff8f0;
+    --bg-gradient-end: #ffefe0;
+    --card-bg: #ffffff;
+    --text-primary: #222222;
+    --text-secondary: #666666;
+    --progress-bg: #ffe8cc;
+    --calendar-completed-bg: #ffcc80;
+    --calendar-completed-text: #e65100;
+    --calendar-completed-check: #bf360c;
+}
+
+.theme-red {
+    --primary-color: #ef5350;
+    --bg-gradient-start: #fff5f5;
+    --bg-gradient-end: #ffebee;
+    --card-bg: #ffffff;
+    --text-primary: #222222;
+    --text-secondary: #666666;
+    --progress-bg: #ffcdd2;
+    --calendar-completed-bg: #ef9a9a;
+    --calendar-completed-text: #c62828;
+    --calendar-completed-check: #b71c1c;
+}
+
+.theme-blue {
+    --primary-color: #42a5f5;
+    --bg-gradient-start: #f0f8ff;
+    --bg-gradient-end: #e3f2fd;
+    --card-bg: #ffffff;
+    --text-primary: #222222;
+    --text-secondary: #666666;
+    --progress-bg: #bbdefb;
+    --calendar-completed-bg: #90caf9;
+    --calendar-completed-text: #1565c0;
+    --calendar-completed-check: #0d47a1;
+}
+
+.theme-purple {
+    --primary-color: #ab47bc;
+    --bg-gradient-start: #faf5ff;
+    --bg-gradient-end: #f3e5f5;
+    --card-bg: #ffffff;
+    --text-primary: #222222;
+    --text-secondary: #666666;
+    --progress-bg: #e1bee7;
+    --calendar-completed-bg: #ce93d8;
+    --calendar-completed-text: #6a1b9a;
+    --calendar-completed-check: #4a148c;
+}
+
+.theme-black {
+    --primary-color: #424242;
+    --bg-gradient-start: #1a1a1a;
+    --bg-gradient-end: #2c2c2c;
+    --card-bg: #2d2d2d;
+    --text-primary: #e0e0e0;
+    --text-secondary: #b0b0b0;
+    --progress-bg: #424242;
+    --calendar-completed-bg: #616161;
+    --calendar-completed-text: #ffc107;
+    --calendar-completed-check: #ffeb3b;
+}
+
 /* Podstawowe style body */
 body {
     font-family: var(--font-family);
@@ -243,41 +321,6 @@ body {
 .nav-link.active {
     background: rgba(255, 255, 255, 0.4);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-}
-
-/* Theme Selector */
-.theme-selector {
-    display: flex;
-    justify-content: center;
-    gap: 0.8rem;
-    max-width: 1200px;
-    margin: 0 auto;
-}
-
-.theme-btn {
-    width: 45px;
-    height: 45px;
-    border: none;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.2);
-    backdrop-filter: blur(10px);
-    font-size: 1.3rem;
-    cursor: pointer;
-    transition: var(--transition);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.theme-btn:hover {
-    transform: translateY(-2px);
-    background: rgba(255, 255, 255, 0.3);
-}
-
-.theme-btn.active {
-    background: rgba(255, 255, 255, 0.4);
-    transform: scale(1.1);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
 /* Main content */
@@ -1959,18 +2002,6 @@ footer p {
         color: white;
     }
     
-    /* Theme selector */
-    .theme-selector {
-        flex-wrap: wrap;
-        justify-content: center;
-    }
-    
-    .theme-btn {
-        width: 40px;
-        height: 40px;
-        font-size: 1.1rem;
-    }
-    
     /* Main content */
     main {
         padding: 0 0.5rem 3rem;
@@ -2443,7 +2474,6 @@ footer p {
 @media print {
     .app-header,
     .hamburger-btn,
-    .theme-selector,
     .btn-primary,
     .btn-secondary,
     .btn-danger,

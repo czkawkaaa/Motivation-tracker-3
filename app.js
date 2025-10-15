@@ -274,30 +274,27 @@ function switchView(viewName) {
 // THEME SYSTEM
 // ======================
 function initThemeSystem() {
-    const themeButtons = document.querySelectorAll('.theme-btn');
-    
-    themeButtons.forEach(button => {
-        button.addEventListener('click', () => {
-            playClickSound(); // Dźwięk kliknięcia
-            const theme = button.dataset.theme;
-            setTheme(theme);
-            AppData.settings.theme = theme;
-            saveData();
-        });
-    });
+    // Usunięto obsługę przycisków z headera - motywy tylko w ustawieniach
 }
 
 function setTheme(themeName) {
     const body = document.body;
-    const themeClasses = ['theme-pink', 'theme-ocean', 'theme-mint', 'theme-lavender', 'theme-strawberry'];
+    const themeClasses = [
+        'theme-pink', 
+        'theme-ocean', 
+        'theme-mint', 
+        'theme-lavender', 
+        'theme-strawberry',
+        'theme-yellow',
+        'theme-orange',
+        'theme-red',
+        'theme-blue',
+        'theme-purple',
+        'theme-black'
+    ];
     
     themeClasses.forEach(cls => body.classList.remove(cls));
     body.classList.add(`theme-${themeName}`);
-    
-    const themeButtons = document.querySelectorAll('.theme-btn');
-    themeButtons.forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.theme === themeName);
-    });
 }
 
 // ======================
