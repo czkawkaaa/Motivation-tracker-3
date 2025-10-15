@@ -77,3 +77,6 @@
 
 ## 💖 Made with Love
 Stworzone z 💖 przez Wiktorię Radomską
+
+## Copilot coding agent
+Jeżeli w repo pojawi się automatyczny agend Copilot, zobacz `COPILOT_ONBOARDING.md` z zasadami pracy agenta, listą plików, których agent nie powinien modyfikować bez zgody oraz przykładowym workflow PR.
