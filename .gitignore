@@ -16,3 +16,7 @@ Thumbs.db
 # IDE
 .vscode/
 .idea/
+
+# Local environment and generated Firebase config
+.env
+firebase-config.local.js

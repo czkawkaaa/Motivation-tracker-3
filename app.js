@@ -132,25 +132,68 @@ document.addEventListener('DOMContentLoaded', function() {
 function loadData() {
     const saved = localStorage.getItem('kawaiiQuestData');
     if (saved) {
-        const data = JSON.parse(saved);
-        Object.assign(AppData, data);
+        try {
+            const data = JSON.parse(saved);
+            
+            // Zabezpieczenie: nie ładuj pustych danych
+            const hasData = data.challenge || 
+                           data.steps || 
+                           data.tasks || 
+                           data.completedTasks;
+            
+            if (hasData) {
+                Object.assign(AppData, data);
+                console.log('📱 Loaded data from localStorage');
+            } else {
+                console.warn('⚠️ localStorage contains empty data - using defaults');
+            }
+        } catch (e) {
+            console.error('❌ Error parsing localStorage data:', e);
+        }
         
         // CZYSZCZENIE: Usuń zaplanowany reset jeśli istnieje (nie używamy już tej funkcji)
         if (AppData.challenge && AppData.challenge.resetScheduled) {
             delete AppData.challenge.resetScheduled;
             console.log('🧹 Wyczyszczono zaplanowany reset (feature wyłączony)');
         }
+    } else {
+        console.log('💾 No saved data found - using defaults');
     }
     applySettings();
 }
 
 function saveData() {
+    // ZAWSZE ustaw timestamp PRZED zapisem
     AppData.lastModified = Date.now();
-    localStorage.setItem('kawaiiQuestData', JSON.stringify(AppData));
     
-    // Synchronizuj z Firebase jeśli dostępne
-    if (typeof window.saveDataToFirestore === 'function') {
-        window.saveDataToFirestore();
+    // Zabezpieczenie: sprawdź czy AppData nie jest pusty
+    const hasData = AppData.challenge || 
+                   AppData.steps || 
+                   AppData.tasks || 
+                   AppData.completedTasks;
+    
+    if (!hasData) {
+        console.warn('⚠️ Próba zapisania pustych danych - pominięto');
+        return;
+    }
+    
+    // Zapisz lokalnie NAJPIERW (najpewniejsze)
+    try {
+        localStorage.setItem('kawaiiQuestData', JSON.stringify(AppData));
+    } catch (e) {
+        console.error('❌ Błąd zapisu do localStorage:', e);
+    }
+    
+    // Synchronizuj z Firebase (jeśli dostępne) - nie blokuj jeśli błąd
+    try {
+        if (typeof window.saveDataToFirestore === 'function') {
+            window.saveDataToFirestore().catch(err => {
+                console.warn('⚠️ Firebase sync failed (offline?)', err);
+                // Nie przeszkadzaj użytkownikowi - dane są bezpieczne w localStorage
+            });
+        }
+    } catch (e) {
+        console.warn('⚠️ Firebase sync error:', e);
     }
     
     checkBadges();

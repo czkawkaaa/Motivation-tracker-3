@@ -186,17 +186,27 @@ async function loadDataFromFirestore() {
                     if (local.lastModified > cloudData.lastModified) {
                         console.log('📱 Local data is newer, syncing to cloud...');
                         await saveDataToFirestore();
-                        return;
+                        return true;
                     }
                 }
             }
             
-            // Załaduj dane z chmury
+            // Załaduj dane z chmury TYLKO jeśli nie są puste
             if (typeof AppData !== 'undefined' && cloudData.data) {
-                Object.assign(AppData, cloudData.data);
-                localStorage.setItem('kawaiiQuestData', JSON.stringify(AppData));
-                if (typeof updateAllDisplays === 'function') {
-                    updateAllDisplays();
+                // Zabezpieczenie: sprawdź czy dane z chmury nie są puste
+                const hasData = cloudData.data.challenge || 
+                               cloudData.data.steps || 
+                               cloudData.data.tasks || 
+                               cloudData.data.completedTasks;
+                
+                if (hasData) {
+                    Object.assign(AppData, cloudData.data);
+                    localStorage.setItem('kawaiiQuestData', JSON.stringify(AppData));
+                    if (typeof updateAllDisplays === 'function') {
+                        updateAllDisplays();
+                    }
+                } else {
+                    console.log('⚠️ Cloud data is empty, keeping local data');
                 }
             }
             
@@ -224,8 +234,25 @@ async function saveDataToFirestore() {
     if (!currentUser) {
         // Nie ma użytkownika - zapisz tylko lokalnie
         if (typeof AppData !== 'undefined') {
+            AppData.lastModified = Date.now();
             localStorage.setItem('kawaiiQuestData', JSON.stringify(AppData));
         }
+        return;
+    }
+    
+    // Zabezpieczenie: nie zapisuj pustych danych
+    if (typeof AppData === 'undefined') {
+        console.warn('⚠️ AppData is undefined - skipping Firebase save');
+        return;
+    }
+    
+    const hasData = AppData.challenge || 
+                   AppData.steps || 
+                   AppData.tasks || 
+                   AppData.completedTasks;
+    
+    if (!hasData) {
+        console.warn('⚠️ AppData is empty - skipping Firebase save to prevent data loss');
         return;
     }
     
@@ -253,6 +280,7 @@ async function saveDataToFirestore() {
         
         // Fallback do localStorage jeśli cloud nie działa
         if (typeof AppData !== 'undefined') {
+            AppData.lastModified = Date.now();
             localStorage.setItem('kawaiiQuestData', JSON.stringify(AppData));
         }
         
@@ -331,10 +359,36 @@ function setupRealtimeSync() {
                 if (cloudData.lastModified && cloudData.lastModified > (AppData.lastModified || 0)) {
                     console.log('🔄 Cloud data is newer, updating local...');
                     if (cloudData.data) {
-                        Object.assign(AppData, cloudData.data);
-                        localStorage.setItem('kawaiiQuestData', JSON.stringify(AppData));
-                        if (typeof updateAllDisplays === 'function') {
-                            updateAllDisplays();
+                        // Zabezpieczenie: sprawdź czy dane z chmury nie są puste
+                        const hasData = cloudData.data.challenge || 
+                                       cloudData.data.steps || 
+                                       cloudData.data.tasks || 
+                                       cloudData.data.completedTasks;
+                        
+                        if (hasData) {
+                            // Inteligentne mergowanie - zachowaj lokalne dane jeśli chmura jest pusta
+                            const mergedData = {
+                                challenge: cloudData.data.challenge || AppData.challenge,
+                                steps: cloudData.data.steps || AppData.steps,
+                                completedTasks: cloudData.data.completedTasks || AppData.completedTasks,
+                                tasks: cloudData.data.tasks || AppData.tasks,
+                                // Reszta pól
+                                streak: cloudData.data.streak ?? AppData.streak,
+                                mood: cloudData.data.mood || AppData.mood,
+                                studyHours: cloudData.data.studyHours || AppData.studyHours,
+                                gallery: cloudData.data.gallery || AppData.gallery,
+                                badges: cloudData.data.badges || AppData.badges,
+                                settings: cloudData.data.settings || AppData.settings,
+                                lastModified: cloudData.lastModified
+                            };
+                            
+                            Object.assign(AppData, mergedData);
+                            localStorage.setItem('kawaiiQuestData', JSON.stringify(AppData));
+                            if (typeof updateAllDisplays === 'function') {
+                                updateAllDisplays();
+                            }
+                        } else {
+                            console.log('⚠️ Cloud data is empty, keeping local data');
                         }
                         
                         // USUNIĘTE: Powiadomienie o synchronizacji (irytujące)
