@@ -220,6 +220,9 @@ async function loadDataFromFirestore() {
         return false;
     }
     
+    // Sprawdź czy już poinformowaliśmy użytkownika o usunięciu w chmurze — jeśli tak, pomiń dalsze ostrzeżenia
+    const alreadyNotifiedDeletion = sessionStorage.getItem('cloudDeletionPending');
+    
     try {
         const docRef = doc(db, 'users', currentUser.uid);
         const docSnap = await getDoc(docRef);
@@ -230,7 +233,7 @@ async function loadDataFromFirestore() {
             
             // Sprawdź czy dane nie zostały usunięte
             if (cloudData.deleted === true || cloudData.data === null) {
-                console.log('🗑️ Dane zostały usunięte w chmurze - robię backup lokalnych danych i powiadamiam użytkownika');
+                console.log('🗑️ Dane zostały usunięte w chmurze - robię backup lokalnych danych');
                 try {
                     // Zachowaj kopię lokalnych danych przed ewentualnym czyszczeniem
                     const prev = localStorage.getItem('kawaiiQuestData');
@@ -239,16 +242,22 @@ async function loadDataFromFirestore() {
                     console.warn('⚠️ Nie udało się utworzyć backupu lokalnego przed czyszczeniem:', e);
                 }
 
-                // Zamiast automatycznie usuwać dane lokalne, ustawemy flagę i poprosimy
-                // użytkownika o potwierdzenie przez UI (unikamy pętli przeładowań)
-                sessionStorage.setItem('cloudDeletionPending', 'true');
-
-                if (typeof showNotification === 'function') {
-                    showNotification('⚠️ Twoje dane zostały usunięte z chmury. Lokalna kopia została zapisana jako backup. Sprawdź ustawienia synchronizacji.', 'warning');
+                // Pokaż powiadomienie TYLKO raz (jeśli nie było wcześniej ustawione)
+                if (!alreadyNotifiedDeletion) {
+                    sessionStorage.setItem('cloudDeletionPending', 'true');
+                    if (typeof showNotification === 'function') {
+                        showNotification('⚠️ Twoje dane zostały usunięte z chmury. Lokalna kopia została zapisana jako backup. Sprawdź ustawienia synchronizacji.', 'warning');
+                    }
                 }
 
                 // Zwróć false żeby caller wiedział, że pominięto ładowanie
                 return false;
+            }
+            
+            // Jeśli dane są OK, wyczyść flagę cloudDeletionPending (user odzyskał dostęp do danych)
+            if (alreadyNotifiedDeletion) {
+                sessionStorage.removeItem('cloudDeletionPending');
+                console.log('✅ Cloud data restored, clearing cloudDeletionPending flag');
             }
             
             // Merge z lokalnymi danymi (na wypadek offline changes)
@@ -417,13 +426,14 @@ function setupRealtimeSync() {
             
             // Sprawdź czy dane zostały usunięte
             if (cloudData.deleted === true || cloudData.data === null) {
-                console.log('🗑️ Dane zostały usunięte w chmurze - czyszczę lokalnie');
+                console.log('🗑️ Dane zostały usunięte w chmurze');
                 
                 // Sprawdź czy już przeładowaliśmy z powodu usunięcia
                 const alreadyReloaded = sessionStorage.getItem('deletionReload');
-                if (alreadyReloaded) {
-                    console.log('⚠️ Already reloaded for deletion, skipping...');
-                    console.log('DEBUG: onSnapshot skip. session deletionReload=', alreadyReloaded);
+                const alreadyNotifiedDeletion = sessionStorage.getItem('cloudDeletionPending');
+                
+                if (alreadyReloaded || alreadyNotifiedDeletion) {
+                    console.log('⚠️ Already handled deletion, skipping...');
                     // Wyłącz listener żeby zapobiec dalszym przeładowaniom
                     if (unsubscribeSnapshot) {
                         unsubscribeSnapshot();
@@ -446,7 +456,7 @@ function setupRealtimeSync() {
                     console.warn('⚠️ Nie udało się utworzyć backupu lokalnego przy wykryciu usunięcia w chmurze:', e);
                 }
 
-                // Ustaw flagę że chmura zgłosiła usunięcie - UI może to obsłużyć
+                // Ustaw flagę że chmura zgłosiła usunięcie - pokaż powiadomienie TYLKO raz
                 sessionStorage.setItem('cloudDeletionPending', 'true');
 
                 if (typeof showNotification === 'function') {
@@ -459,8 +469,15 @@ function setupRealtimeSync() {
                 return;
             }
             
-            // Wyczyść flagę deletionReload jeśli dane są OK
-            sessionStorage.removeItem('deletionReload');
+            // Wyczyść flagi jeśli dane są OK (user odzyskał dostęp do danych w chmurze)
+            if (sessionStorage.getItem('deletionReload')) {
+                sessionStorage.removeItem('deletionReload');
+                console.log('✅ Cloud data restored, clearing deletionReload flag');
+            }
+            if (sessionStorage.getItem('cloudDeletionPending')) {
+                sessionStorage.removeItem('cloudDeletionPending');
+                console.log('✅ Cloud data restored, clearing cloudDeletionPending flag');
+            }
             
             // Sprawdź czy zmiana nie pochodzi z tego urządzenia
             if (typeof AppData !== 'undefined') {
