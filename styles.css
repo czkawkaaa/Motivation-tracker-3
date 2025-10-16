@@ -791,6 +791,77 @@ main {
     cursor: default;
 }
 
+/* Selected date styling */
+.calendar-day.selected {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: white;
+    font-weight: 700;
+    border: 3px solid #4f46e5;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3),
+                0 4px 12px rgba(99, 102, 241, 0.4);
+    transform: scale(1.05);
+    z-index: 10;
+}
+
+.calendar-day.selected:hover {
+    background: linear-gradient(135deg, #4f46e5, #7c3aed);
+}
+
+/* When a day is both today and selected */
+.calendar-day.today.selected {
+    background: linear-gradient(135deg, var(--primary-color), #6366f1);
+    border: 3px solid var(--primary-color);
+    box-shadow: 0 0 0 3px var(--primary-color),
+                0 0 0 6px rgba(99, 102, 241, 0.3),
+                0 0 20px var(--primary-color),
+                0 4px 12px rgba(99, 102, 241, 0.4);
+}
+
+/* Selected date indicator bar */
+.selected-date-indicator {
+    display: none;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 1.5rem;
+    margin-bottom: 2rem;
+    background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+    border: 2px solid #3b82f6;
+    border-radius: 16px;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1);
+}
+
+.date-indicator-icon {
+    font-size: 1.5rem;
+}
+
+.date-indicator-text {
+    flex: 1;
+    font-size: 1rem;
+    color: #1e40af;
+}
+
+.date-indicator-text strong {
+    font-weight: 700;
+    color: #1e3a8a;
+}
+
+.btn-clear-selection {
+    padding: 0.5rem 1rem;
+    background: #3b82f6;
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-clear-selection:hover {
+    background: #2563eb;
+    transform: scale(1.05);
+}
+
 /* Streak indicator in calendar */
 .calendar-day.has-streak::after {
     content: '🔥';
