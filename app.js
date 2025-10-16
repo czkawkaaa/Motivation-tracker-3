@@ -96,6 +96,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initGallery();
     initBadges();
     initSettings();
+    initActiveDateIndicator();
     
     updateAllDisplays();
     startQuoteRotation();
@@ -125,6 +126,16 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+
+function initActiveDateIndicator() {
+    const resetBtn = document.getElementById('resetToTodayBtn');
+    if (resetBtn) {
+        resetBtn.addEventListener('click', () => {
+            playClickSound();
+            resetToToday();
+        });
+    }
+}
 
 // ======================
 // DATA MANAGEMENT
@@ -210,6 +221,13 @@ function sendWidgetUpdateToSW() {
 function getTodayKey() {
     const today = new Date();
     return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+}
+
+function getActiveOrTodayKey() {
+    if (activeDate) {
+        return activeDate;
+    }
+    return getTodayKey();
 }
 
 function isRestDay() {
@@ -316,7 +334,7 @@ function initDashboard() {
     saveStepsBtn.addEventListener('click', () => {
         playSuccessSound(); // Dźwięk sukcesu
         const steps = parseInt(stepsInput.value) || 0;
-        AppData.steps[getTodayKey()] = steps;
+        AppData.steps[getActiveOrTodayKey()] = steps;
         saveData();
         
         stepsSuccess.classList.add('show');
@@ -343,7 +361,7 @@ function initDashboard() {
     saveMoodBtn.addEventListener('click', () => {
         if (selectedMood) {
             playSuccessSound(); // Dźwięk sukcesu
-            AppData.mood[getTodayKey()] = selectedMood;
+            AppData.mood[getActiveOrTodayKey()] = selectedMood;
             saveData();
             
             moodSuccess.classList.add('show');
@@ -359,7 +377,7 @@ function initDashboard() {
     const studySuccess = document.getElementById('studySuccess');
     
     // Load today's study hours
-    const todayKey = getTodayKey();
+    const todayKey = getActiveOrTodayKey();
     if (AppData.studyHours[todayKey]) {
         studyHoursInput.value = AppData.studyHours[todayKey];
     }
@@ -367,7 +385,7 @@ function initDashboard() {
     saveStudyBtn.addEventListener('click', () => {
         playSuccessSound(); // Dźwięk sukcesu
         const hours = parseFloat(studyHoursInput.value) || 0;
-        AppData.studyHours[getTodayKey()] = hours;
+        AppData.studyHours[getActiveOrTodayKey()] = hours;
         saveData();
         
         studySuccess.classList.add('show');
@@ -441,7 +459,7 @@ function initDashboard() {
     
     resetTasksBtn.addEventListener('click', () => {
         playClickSound(); // Dźwięk kliknięcia
-        const today = getTodayKey();
+        const today = getActiveOrTodayKey();
         const wasCompleted = AppData.challenge.completedDays.includes(today);
         
         const taskCheckboxes = document.querySelectorAll('.task-checkbox');
@@ -496,8 +514,10 @@ function renderTasks() {
     const taskActions = document.querySelector('.task-actions');
     const editTasksBtn = document.getElementById('editTasksBtn');
     
-    // Check if today is rest day
-    if (isRestDay()) {
+    const dateKey = getActiveOrTodayKey();
+    
+    // Check if the selected date is a rest day
+    if (isRestDayForDate(dateKey)) {
         tasksList.style.display = 'none';
         taskActions.style.display = 'none';
         restDayMessage.style.display = 'block';
@@ -505,9 +525,8 @@ function renderTasks() {
         
         // Auto-complete rest day if setting is enabled
         if (AppData.settings.countRestDays) {
-            const today = getTodayKey();
-            if (!AppData.challenge.completedDays.includes(today)) {
-                AppData.challenge.completedDays.push(today);
+            if (!AppData.challenge.completedDays.includes(dateKey)) {
+                AppData.challenge.completedDays.push(dateKey);
                 AppData.challenge.currentDay++;
                 calculateStreak();
                 saveData();
@@ -524,8 +543,7 @@ function renderTasks() {
     
     tasksList.innerHTML = '';
     
-    const today = getTodayKey();
-    const completedTasksToday = AppData.completedTasks[today] || [];
+    const completedTasksToday = AppData.completedTasks[dateKey] || [];
     
     // Backward compatibility: jeśli to jest liczba zamiast tablicy, konwertuj
     const completedIndices = Array.isArray(completedTasksToday) 
@@ -590,7 +608,7 @@ function updateTasksData() {
     const completedIndices = Array.from(taskCheckboxes)
         .map((cb, index) => cb.checked ? index : -1)
         .filter(index => index !== -1);
-    AppData.completedTasks[getTodayKey()] = completedIndices;
+    AppData.completedTasks[getActiveOrTodayKey()] = completedIndices;
     saveData();
 }
 
@@ -795,7 +813,7 @@ function updateBannerCountdown() {
 }
 
 function checkDayCompletion() {
-    const today = getTodayKey();
+    const today = getActiveOrTodayKey();
     const taskCheckboxes = document.querySelectorAll('.task-checkbox');
     const allCompleted = Array.from(taskCheckboxes).every(cb => cb.checked);
     
@@ -843,6 +861,7 @@ function updateAllDisplays() {
     updateStreakDisplay();
     updateTodaySteps();
     updateTodayMood();
+    updateStudyHoursInput(); // Add this to update study hours input
     
     // Odśwież też inne elementy UI
     if (typeof renderTasks === 'function') renderTasks();
@@ -851,6 +870,14 @@ function updateAllDisplays() {
     if (typeof renderGallery === 'function') renderGallery();
     if (typeof updateBadgesDisplay === 'function') updateBadgesDisplay();
     if (typeof applySettings === 'function') applySettings();
+}
+
+function updateStudyHoursInput() {
+    const studyHoursInput = document.getElementById('studyHoursInput');
+    if (studyHoursInput) {
+        const hours = AppData.studyHours[getActiveOrTodayKey()] || 0;
+        studyHoursInput.value = hours || '';
+    }
 }
 
 // ======================
@@ -971,16 +998,22 @@ function updateStreakDisplay() {
 }
 
 function updateTodaySteps() {
-    const steps = AppData.steps[getTodayKey()] || 0;
+    const steps = AppData.steps[getActiveOrTodayKey()] || 0;
     document.getElementById('stepsInput').value = steps || '';
 }
 
 function updateTodayMood() {
-    const mood = AppData.mood[getTodayKey()];
+    const mood = AppData.mood[getActiveOrTodayKey()];
     if (mood) {
         const moodButtons = document.querySelectorAll('.card-mood .mood-btn');
         moodButtons.forEach(btn => {
             btn.classList.toggle('selected', btn.dataset.mood === mood);
+        });
+    } else {
+        // Clear mood selection if no mood for this date
+        const moodButtons = document.querySelectorAll('.card-mood .mood-btn');
+        moodButtons.forEach(btn => {
+            btn.classList.remove('selected');
         });
     }
 }
@@ -996,6 +1029,7 @@ function startQuoteRotation() {
 // CALENDAR
 // ======================
 let currentCalendarDate = new Date();
+let activeDate = null; // Currently selected date for viewing/editing (null = today)
 
 function initCalendar() {
     document.getElementById('prevMonth').addEventListener('click', () => {
@@ -1085,6 +1119,11 @@ function renderCalendar() {
             dayDiv.classList.add('today');
         }
         
+        // Check if this is the active date
+        if (activeDate && dayKey === activeDate) {
+            dayDiv.classList.add('active-date');
+        }
+        
         // Check if day is in challenge range
         const isInChallengeRange = isDayInChallengeRange(dayKey);
         const isCompleted = AppData.challenge.completedDays.includes(dayKey);
@@ -1101,8 +1140,67 @@ function renderCalendar() {
             dayDiv.classList.add('has-streak');
         }
         
+        // Make day clickable to select as active date
+        dayDiv.style.cursor = 'pointer';
+        dayDiv.addEventListener('click', () => {
+            playClickSound();
+            setActiveDate(dayKey);
+        });
+        
         calendarGrid.appendChild(dayDiv);
     }
+}
+
+function setActiveDate(dateKey) {
+    activeDate = dateKey;
+    
+    // Update all displays to show data for the active date
+    updateAllDisplays();
+    renderCalendar();
+    updateActiveDateIndicator();
+    
+    // Switch to dashboard view to see the selected date's data
+    switchView('dashboard');
+    
+    // Update active nav link
+    const navLinks = document.querySelectorAll('.nav-link');
+    navLinks.forEach(l => l.classList.remove('active'));
+    const dashboardLink = document.querySelector('.nav-link[data-view="dashboard"]');
+    if (dashboardLink) {
+        dashboardLink.classList.add('active');
+    }
+    
+    // Show notification about which date is selected
+    const date = new Date(dateKey + 'T00:00:00');
+    const dateStr = date.toLocaleDateString('pl-PL', { day: 'numeric', month: 'long', year: 'numeric' });
+    showNotification(`📅 Wyświetlanie danych dla: ${dateStr}`, 'success');
+}
+
+function updateActiveDateIndicator() {
+    const indicator = document.getElementById('activeDateIndicator');
+    const indicatorText = document.getElementById('activeDateText');
+    
+    if (activeDate) {
+        const date = new Date(activeDate + 'T00:00:00');
+        const dateStr = date.toLocaleDateString('pl-PL', { 
+            weekday: 'long',
+            day: 'numeric', 
+            month: 'long', 
+            year: 'numeric' 
+        });
+        indicatorText.textContent = dateStr;
+        indicator.style.display = 'flex';
+    } else {
+        indicator.style.display = 'none';
+    }
+}
+
+function resetToToday() {
+    activeDate = null;
+    updateAllDisplays();
+    renderCalendar();
+    updateActiveDateIndicator();
+    showNotification('🏠 Powrót do danych bieżących', 'success');
 }
 
 // ======================
