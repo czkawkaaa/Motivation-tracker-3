@@ -96,6 +96,8 @@ document.addEventListener('DOMContentLoaded', function() {
     initGallery();
     initBadges();
     initSettings();
+    // Sync UI
+    if (typeof initSyncUI === 'function') initSyncUI();
     
     updateAllDisplays();
     startQuoteRotation();
@@ -1906,6 +1908,54 @@ function initSettings() {
     exportDataBtn.addEventListener('click', () => {
         playClickSound(); // Dźwięk kliknięcia
         exportDataAsHTML();
+    });
+}
+
+function initSyncUI() {
+    const lastSyncEl = document.getElementById('lastSyncStatus');
+    const btnSyncNow = document.getElementById('btnSyncNow');
+    const btnForcePull = document.getElementById('btnForcePull');
+    const btnForcePush = document.getElementById('btnForcePush');
+
+    function updateLastSync(ts) {
+        if (!lastSyncEl) return;
+        if (!ts) {
+            lastSyncEl.textContent = '—';
+            return;
+        }
+        const d = new Date(ts);
+        lastSyncEl.textContent = d.toLocaleString();
+    }
+
+    // Try to read lastModified from AppData
+    try {
+        if (AppData && AppData.lastModified) updateLastSync(AppData.lastModified);
+    } catch (e) {}
+
+    if (btnSyncNow) btnSyncNow.addEventListener('click', async () => {
+        if (typeof window.syncNow === 'function') {
+            await window.syncNow();
+            if (AppData && AppData.lastModified) updateLastSync(AppData.lastModified);
+            showNotification && showNotification('🔄 Synchronizacja zakończona', 'success');
+        } else {
+            showNotification && showNotification('⚠️ Funkcja sync nie jest dostępna', 'warning');
+        }
+    });
+
+    if (btnForcePull) btnForcePull.addEventListener('click', async () => {
+        if (typeof window.forcePull === 'function') {
+            await window.forcePull();
+            if (AppData && AppData.lastModified) updateLastSync(AppData.lastModified);
+            showNotification && showNotification('⬇️ Pobieranie z chmury zakończone', 'success');
+        }
+    });
+
+    if (btnForcePush) btnForcePush.addEventListener('click', async () => {
+        if (typeof window.forcePush === 'function') {
+            await window.forcePush();
+            if (AppData && AppData.lastModified) updateLastSync(AppData.lastModified);
+            showNotification && showNotification('⬆️ Wypchnięto lokalne dane', 'success');
+        }
     });
 }
 
