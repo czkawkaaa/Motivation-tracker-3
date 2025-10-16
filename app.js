@@ -1913,6 +1913,9 @@ function initSettings() {
 
 function initSyncUI() {
     const lastSyncEl = document.getElementById('lastSyncStatus');
+    const loginStatusEl = document.getElementById('syncLoginStatus');
+    const userIDEl = document.getElementById('syncUserID');
+    const realtimeStatusEl = document.getElementById('syncRealtimeStatus');
     const btnSyncNow = document.getElementById('btnSyncNow');
     const btnForcePull = document.getElementById('btnForcePull');
     const btnForcePush = document.getElementById('btnForcePush');
@@ -1927,15 +1930,41 @@ function initSyncUI() {
         lastSyncEl.textContent = d.toLocaleString();
     }
 
+    function updateSyncStatus() {
+        // Check if user is logged in (via firebase-sync currentUser)
+        // We'll expose currentUser via window for diagnostics
+        const isLoggedIn = window.firebaseCurrentUser !== undefined && window.firebaseCurrentUser !== null;
+        
+        if (loginStatusEl) {
+            loginStatusEl.textContent = isLoggedIn ? '✅ Zalogowany' : '❌ Niezalogowany';
+            loginStatusEl.style.color = isLoggedIn ? 'green' : 'red';
+        }
+        
+        if (userIDEl) {
+            userIDEl.textContent = isLoggedIn && window.firebaseCurrentUser ? window.firebaseCurrentUser.uid : '—';
+        }
+        
+        if (realtimeStatusEl) {
+            const hasRealtimeSync = window.firebaseRealtimeSyncActive === true;
+            realtimeStatusEl.textContent = hasRealtimeSync ? '✅ Aktywny' : (isLoggedIn ? '⚠️ Nieaktywny' : '—');
+            realtimeStatusEl.style.color = hasRealtimeSync ? 'green' : 'orange';
+        }
+    }
+
     // Try to read lastModified from AppData
     try {
         if (AppData && AppData.lastModified) updateLastSync(AppData.lastModified);
     } catch (e) {}
 
+    // Update status on init and periodically
+    updateSyncStatus();
+    setInterval(updateSyncStatus, 5000);
+
     if (btnSyncNow) btnSyncNow.addEventListener('click', async () => {
         if (typeof window.syncNow === 'function') {
             await window.syncNow();
             if (AppData && AppData.lastModified) updateLastSync(AppData.lastModified);
+            updateSyncStatus();
             showNotification && showNotification('🔄 Synchronizacja zakończona', 'success');
         } else {
             showNotification && showNotification('⚠️ Funkcja sync nie jest dostępna', 'warning');
@@ -1946,6 +1975,7 @@ function initSyncUI() {
         if (typeof window.forcePull === 'function') {
             await window.forcePull();
             if (AppData && AppData.lastModified) updateLastSync(AppData.lastModified);
+            updateSyncStatus();
             showNotification && showNotification('⬇️ Pobieranie z chmury zakończone', 'success');
         }
     });
@@ -1954,6 +1984,7 @@ function initSyncUI() {
         if (typeof window.forcePush === 'function') {
             await window.forcePush();
             if (AppData && AppData.lastModified) updateLastSync(AppData.lastModified);
+            updateSyncStatus();
             showNotification && showNotification('⬆️ Wypchnięto lokalne dane', 'success');
         }
     });

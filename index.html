@@ -512,13 +512,16 @@
                 <section class="settings-section">
                     <h2>🔁 Synchronizacja</h2>
                     <div class="setting-item">
-                        <p>Ostatni sync: <span id="lastSyncStatus">—</span></p>
-                        <div>
+                        <p><strong>Status logowania:</strong> <span id="syncLoginStatus">❓ Sprawdzam...</span></p>
+                        <p><strong>ID użytkownika:</strong> <span id="syncUserID">—</span></p>
+                        <p><strong>Realtime sync:</strong> <span id="syncRealtimeStatus">—</span></p>
+                        <p><strong>Ostatni sync:</strong> <span id="lastSyncStatus">—</span></p>
+                        <div style="margin-top: 10px;">
                             <button id="btnSyncNow">🔄 Wymuś sync</button>
                             <button id="btnForcePull">⬇️ Pobierz chmurę</button>
                             <button id="btnForcePush">⬆️ Wypchnij lokalne</button>
                         </div>
-                        <small>Synchronizacja odbywa się automatycznie przy powrocie do karty i po odzyskaniu połączenia.</small>
+                        <small>Synchronizacja odbywa się automatycznie przy powrocie do karty i po odzyskaniu połączenia. <strong>Musisz być zalogowany/a przez Google aby synchronizacja działała między urządzeniami.</strong></small>
                     </div>
                 </section>
 

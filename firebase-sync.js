@@ -18,6 +18,10 @@ import {
 let currentUser = null;
 let unsubscribeSnapshot = null;
 
+// Expose for diagnostics in UI
+window.firebaseCurrentUser = null;
+window.firebaseRealtimeSyncActive = false;
+
 // Smart merge helper: merges local and cloud data structures with simple rules:
 // - For per-day maps (steps, studyHours, mood, completedTasks): union keys; for conflicts prefer source with newer lastModified timestamps if present, otherwise prefer non-empty values and cloud by default.
 // - For arrays like completedDays: union + dedupe + sort.
@@ -155,6 +159,7 @@ async function logout() {
 
 function onUserLogin(user) {
     currentUser = user;
+    window.firebaseCurrentUser = user; // Expose for diagnostics
     
     // Pokaż info o użytkowniku
     const loginBtn = document.getElementById('loginBtn');
@@ -189,6 +194,8 @@ function onUserLogin(user) {
 
 function onUserLogout() {
     currentUser = null;
+    window.firebaseCurrentUser = null; // Clear diagnostics
+    window.firebaseRealtimeSyncActive = false;
     
     // Pokaż przycisk logowania
     const loginBtn = document.getElementById('loginBtn');
@@ -201,6 +208,7 @@ function onUserLogout() {
     if (unsubscribeSnapshot) {
         unsubscribeSnapshot();
         unsubscribeSnapshot = null;
+        window.firebaseRealtimeSyncActive = false;
     }
 }
 
@@ -414,6 +422,7 @@ async function saveDataToFirestore() {
 function setupRealtimeSync() {
     if (!currentUser || unsubscribeSnapshot) return;
     
+    window.firebaseRealtimeSyncActive = true; // Mark as active
     const docRef = doc(db, 'users', currentUser.uid);
     
     // Nasłuchuj zmian w czasie rzeczywistym
