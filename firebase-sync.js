@@ -18,6 +18,71 @@ import {
 let currentUser = null;
 let unsubscribeSnapshot = null;
 
+// Smart merge helper: merges local and cloud data structures with simple rules:
+// - For per-day maps (steps, studyHours, mood, completedTasks): union keys; for conflicts prefer source with newer lastModified timestamps if present, otherwise prefer non-empty values and cloud by default.
+// - For arrays like completedDays: union + dedupe + sort.
+// - For objects like badges/gallery: merge keys and prefer cloud when unsure.
+function smartMergeData(local, cloud, cloudLastModified = 0) {
+    if (!local) return cloud || {};
+    if (!cloud) return local;
+
+    const merged = { ...local };
+
+    // Helper to merge maps (per-date)
+    function mergeMaps(key) {
+        merged[key] = merged[key] || {};
+        const localMap = local[key] || {};
+        const cloudMap = cloud[key] || {};
+        const allKeys = Array.from(new Set([...Object.keys(localMap), ...Object.keys(cloudMap)]));
+        allKeys.forEach(k => {
+            const lv = localMap[k];
+            const cv = cloudMap[k];
+            if (lv === undefined) merged[key][k] = cv;
+            else if (cv === undefined) merged[key][k] = lv;
+            else {
+                // Conflict: prefer the side with newer overall timestamp
+                if ((local.lastModified || 0) > (cloudLastModified || 0)) merged[key][k] = lv;
+                else merged[key][k] = cv;
+            }
+        });
+    }
+
+    // Merge per-day maps
+    ['steps', 'studyHours', 'mood', 'completedTasks'].forEach(k => mergeMaps(k));
+
+    // Merge completedDays (array) - union, dedupe, sort
+    const localDays = Array.isArray(local.challenge?.completedDays) ? local.challenge.completedDays : [];
+    const cloudDays = Array.isArray(cloud.challenge?.completedDays) ? cloud.challenge.completedDays : [];
+    const mergedDays = Array.from(new Set([...localDays, ...cloudDays])).sort();
+    merged.challenge = merged.challenge || {};
+    merged.challenge.completedDays = mergedDays;
+
+    // Merge challenge scalar fields: prefer the newest source
+    merged.challenge.currentDay = (local.challenge?.currentDay || 0);
+    if (cloud.challenge?.currentDay && cloudLastModified > (local.lastModified || 0)) {
+        merged.challenge.currentDay = cloud.challenge.currentDay;
+    }
+    merged.challenge.totalDays = cloud.challenge?.totalDays || local.challenge?.totalDays || merged.challenge.totalDays || 75;
+
+    // Merge tasks array (prefer longest / cloud if conflict)
+    merged.tasks = cloud.tasks || local.tasks;
+
+    // Merge badges and gallery (shallow merge)
+    merged.badges = { ...(local.badges || {}), ...(cloud.badges || {}) };
+    merged.gallery = Array.isArray(local.gallery) || Array.isArray(cloud.gallery)
+        ? Array.from(new Set([...(local.gallery || []), ...(cloud.gallery || [])]))
+        : (cloud.gallery || local.gallery);
+
+    // Merge settings: cloud overrides local when cloud is newer
+    merged.settings = { ...(local.settings || {}), ...(cloud.settings || {}) };
+
+    // Streak & lastModified
+    merged.streak = cloud.streak ?? local.streak;
+    merged.lastModified = Math.max(local.lastModified || 0, cloud.lastModified || 0, Date.now());
+
+    return merged;
+}
+
 // ======================
 // AUTHENTICATION
 // ======================
@@ -159,7 +224,7 @@ async function loadDataFromFirestore() {
         const docRef = doc(db, 'users', currentUser.uid);
         const docSnap = await getDoc(docRef);
         
-        if (docSnap.exists()) {
+            if (docSnap.exists()) {
             const cloudData = docSnap.data();
             console.log('☁️ Loaded data from cloud:', cloudData);
             
@@ -209,7 +274,9 @@ async function loadDataFromFirestore() {
                                cloudData.data.completedTasks;
                 
                 if (hasData) {
-                    Object.assign(AppData, cloudData.data);
+                    // Use smart merge to minimize conflicts between devices
+                    const merged = smartMergeData(AppData, cloudData.data, cloudData.lastModified || 0);
+                    Object.assign(AppData, merged);
                     localStorage.setItem('kawaiiQuestData', JSON.stringify(AppData));
                     if (typeof updateAllDisplays === 'function') {
                         updateAllDisplays();
@@ -238,6 +305,40 @@ async function loadDataFromFirestore() {
         return false;
     }
 }
+
+// Manual sync helpers exposed to UI
+async function syncNow() {
+    if (!currentUser) return await saveDataToFirestore();
+    // Try a pull then push merged
+    await loadDataFromFirestore();
+    await saveDataToFirestore();
+}
+
+async function forcePull() {
+    // Force reloading from cloud ignoring local lastModified
+    if (!currentUser) return;
+    const docRef = doc(db, 'users', currentUser.uid);
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+        const cloud = docSnap.data();
+        if (cloud.data) {
+            const merged = smartMergeData(AppData, cloud.data, cloud.lastModified || 0);
+            Object.assign(AppData, merged);
+            localStorage.setItem('kawaiiQuestData', JSON.stringify(AppData));
+            if (typeof updateAllDisplays === 'function') updateAllDisplays();
+        }
+    }
+}
+
+async function forcePush() {
+    if (!currentUser) return;
+    await saveDataToFirestore();
+}
+
+// Expose for UI
+window.syncNow = syncNow;
+window.forcePull = forcePull;
+window.forcePush = forcePush;
 
 async function saveDataToFirestore() {
     if (!currentUser) {
@@ -376,23 +477,9 @@ function setupRealtimeSync() {
                                        cloudData.data.completedTasks;
                         
                         if (hasData) {
-                            // Inteligentne mergowanie - zachowaj lokalne dane jeśli chmura jest pusta
-                            const mergedData = {
-                                challenge: cloudData.data.challenge || AppData.challenge,
-                                steps: cloudData.data.steps || AppData.steps,
-                                completedTasks: cloudData.data.completedTasks || AppData.completedTasks,
-                                tasks: cloudData.data.tasks || AppData.tasks,
-                                // Reszta pól
-                                streak: cloudData.data.streak ?? AppData.streak,
-                                mood: cloudData.data.mood || AppData.mood,
-                                studyHours: cloudData.data.studyHours || AppData.studyHours,
-                                gallery: cloudData.data.gallery || AppData.gallery,
-                                badges: cloudData.data.badges || AppData.badges,
-                                settings: cloudData.data.settings || AppData.settings,
-                                lastModified: cloudData.lastModified
-                            };
-                            
-                            Object.assign(AppData, mergedData);
+                            // Smart merge cloud -> local
+                            const merged = smartMergeData(AppData, cloudData.data, cloudData.lastModified || 0);
+                            Object.assign(AppData, merged);
                             localStorage.setItem('kawaiiQuestData', JSON.stringify(AppData));
                             if (typeof updateAllDisplays === 'function') {
                                 updateAllDisplays();
