@@ -351,6 +351,59 @@ main {
     }
 }
 
+/* Active Date Indicator */
+.active-date-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: linear-gradient(135deg, var(--primary-color), rgba(255, 154, 194, 0.8));
+    color: white;
+    padding: 1rem 1.5rem;
+    border-radius: var(--border-radius);
+    margin-bottom: 1.5rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.indicator-icon {
+    font-size: 1.5rem;
+    margin-right: 0.75rem;
+}
+
+.indicator-text {
+    flex: 1;
+    font-size: 1rem;
+    font-weight: 500;
+}
+
+.btn-reset-date {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: 2px solid white;
+    padding: 0.5rem 1rem;
+    border-radius: 12px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: var(--transition);
+}
+
+.btn-reset-date:hover {
+    background: white;
+    color: var(--primary-color);
+    transform: scale(1.05);
+}
+
 /* Dashboard Grid */
 .dashboard-grid {
     display: grid;
@@ -722,6 +775,23 @@ main {
                     0 0 30px var(--primary-color),
                     0 0 60px var(--primary-color);
     }
+}
+
+.calendar-day.active-date {
+    background: linear-gradient(135deg, var(--primary-color), rgba(255, 154, 194, 0.7));
+    color: white;
+    font-weight: 700;
+    border: 3px solid var(--primary-color);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    transform: scale(1.05);
+}
+
+.calendar-day.active-date::before {
+    content: '📍';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    font-size: 0.7rem;
 }
 
 .calendar-day.completed::after {

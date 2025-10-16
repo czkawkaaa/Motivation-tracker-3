@@ -53,6 +53,11 @@
     <main>
         <!-- DASHBOARD VIEW -->
         <div class="view active" id="view-dashboard">
+            <div id="activeDateIndicator" class="active-date-indicator" style="display: none;">
+                <span class="indicator-icon">📅</span>
+                <span class="indicator-text">Wyświetlanie danych dla: <strong id="activeDateText"></strong></span>
+                <button class="btn-reset-date" id="resetToTodayBtn">🔄 Wróć do dziś</button>
+            </div>
             <div class="dashboard-grid">
                 <!-- Wyzwanie Card -->
                 <section class="card card-challenge">
