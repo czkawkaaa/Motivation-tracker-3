@@ -144,6 +144,40 @@ function loadData() {
     applySettings();
 }
 
+// Active date selection for editing historical days
+// null = today
+let selectedDate = null;
+
+function setSelectedDate(dateInput) {
+    if (!dateInput) { selectedDate = null; updateSelectedDateDisplay(); return; }
+    if (dateInput instanceof Date) {
+        const d = dateInput;
+        dateInput = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    }
+    selectedDate = dateInput;
+    updateSelectedDateDisplay();
+}
+
+function clearSelectedDate() {
+    selectedDate = null;
+    updateSelectedDateDisplay();
+}
+
+function getActiveKey() {
+    return selectedDate || getTodayKey();
+}
+
+function updateSelectedDateDisplay() {
+    const el = document.getElementById('selectedDateDisplay');
+    if (!el) return;
+    if (!selectedDate) {
+        el.textContent = 'Dzisiaj';
+    } else {
+        const d = new Date(selectedDate + 'T00:00:00');
+        el.textContent = d.toLocaleDateString();
+    }
+}
+
 function saveData() {
     AppData.lastModified = Date.now();
     localStorage.setItem('kawaiiQuestData', JSON.stringify(AppData));
@@ -316,7 +350,7 @@ function initDashboard() {
     saveStepsBtn.addEventListener('click', () => {
         playSuccessSound(); // Dźwięk sukcesu
         const steps = parseInt(stepsInput.value) || 0;
-        AppData.steps[getTodayKey()] = steps;
+        AppData.steps[getActiveKey()] = steps;
         saveData();
         
         stepsSuccess.classList.add('show');
@@ -343,7 +377,7 @@ function initDashboard() {
     saveMoodBtn.addEventListener('click', () => {
         if (selectedMood) {
             playSuccessSound(); // Dźwięk sukcesu
-            AppData.mood[getTodayKey()] = selectedMood;
+            AppData.mood[getActiveKey()] = selectedMood;
             saveData();
             
             moodSuccess.classList.add('show');
@@ -358,16 +392,18 @@ function initDashboard() {
     const saveStudyBtn = document.getElementById('saveStudyBtn');
     const studySuccess = document.getElementById('studySuccess');
     
-    // Load today's study hours
-    const todayKey = getTodayKey();
-    if (AppData.studyHours[todayKey]) {
-        studyHoursInput.value = AppData.studyHours[todayKey];
+    // Load study hours for active date
+    const activeStudyKey = getActiveKey();
+    if (AppData.studyHours[activeStudyKey] !== undefined) {
+        studyHoursInput.value = AppData.studyHours[activeStudyKey];
+    } else {
+        studyHoursInput.value = '';
     }
     
     saveStudyBtn.addEventListener('click', () => {
         playSuccessSound(); // Dźwięk sukcesu
         const hours = parseFloat(studyHoursInput.value) || 0;
-        AppData.studyHours[getTodayKey()] = hours;
+        AppData.studyHours[getActiveKey()] = hours;
         saveData();
         
         studySuccess.classList.add('show');
@@ -524,8 +560,8 @@ function renderTasks() {
     
     tasksList.innerHTML = '';
     
-    const today = getTodayKey();
-    const completedTasksToday = AppData.completedTasks[today] || [];
+    const activeTasksKey = getActiveKey();
+    const completedTasksToday = AppData.completedTasks[activeTasksKey] || [];
     
     // Backward compatibility: jeśli to jest liczba zamiast tablicy, konwertuj
     const completedIndices = Array.isArray(completedTasksToday) 
@@ -549,10 +585,10 @@ function renderTasks() {
         }
         
         const checkbox = label.querySelector('.task-checkbox');
-        checkbox.addEventListener('change', () => {
+            checkbox.addEventListener('change', () => {
             playCheckboxSound(); // Dźwięk checkboxa
             label.classList.toggle('completed', checkbox.checked);
-            updateTasksData();
+                updateTasksData();
             if (checkbox.checked) {
                 checkDayCompletion();
             }
@@ -590,7 +626,7 @@ function updateTasksData() {
     const completedIndices = Array.from(taskCheckboxes)
         .map((cb, index) => cb.checked ? index : -1)
         .filter(index => index !== -1);
-    AppData.completedTasks[getTodayKey()] = completedIndices;
+    AppData.completedTasks[getActiveKey()] = completedIndices;
     saveData();
 }
 
@@ -971,12 +1007,12 @@ function updateStreakDisplay() {
 }
 
 function updateTodaySteps() {
-    const steps = AppData.steps[getTodayKey()] || 0;
+    const steps = AppData.steps[getActiveKey()] || 0;
     document.getElementById('stepsInput').value = steps || '';
 }
 
 function updateTodayMood() {
-    const mood = AppData.mood[getTodayKey()];
+    const mood = AppData.mood[getActiveKey()];
     if (mood) {
         const moodButtons = document.querySelectorAll('.card-mood .mood-btn');
         moodButtons.forEach(btn => {
@@ -1101,6 +1137,32 @@ function renderCalendar() {
             dayDiv.classList.add('has-streak');
         }
         
+        // Click to select day for editing
+        dayDiv.addEventListener('click', () => {
+            const todayKey = getTodayKey();
+            // If user clicked today, clear selection (work on today mode)
+            if (dayKey === todayKey) {
+                const prev = calendarGrid.querySelector('.calendar-day.selected');
+                if (prev) prev.classList.remove('selected');
+                clearSelectedDate();
+                switchView('dashboard');
+                // Refresh dashboard inputs to show today's data
+                updateAllDisplays();
+                return;
+            }
+
+            // remove previously selected
+            const prev = calendarGrid.querySelector('.calendar-day.selected');
+            if (prev) prev.classList.remove('selected');
+            // mark this one
+            dayDiv.classList.add('selected');
+            // set selectedDate to this key
+            selectedDate = dayKey;
+            updateSelectedDateDisplay();
+            // switch to dashboard for editing
+            switchView('dashboard');
+        });
+
         calendarGrid.appendChild(dayDiv);
     }
 }
