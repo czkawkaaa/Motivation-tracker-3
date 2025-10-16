@@ -131,6 +131,18 @@ document.addEventListener('DOMContentLoaded', function() {
 // ======================
 function loadData() {
     const saved = localStorage.getItem('kawaiiQuestData');
+    // If main data was cleared (e.g., by older sync logic or service worker), try to restore backup
+    if (!saved) {
+        try {
+            const backup = localStorage.getItem('kawaiiQuestData_backup') || localStorage.getItem('kawaiiQuestData_cloudDeletionBackup');
+            if (backup) {
+                console.warn('⚠️ Główne dane zostały wyczyszczone — przywracam lokalny backup.');
+                localStorage.setItem('kawaiiQuestData', backup);
+            }
+        } catch (e) {
+            console.warn('⚠️ Nie udało się przywrócić backupu:', e);
+        }
+    }
     if (saved) {
         try {
             const data = JSON.parse(saved);
@@ -212,6 +224,18 @@ function saveData() {
     
     // Zapisz lokalnie NAJPIERW (najpewniejsze)
     try {
+        // Zrób kopię zapasową poprzednich lokalnych danych na wypadek, gdyby
+        // przyszłe operacje chciały je usunąć (np. sync z chmurą).
+        try {
+            const prev = localStorage.getItem('kawaiiQuestData');
+            if (prev) {
+                // Nadpisuj jedynie jedną kopię backupu (możemy rozszerzyć do wersjonowania)
+                localStorage.setItem('kawaiiQuestData_backup', prev);
+            }
+        } catch (e) {
+            console.warn('⚠️ Nie udało się utworzyć backupu lokalnego przed zapisem:', e);
+        }
+
         localStorage.setItem('kawaiiQuestData', JSON.stringify(AppData));
     } catch (e) {
         console.error('❌ Błąd zapisu do localStorage:', e);

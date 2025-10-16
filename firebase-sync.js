@@ -165,14 +165,23 @@ async function loadDataFromFirestore() {
             
             // Sprawdź czy dane nie zostały usunięte
             if (cloudData.deleted === true || cloudData.data === null) {
-                console.log('🗑️ Dane zostały usunięte w chmurze - czyszczę lokalnie');
-                localStorage.removeItem('kawaiiQuestData');
-                
-                // USUNIĘTE: Powiadomienie przy każdym wczytaniu (irytujące)
-                // if (typeof showNotification === 'function') {
-                //     showNotification('🗑️ Dane zostały usunięte', 'info');
-                // }
-                
+                console.log('🗑️ Dane zostały usunięte w chmurze - robię backup lokalnych danych i powiadamiam użytkownika');
+                try {
+                    // Zachowaj kopię lokalnych danych przed ewentualnym czyszczeniem
+                    const prev = localStorage.getItem('kawaiiQuestData');
+                    if (prev) localStorage.setItem('kawaiiQuestData_cloudDeletionBackup', prev);
+                } catch (e) {
+                    console.warn('⚠️ Nie udało się utworzyć backupu lokalnego przed czyszczeniem:', e);
+                }
+
+                // Zamiast automatycznie usuwać dane lokalne, ustawemy flagę i poprosimy
+                // użytkownika o potwierdzenie przez UI (unikamy pętli przeładowań)
+                sessionStorage.setItem('cloudDeletionPending', 'true');
+
+                if (typeof showNotification === 'function') {
+                    showNotification('⚠️ Twoje dane zostały usunięte z chmury. Lokalna kopia została zapisana jako backup. Sprawdź ustawienia synchronizacji.', 'warning');
+                }
+
                 // Zwróć false żeby caller wiedział, że pominięto ładowanie
                 return false;
             }
@@ -327,24 +336,25 @@ function setupRealtimeSync() {
                     unsubscribeSnapshot();
                     unsubscribeSnapshot = null;
                 }
-                
-                // Wyczyść dane lokalne
-                localStorage.clear();
-                
-                // Ustaw flagę że przeładowujemy
-                sessionStorage.setItem('deletionReload', 'true');
-                
-                // USUNIĘTE: Powiadomienie przy realtime sync (irytujące)
-                // if (typeof showNotification === 'function') {
-                //     showNotification('🗑️ Dane zostały usunięte', 'warning');
-                // }
-                console.log('DEBUG: onSnapshot detected deletion. scheduling reload. uid=', currentUser && currentUser.uid);
-                
-                // Jednorazowe przeładowanie strony
-                setTimeout(() => {
-                    location.reload();
-                }, 1000);
-                
+
+                // Utwórz backup lokalnych danych, ale NIE czyść lokalnego storage automatycznie.
+                try {
+                    const prev = localStorage.getItem('kawaiiQuestData');
+                    if (prev) localStorage.setItem('kawaiiQuestData_cloudDeletionBackup', prev);
+                } catch (e) {
+                    console.warn('⚠️ Nie udało się utworzyć backupu lokalnego przy wykryciu usunięcia w chmurze:', e);
+                }
+
+                // Ustaw flagę że chmura zgłosiła usunięcie - UI może to obsłużyć
+                sessionStorage.setItem('cloudDeletionPending', 'true');
+
+                if (typeof showNotification === 'function') {
+                    showNotification('⚠️ Twoje dane zostały usunięte w chmurze. Lokalna kopia została zapisana jako backup. Sprawdź ustawienia synchronizacji.', 'warning');
+                }
+
+                console.log('DEBUG: onSnapshot detected deletion. cloudDeletionPending set. uid=', currentUser && currentUser.uid);
+
+                // Nie przeładowuj automatycznie — użytkownik musi potwierdzić działanie
                 return;
             }
             
