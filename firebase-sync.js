@@ -175,7 +175,7 @@ function onUserLogin(user) {
     if (userName) userName.textContent = user.displayName || user.email;
     if (userPhoto) userPhoto.src = user.photoURL || 'https://via.placeholder.com/36';
     
-    // Załaduj dane z Firestore
+    // Załaduj dane z Firestore i ZAWSZE uruchom realtime sync
     (async () => {
         try {
             await loadDataFromFirestore();
@@ -183,11 +183,11 @@ function onUserLogin(user) {
             console.error('❌ Error during initial cloud load:', err);
         }
         
-        // ZAWSZE włącz realtime sync po zalogowaniu (niezależnie od wyniku load)
-        // To zapewnia synchronizację między urządzeniami
+        // ZAWSZE uruchom realtime sync po zalogowaniu
+        // (nawet jeśli load był pominięty z powodu deletionReload)
         try {
             setupRealtimeSync();
-            console.log('✅ Realtime sync activated after login');
+            console.log('✅ Realtime sync setup completed');
         } catch (e) {
             console.error('❌ Failed to setup realtime sync:', e);
         }
@@ -455,16 +455,16 @@ function setupRealtimeSync() {
     }
     
     if (unsubscribeSnapshot) {
-        console.log('⚠️ Realtime sync already active, skipping setup');
+        console.log('ℹ️ Realtime sync already active, skipping setup');
         return;
     }
     
     console.log('🔄 Setting up realtime sync for user:', currentUser.uid);
-    window.firebaseRealtimeSyncActive = true; // Mark as active
     const docRef = doc(db, 'users', currentUser.uid);
     
     // Nasłuchuj zmian w czasie rzeczywistym
     unsubscribeSnapshot = onSnapshot(docRef, (docSnap) => {
+        window.firebaseRealtimeSyncActive = true; // Mark as active when snapshot received
         if (docSnap.exists()) {
             const cloudData = docSnap.data();
             
@@ -567,16 +567,18 @@ function setupRealtimeSync() {
         console.error('❌ Error code:', error.code);
         console.error('❌ Error message:', error.message);
         window.firebaseLastError = `REALTIME: ${error.code} - ${error.message}`;
-        window.firebaseRealtimeSyncActive = false; // Mark as inactive on error
+        window.firebaseRealtimeSyncActive = false;
         
         if (error.code === 'permission-denied') {
             if (typeof showNotification === 'function') {
-                showNotification('🔒 Realtime sync zablokowany - sprawdź reguły Firestore!', 'error');
+                showNotification('🔒 Brak uprawnień realtime sync! Sprawdź reguły Firestore.', 'error');
             }
         }
     });
     
-    console.log('✅ Realtime sync listener established');
+    // Ustaw flagę że listener został zarejestrowany
+    window.firebaseRealtimeSyncActive = true;
+    console.log('✅ Realtime sync listener registered');
 }
 
 // Eksportuj funkcję dla użycia w app.js
