@@ -99,6 +99,8 @@ document.addEventListener('DOMContentLoaded', function() {
     
     updateAllDisplays();
     startQuoteRotation();
+    // Ensure selected date display is correct on load
+    try { updateSelectedDateDisplay(); } catch (e) {}
     
     // Sprawdź czy jest zaplanowany reset danych
     // WYŁĄCZONE: checkScheduledReset() może powodować niechciane resety
@@ -142,6 +144,44 @@ function loadData() {
         }
     }
     applySettings();
+}
+
+// Selected date for editing historical days (null = today)
+let selectedDate = null; // ISO date string yyyy-mm-dd or null
+
+function setSelectedDate(dateString) {
+    // expect yyyy-mm-dd or Date
+    if (dateString instanceof Date) {
+        const d = dateString;
+        dateString = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    }
+    selectedDate = dateString;
+    updateSelectedDateDisplay();
+    // when changing selected date we should refresh UI
+    try { updateAllDisplays(); } catch (e) {}
+}
+
+function clearSelectedDate() {
+    selectedDate = null;
+    updateSelectedDateDisplay();
+    try { updateAllDisplays(); } catch (e) {}
+}
+
+function getActiveKey() {
+    if (selectedDate) return selectedDate;
+    return getTodayKey();
+}
+
+function updateSelectedDateDisplay() {
+    const el = document.getElementById('selectedDateDisplay');
+    if (!el) return;
+    if (!selectedDate) {
+        el.textContent = 'Dzisiaj';
+    } else {
+        // show friendly date
+        const d = new Date(selectedDate);
+        el.textContent = d.toLocaleDateString();
+    }
 }
 
 function saveData() {
@@ -316,7 +356,7 @@ function initDashboard() {
     saveStepsBtn.addEventListener('click', () => {
         playSuccessSound(); // Dźwięk sukcesu
         const steps = parseInt(stepsInput.value) || 0;
-        AppData.steps[getTodayKey()] = steps;
+        AppData.steps[getActiveKey()] = steps;
         saveData();
         
         stepsSuccess.classList.add('show');
@@ -343,7 +383,7 @@ function initDashboard() {
     saveMoodBtn.addEventListener('click', () => {
         if (selectedMood) {
             playSuccessSound(); // Dźwięk sukcesu
-            AppData.mood[getTodayKey()] = selectedMood;
+            AppData.mood[getActiveKey()] = selectedMood;
             saveData();
             
             moodSuccess.classList.add('show');
@@ -358,16 +398,18 @@ function initDashboard() {
     const saveStudyBtn = document.getElementById('saveStudyBtn');
     const studySuccess = document.getElementById('studySuccess');
     
-    // Load today's study hours
-    const todayKey = getTodayKey();
-    if (AppData.studyHours[todayKey]) {
-        studyHoursInput.value = AppData.studyHours[todayKey];
+    // Load study hours for active date
+    const activeKey = getActiveKey();
+    if (AppData.studyHours[activeKey]) {
+        studyHoursInput.value = AppData.studyHours[activeKey];
+    } else {
+        studyHoursInput.value = 0;
     }
     
     saveStudyBtn.addEventListener('click', () => {
         playSuccessSound(); // Dźwięk sukcesu
         const hours = parseFloat(studyHoursInput.value) || 0;
-        AppData.studyHours[getTodayKey()] = hours;
+        AppData.studyHours[getActiveKey()] = hours;
         saveData();
         
         studySuccess.classList.add('show');
@@ -496,8 +538,10 @@ function renderTasks() {
     const taskActions = document.querySelector('.task-actions');
     const editTasksBtn = document.getElementById('editTasksBtn');
     
-    // Check if today is rest day
-    if (isRestDay()) {
+    const today = getActiveKey();
+
+    // Check if selected/active day is rest day
+    if (isRestDayForDate(today)) {
         tasksList.style.display = 'none';
         taskActions.style.display = 'none';
         restDayMessage.style.display = 'block';
@@ -524,7 +568,7 @@ function renderTasks() {
     
     tasksList.innerHTML = '';
     
-    const today = getTodayKey();
+    // Normal day - show tasks
     const completedTasksToday = AppData.completedTasks[today] || [];
     
     // Backward compatibility: jeśli to jest liczba zamiast tablicy, konwertuj
@@ -590,7 +634,7 @@ function updateTasksData() {
     const completedIndices = Array.from(taskCheckboxes)
         .map((cb, index) => cb.checked ? index : -1)
         .filter(index => index !== -1);
-    AppData.completedTasks[getTodayKey()] = completedIndices;
+    AppData.completedTasks[getActiveKey()] = completedIndices;
     saveData();
 }
 
@@ -884,9 +928,9 @@ function isDayInChallengeRange(dayKey) {
 }
 
 function startChallenge() {
-    const todayKey = getTodayKey();
+    const startKey = getActiveKey();
     if (!AppData.challenge.startDate) {
-        AppData.challenge.startDate = todayKey;
+        AppData.challenge.startDate = startKey;
         // Ensure totalDays is synced with settings
         AppData.challenge.totalDays = AppData.settings.challengeLength || AppData.challenge.totalDays || 75;
         // Reset progress when starting new challenge
@@ -971,12 +1015,12 @@ function updateStreakDisplay() {
 }
 
 function updateTodaySteps() {
-    const steps = AppData.steps[getTodayKey()] || 0;
-    document.getElementById('stepsInput').value = steps || '';
+    const steps = AppData.steps[getActiveKey()] || 0;
+    document.getElementById('stepsInput').value = steps || 0;
 }
 
 function updateTodayMood() {
-    const mood = AppData.mood[getTodayKey()];
+    const mood = AppData.mood[getActiveKey()];
     if (mood) {
         const moodButtons = document.querySelectorAll('.card-mood .mood-btn');
         moodButtons.forEach(btn => {
@@ -1100,6 +1144,13 @@ function renderCalendar() {
         if (streakDays.has(dayKey)) {
             dayDiv.classList.add('has-streak');
         }
+
+        // Click to select day for editing
+        dayDiv.addEventListener('click', () => {
+            // set selected date and switch to dashboard
+            setSelectedDate(dayKey);
+            switchView('dashboard');
+        });
         
         calendarGrid.appendChild(dayDiv);
     }
@@ -1547,7 +1598,6 @@ function initSettings() {
         saveData();
         updateStats();
     });
-    
     // Study goal
     const studyGoal = document.getElementById('studyGoal');
     studyGoal.value = AppData.settings.studyGoal;
@@ -1620,8 +1670,17 @@ function initSettings() {
                     }
                 }
                 
-                // Następnie usuń lokalnie
-                localStorage.clear();
+
+                // Następnie usuń lokalnie tylko dane aplikacji (nie czyść całego localStorage)
+                try {
+                    // Ustaw flagę sesyjną aby inne moduły wiedziały, że to było świadome usunięcie
+                    sessionStorage.setItem('deletionReload', 'true');
+                } catch (e) {
+                    console.warn('Nie udało się ustawić sessionStorage flag:', e);
+                }
+
+                localStorage.removeItem('kawaiiQuestData');
+                // Przeładuj stronę raz, po usunięciu danych
                 location.reload();
             }
         }

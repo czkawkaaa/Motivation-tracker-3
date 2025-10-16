@@ -237,10 +237,12 @@ async function saveDataToFirestore() {
             AppData.lastModified = Date.now();
         }
         
+        // Przy zapisie upewnij się, że pole `deleted` jest wyczyszczone
         await setDoc(docRef, {
             data: AppData,
             lastModified: AppData.lastModified,
             email: currentUser.email,
+            deleted: false,
             updatedAt: serverTimestamp()
         }, { merge: true });
         
@@ -300,11 +302,19 @@ function setupRealtimeSync() {
                     unsubscribeSnapshot = null;
                 }
                 
-                // Wyczyść dane lokalne
-                localStorage.clear();
-                
-                // Ustaw flagę że przeładowujemy
-                sessionStorage.setItem('deletionReload', 'true');
+                // Wyczyść dane lokalne tylko dla tej aplikacji
+                try {
+                    localStorage.removeItem('kawaiiQuestData');
+                } catch (e) {
+                    console.warn('Nie udało się usunąć kawaiiQuestData z localStorage:', e);
+                }
+
+                // Ustaw flagę że przeładowujemy (sessionStorage przetrwa jedno przeładowanie)
+                try {
+                    sessionStorage.setItem('deletionReload', 'true');
+                } catch (e) {
+                    console.warn('Nie udało się ustawić sessionStorage deletionReload:', e);
+                }
                 
                 // USUNIĘTE: Powiadomienie przy realtime sync (irytujące)
                 // if (typeof showNotification === 'function') {
@@ -366,13 +376,14 @@ async function deleteDataFromFirestore() {
         const docRef = doc(db, 'users', currentUser.uid);
         
         // Usuń dokument z Firestore
+        // Zapisz informację o usunięciu zamiast twardego usunięcia, używamy merge aby nie zniszczyć innych pól
         await setDoc(docRef, {
             data: null,
             lastModified: Date.now(),
             email: currentUser.email,
             deleted: true,
             updatedAt: serverTimestamp()
-        });
+        }, { merge: true });
         
         console.log('🗑️ Dane usunięte z Firestore');
         

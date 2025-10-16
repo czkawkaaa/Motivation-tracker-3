@@ -54,6 +54,12 @@
         <!-- DASHBOARD VIEW -->
         <div class="view active" id="view-dashboard">
             <div class="dashboard-grid">
+                    <div class="date-nav" id="dateNav" style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+                        <button class="btn-secondary" id="prevDayBtn">◀ Poprzedni</button>
+                        <div id="selectedDateDisplay" style="font-weight:600">Dzisiaj</div>
+                        <button class="btn-secondary" id="nextDayBtn">Następny ▶</button>
+                        <button class="btn-secondary" id="clearSelectedDateBtn" title="Wróć do dzisiaj">Wróć do dziś</button>
+                    </div>
                 <!-- Wyzwanie Card -->
                 <section class="card card-challenge">
                     <h2>🎯 Wyzwanie</h2>
