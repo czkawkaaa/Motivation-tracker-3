@@ -996,6 +996,7 @@ function startQuoteRotation() {
 // CALENDAR
 // ======================
 let currentCalendarDate = new Date();
+let selectedDate = null; // Selected date for viewing data
 
 function initCalendar() {
     document.getElementById('prevMonth').addEventListener('click', () => {
@@ -1085,6 +1086,11 @@ function renderCalendar() {
             dayDiv.classList.add('today');
         }
         
+        // Check if this date is selected
+        if (selectedDate && dayKey === selectedDate) {
+            dayDiv.classList.add('selected');
+        }
+        
         // Check if day is in challenge range
         const isInChallengeRange = isDayInChallengeRange(dayKey);
         const isCompleted = AppData.challenge.completedDays.includes(dayKey);
@@ -1101,8 +1107,30 @@ function renderCalendar() {
             dayDiv.classList.add('has-streak');
         }
         
+        // Add click handler to select date
+        dayDiv.addEventListener('click', () => {
+            playClickSound();
+            selectDate(dayKey);
+        });
+        
         calendarGrid.appendChild(dayDiv);
     }
+}
+
+// Function to select a date in the calendar
+function selectDate(dateKey) {
+    selectedDate = dateKey;
+    renderCalendar(); // Re-render to show selection
+    showNotification(`📅 Wybrano datę: ${formatDateForDisplay(dateKey)}`, 'success');
+}
+
+// Helper function to format date for display
+function formatDateForDisplay(dateKey) {
+    const date = new Date(dateKey);
+    const day = date.getDate();
+    const month = date.getMonth() + 1;
+    const year = date.getFullYear();
+    return `${day}.${String(month).padStart(2, '0')}.${year}`;
 }
 
 // ======================
