@@ -401,6 +401,9 @@ async function saveDataToFirestore() {
         // Zapisz też lokalnie jako backup
         localStorage.setItem('kawaiiQuestData', JSON.stringify(AppData));
         
+        // Wyczyść flagę deletionReload jeśli nowe dane zostały zapisane
+        sessionStorage.removeItem('deletionReload');
+        
         console.log('☁️ Data saved to cloud');
     } catch (error) {
         console.error('❌ Error saving to Firestore:', error);
@@ -570,17 +573,19 @@ async function deleteDataFromFirestore() {
     
     try {
         const docRef = doc(db, 'users', currentUser.uid);
+        const timestamp = Date.now();
         
         // Usuń dokument z Firestore
         await setDoc(docRef, {
             data: null,
-            lastModified: Date.now(),
+            lastModified: timestamp,
             email: currentUser.email,
             deleted: true,
             updatedAt: serverTimestamp()
         });
         
         console.log('🗑️ Dane usunięte z Firestore');
+        console.log('DEBUG: deleteDataFromFirestore -> uid=', currentUser.uid, 'time=', timestamp);
         
         if (typeof showNotification === 'function') {
             showNotification('🗑️ Dane usunięte z chmury', 'success');
