@@ -359,7 +359,8 @@ function initDashboard() {
     saveStepsBtn.addEventListener('click', () => {
         playSuccessSound(); // Dźwięk sukcesu
         const steps = parseInt(stepsInput.value) || 0;
-        AppData.steps[getTodayKey()] = steps;
+        const dateKey = getActiveDate(); // Use selected date instead of today
+        AppData.steps[dateKey] = steps;
         saveData();
         
         stepsSuccess.classList.add('show');
@@ -386,7 +387,8 @@ function initDashboard() {
     saveMoodBtn.addEventListener('click', () => {
         if (selectedMood) {
             playSuccessSound(); // Dźwięk sukcesu
-            AppData.mood[getTodayKey()] = selectedMood;
+            const dateKey = getActiveDate(); // Use selected date instead of today
+            AppData.mood[dateKey] = selectedMood;
             saveData();
             
             moodSuccess.classList.add('show');
@@ -410,7 +412,8 @@ function initDashboard() {
     saveStudyBtn.addEventListener('click', () => {
         playSuccessSound(); // Dźwięk sukcesu
         const hours = parseFloat(studyHoursInput.value) || 0;
-        AppData.studyHours[getTodayKey()] = hours;
+        const dateKey = getActiveDate(); // Use selected date instead of today
+        AppData.studyHours[dateKey] = hours;
         saveData();
         
         studySuccess.classList.add('show');
@@ -484,8 +487,8 @@ function initDashboard() {
     
     resetTasksBtn.addEventListener('click', () => {
         playClickSound(); // Dźwięk kliknięcia
-        const today = getTodayKey();
-        const wasCompleted = AppData.challenge.completedDays.includes(today);
+        const dateKey = getActiveDate(); // Use selected date instead of today
+        const wasCompleted = AppData.challenge.completedDays.includes(dateKey);
         
         const taskCheckboxes = document.querySelectorAll('.task-checkbox');
         taskCheckboxes.forEach(cb => {
@@ -495,7 +498,7 @@ function initDashboard() {
         
         // Remove day from completed if it was there
         if (wasCompleted) {
-            const index = AppData.challenge.completedDays.indexOf(today);
+            const index = AppData.challenge.completedDays.indexOf(dateKey);
             if (index > -1) {
                 AppData.challenge.completedDays.splice(index, 1);
                 AppData.challenge.currentDay = Math.max(0, AppData.challenge.currentDay - 1);
@@ -505,8 +508,9 @@ function initDashboard() {
             showNotification('⚠️ Dzień został cofnięty. Ukończ zadania ponownie aby przywrócić streak!', 'warning');
         }
         
-        updateTasksData();
+        updateTasksDataForDate(dateKey);
         updateAllDisplays();
+        renderCalendar(); // Refresh calendar
     });
     
     completeAllTasksBtn.addEventListener('click', () => {
@@ -516,8 +520,9 @@ function initDashboard() {
             cb.checked = true;
             cb.closest('.task-item').classList.add('completed');
         });
-        updateTasksData();
-        checkDayCompletion();
+        const dateKey = getActiveDate(); // Use selected date instead of today
+        updateTasksDataForDate(dateKey);
+        checkDayCompletionForDate(dateKey);
         
         // Trigger confetti animation
         createConfetti();
@@ -534,75 +539,20 @@ function initDashboard() {
 }
 
 function renderTasks() {
-    const tasksList = document.getElementById('tasksList');
-    const restDayMessage = document.getElementById('restDayMessage');
-    const taskActions = document.querySelector('.task-actions');
-    const editTasksBtn = document.getElementById('editTasksBtn');
+    // Delegate to renderTasksForDate with active date
+    const dateKey = getActiveDate();
+    renderTasksForDate(dateKey);
     
-    // Check if today is rest day
-    if (isRestDay()) {
-        tasksList.style.display = 'none';
-        taskActions.style.display = 'none';
-        restDayMessage.style.display = 'block';
-        editTasksBtn.style.display = 'none';
-        
-        // Auto-complete rest day if setting is enabled
-        if (AppData.settings.countRestDays) {
-            const today = getTodayKey();
-            if (!AppData.challenge.completedDays.includes(today)) {
-                AppData.challenge.completedDays.push(today);
-                AppData.challenge.currentDay++;
-                calculateStreak();
-                saveData();
-            }
-        }
-        return;
-    }
-    
-    // Normal day - show tasks
-    tasksList.style.display = 'block';
-    taskActions.style.display = 'flex';
-    restDayMessage.style.display = 'none';
-    editTasksBtn.style.display = 'block';
-    
-    tasksList.innerHTML = '';
-    
+    // Auto-complete rest day if setting is enabled (only for today)
     const today = getTodayKey();
-    const completedTasksToday = AppData.completedTasks[today] || [];
-    
-    // Backward compatibility: jeśli to jest liczba zamiast tablicy, konwertuj
-    const completedIndices = Array.isArray(completedTasksToday) 
-        ? completedTasksToday 
-        : Array.from({length: completedTasksToday}, (_, i) => i);
-    
-    AppData.tasks.forEach((task, index) => {
-        const label = document.createElement('label');
-        label.className = 'task-item';
-        
-        // Sprawdź czy to zadanie jest ukończone
-        const isCompleted = completedIndices.includes(index);
-        
-        label.innerHTML = `
-            <input type="checkbox" class="task-checkbox" data-index="${index}" ${isCompleted ? 'checked' : ''}>
-            <span class="task-text">${task}</span>
-        `;
-        
-        if (isCompleted) {
-            label.classList.add('completed');
+    if (dateKey === today && isRestDayForDate(today) && AppData.settings.countRestDays) {
+        if (!AppData.challenge.completedDays.includes(today)) {
+            AppData.challenge.completedDays.push(today);
+            AppData.challenge.currentDay++;
+            calculateStreak();
+            saveData();
         }
-        
-        const checkbox = label.querySelector('.task-checkbox');
-        checkbox.addEventListener('change', () => {
-            playCheckboxSound(); // Dźwięk checkboxa
-            label.classList.toggle('completed', checkbox.checked);
-            updateTasksData();
-            if (checkbox.checked) {
-                checkDayCompletion();
-            }
-        });
-        
-        tasksList.appendChild(label);
-    });
+    }
 }
 
 function renderEditTasks() {
@@ -1039,6 +989,7 @@ function startQuoteRotation() {
 // CALENDAR
 // ======================
 let currentCalendarDate = new Date();
+let selectedDate = null; // Stores the currently selected date for editing
 
 function initCalendar() {
     document.getElementById('prevMonth').addEventListener('click', () => {
@@ -1128,6 +1079,11 @@ function renderCalendar() {
             dayDiv.classList.add('today');
         }
         
+        // Check if this is the selected date
+        if (selectedDate && dayKey === selectedDate) {
+            dayDiv.classList.add('selected');
+        }
+        
         // Check if day is in challenge range
         const isInChallengeRange = isDayInChallengeRange(dayKey);
         const isCompleted = AppData.challenge.completedDays.includes(dayKey);
@@ -1144,7 +1100,212 @@ function renderCalendar() {
             dayDiv.classList.add('has-streak');
         }
         
+        // Add click handler to select date
+        dayDiv.addEventListener('click', () => {
+            playClickSound();
+            selectDate(dayKey);
+        });
+        
         calendarGrid.appendChild(dayDiv);
+    }
+}
+
+// ======================
+// DATE SELECTION
+// ======================
+function selectDate(dateKey) {
+    selectedDate = dateKey;
+    renderCalendar(); // Re-render calendar to show selected date
+    loadDataForDate(dateKey); // Load data for the selected date
+    updateDateIndicator(dateKey); // Show which date is being viewed
+    showNotification(`📅 Wybrano datę: ${formatDateDisplay(dateKey)}`, 'success');
+}
+
+function formatDateDisplay(dateKey) {
+    const date = new Date(dateKey + 'T00:00:00');
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const selectedDateObj = new Date(date);
+    selectedDateObj.setHours(0, 0, 0, 0);
+    
+    if (selectedDateObj.getTime() === today.getTime()) {
+        return 'Dziś';
+    }
+    
+    const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+    return date.toLocaleDateString('pl-PL', options);
+}
+
+function updateDateIndicator(dateKey) {
+    // Find or create date indicator element
+    let indicator = document.getElementById('selectedDateIndicator');
+    if (!indicator) {
+        indicator = document.createElement('div');
+        indicator.id = 'selectedDateIndicator';
+        indicator.className = 'selected-date-indicator';
+        
+        // Insert at the top of dashboard
+        const dashboard = document.getElementById('view-dashboard');
+        const dashboardGrid = dashboard.querySelector('.dashboard-grid');
+        dashboard.insertBefore(indicator, dashboardGrid);
+    }
+    
+    const today = getTodayKey();
+    if (dateKey === today) {
+        indicator.innerHTML = `
+            <span class="date-indicator-icon">📅</span>
+            <span class="date-indicator-text">Przeglądasz i edytujesz: <strong>Dzisiaj</strong></span>
+            <button class="btn-clear-selection" onclick="clearDateSelection()">✕</button>
+        `;
+    } else {
+        indicator.innerHTML = `
+            <span class="date-indicator-icon">📅</span>
+            <span class="date-indicator-text">Przeglądasz i edytujesz: <strong>${formatDateDisplay(dateKey)}</strong></span>
+            <button class="btn-clear-selection" onclick="clearDateSelection()">✕ Wróć do dzisiaj</button>
+        `;
+    }
+    
+    indicator.style.display = 'flex';
+}
+
+function clearDateSelection() {
+    selectedDate = null;
+    renderCalendar();
+    loadDataForDate(getTodayKey());
+    
+    const indicator = document.getElementById('selectedDateIndicator');
+    if (indicator) {
+        indicator.style.display = 'none';
+    }
+    
+    showNotification('📅 Powrócono do daty dzisiejszej', 'success');
+}
+
+function getActiveDate() {
+    return selectedDate || getTodayKey();
+}
+
+function loadDataForDate(dateKey) {
+    // Update all dashboard inputs with data for the selected date
+    
+    // Steps
+    const stepsInput = document.getElementById('stepsInput');
+    if (stepsInput) {
+        stepsInput.value = AppData.steps[dateKey] || '';
+    }
+    
+    // Mood
+    const moodButtons = document.querySelectorAll('.card-mood .mood-btn');
+    const savedMood = AppData.mood[dateKey];
+    moodButtons.forEach(btn => {
+        btn.classList.toggle('selected', btn.dataset.mood === String(savedMood));
+    });
+    
+    // Study hours
+    const studyHoursInput = document.getElementById('studyHoursInput');
+    if (studyHoursInput) {
+        studyHoursInput.value = AppData.studyHours[dateKey] || 0;
+    }
+    
+    // Tasks
+    renderTasksForDate(dateKey);
+}
+
+function renderTasksForDate(dateKey) {
+    const tasksList = document.getElementById('tasksList');
+    const restDayMessage = document.getElementById('restDayMessage');
+    const taskActions = document.querySelector('.task-actions');
+    const editTasksBtn = document.getElementById('editTasksBtn');
+    
+    // Check if the selected date is a rest day
+    if (isRestDayForDate(dateKey)) {
+        tasksList.style.display = 'none';
+        taskActions.style.display = 'none';
+        restDayMessage.style.display = 'block';
+        editTasksBtn.style.display = 'none';
+        return;
+    }
+    
+    // Normal day - show tasks
+    tasksList.style.display = 'block';
+    taskActions.style.display = 'flex';
+    restDayMessage.style.display = 'none';
+    editTasksBtn.style.display = 'block';
+    
+    tasksList.innerHTML = '';
+    
+    const completedTasksForDate = AppData.completedTasks[dateKey] || [];
+    
+    // Backward compatibility: jeśli to jest liczba zamiast tablicy, konwertuj
+    const completedIndices = Array.isArray(completedTasksForDate) 
+        ? completedTasksForDate 
+        : Array.from({length: completedTasksForDate}, (_, i) => i);
+    
+    AppData.tasks.forEach((task, index) => {
+        const label = document.createElement('label');
+        label.className = 'task-item';
+        
+        // Sprawdź czy to zadanie jest ukończone
+        const isCompleted = completedIndices.includes(index);
+        
+        label.innerHTML = `
+            <input type="checkbox" class="task-checkbox" data-index="${index}" ${isCompleted ? 'checked' : ''}>
+            <span class="task-text">${task}</span>
+        `;
+        
+        if (isCompleted) {
+            label.classList.add('completed');
+        }
+        
+        const checkbox = label.querySelector('.task-checkbox');
+        checkbox.addEventListener('change', () => {
+            playCheckboxSound();
+            label.classList.toggle('completed', checkbox.checked);
+            updateTasksDataForDate(dateKey);
+            if (checkbox.checked) {
+                checkDayCompletionForDate(dateKey);
+            }
+        });
+        
+        tasksList.appendChild(label);
+    });
+}
+
+function updateTasksDataForDate(dateKey) {
+    const taskCheckboxes = document.querySelectorAll('.task-checkbox');
+    const completedIndices = Array.from(taskCheckboxes)
+        .map((cb, index) => cb.checked ? index : -1)
+        .filter(index => index !== -1);
+    AppData.completedTasks[dateKey] = completedIndices;
+    saveData();
+}
+
+function checkDayCompletionForDate(dateKey) {
+    const taskCheckboxes = document.querySelectorAll('.task-checkbox');
+    const allCompleted = Array.from(taskCheckboxes).every(cb => cb.checked);
+    
+    if (allCompleted && AppData.tasks.length > 0 && !AppData.challenge.completedDays.includes(dateKey)) {
+        AppData.challenge.completedDays.push(dateKey);
+        
+        // Only increment currentDay if this is today or a past date within challenge range
+        const today = getTodayKey();
+        if (dateKey <= today) {
+            AppData.challenge.currentDay++;
+        }
+        
+        // Sprawdź czy wyzwanie zostało ukończone
+        if (AppData.challenge.currentDay >= AppData.challenge.totalDays) {
+            handleChallengeCompletion();
+        }
+        
+        calculateStreak();
+        saveData();
+        updateAllDisplays();
+        renderCalendar(); // Refresh calendar to show newly completed day
+        showNotification('🎉 Dzień ukończony! Świetna robota!', 'success');
+        
+        // Trigger confetti animation
+        createConfetti();
     }
 }
 
