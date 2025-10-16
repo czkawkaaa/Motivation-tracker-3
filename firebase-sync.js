@@ -21,6 +21,9 @@ let unsubscribeSnapshot = null;
 // Expose for diagnostics in UI
 window.firebaseCurrentUser = null;
 window.firebaseRealtimeSyncActive = false;
+window.firebaseLastError = null;
+window.firebaseLastWriteAttempt = null;
+window.firebaseLastReadAttempt = null;
 
 // Smart merge helper: merges local and cloud data structures with simple rules:
 // - For per-day maps (steps, studyHours, mood, completedTasks): union keys; for conflicts prefer source with newer lastModified timestamps if present, otherwise prefer non-empty values and cloud by default.
@@ -219,6 +222,8 @@ function onUserLogout() {
 async function loadDataFromFirestore() {
     if (!currentUser) return;
     
+    window.firebaseLastReadAttempt = new Date().toISOString();
+    
     // Sprawdź czy właśnie usunęliśmy dane (zapobiega pętli)
     const justDeleted = sessionStorage.getItem('deletionReload');
     if (justDeleted) {
@@ -233,7 +238,9 @@ async function loadDataFromFirestore() {
     
     try {
         const docRef = doc(db, 'users', currentUser.uid);
+        console.log('📖 Attempting to read from Firestore, user:', currentUser.uid);
         const docSnap = await getDoc(docRef);
+        console.log('📖 Firestore read successful, exists:', docSnap.exists());
         
             if (docSnap.exists()) {
             const cloudData = docSnap.data();
@@ -316,8 +323,18 @@ async function loadDataFromFirestore() {
         }
     } catch (error) {
         console.error('❌ Error loading from Firestore:', error);
-        if (typeof showNotification === 'function') {
-            showNotification('⚠️ Błąd ładowania danych z chmury', 'warning');
+        console.error('❌ Error code:', error.code);
+        console.error('❌ Error message:', error.message);
+        window.firebaseLastError = `READ: ${error.code} - ${error.message}`;
+        
+        if (error.code === 'permission-denied') {
+            if (typeof showNotification === 'function') {
+                showNotification('🔒 Brak uprawnień odczytu Firestore! Sprawdź reguły bezpieczeństwa.', 'error');
+            }
+        } else {
+            if (typeof showNotification === 'function') {
+                showNotification('⚠️ Błąd ładowania danych z chmury: ' + error.code, 'warning');
+            }
         }
         return false;
     }
@@ -367,6 +384,8 @@ async function saveDataToFirestore() {
         return;
     }
     
+    window.firebaseLastWriteAttempt = new Date().toISOString();
+    
     // Zabezpieczenie: nie zapisuj pustych danych
     if (typeof AppData === 'undefined') {
         console.warn('⚠️ AppData is undefined - skipping Firebase save');
@@ -391,6 +410,9 @@ async function saveDataToFirestore() {
             AppData.lastModified = Date.now();
         }
         
+        console.log('💾 Attempting to write to Firestore, user:', currentUser.uid);
+        console.log('💾 Data size:', JSON.stringify(AppData).length, 'bytes');
+        
         await setDoc(docRef, {
             data: AppData,
             lastModified: AppData.lastModified,
@@ -398,12 +420,16 @@ async function saveDataToFirestore() {
             updatedAt: serverTimestamp()
         }, { merge: true });
         
+        console.log('✅ Data saved to cloud successfully');
+        window.firebaseLastError = null; // Clear error on success
+        
         // Zapisz też lokalnie jako backup
         localStorage.setItem('kawaiiQuestData', JSON.stringify(AppData));
-        
-        console.log('☁️ Data saved to cloud');
     } catch (error) {
         console.error('❌ Error saving to Firestore:', error);
+        console.error('❌ Error code:', error.code);
+        console.error('❌ Error message:', error.message);
+        window.firebaseLastError = `WRITE: ${error.code} - ${error.message}`;
         
         // Fallback do localStorage jeśli cloud nie działa
         if (typeof AppData !== 'undefined') {
@@ -413,7 +439,11 @@ async function saveDataToFirestore() {
         
         if (error.code === 'permission-denied') {
             if (typeof showNotification === 'function') {
-                showNotification('⚠️ Brak uprawnień do zapisu. Sprawdź reguły Firestore.', 'warning');
+                showNotification('🔒 Brak uprawnień zapisu Firestore! Sprawdź reguły bezpieczeństwa.', 'error');
+            }
+        } else {
+            if (typeof showNotification === 'function') {
+                showNotification('⚠️ Błąd zapisu do chmury: ' + error.code, 'warning');
             }
         }
     }

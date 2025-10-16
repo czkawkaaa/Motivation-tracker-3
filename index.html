@@ -516,12 +516,16 @@
                         <p><strong>ID użytkownika:</strong> <span id="syncUserID">—</span></p>
                         <p><strong>Realtime sync:</strong> <span id="syncRealtimeStatus">—</span></p>
                         <p><strong>Ostatni sync:</strong> <span id="lastSyncStatus">—</span></p>
+                        <p><strong>Ostatni błąd:</strong> <span id="syncErrorStatus">—</span></p>
+                        <p><strong>Ostatni odczyt:</strong> <span id="syncLastRead">—</span></p>
+                        <p><strong>Ostatni zapis:</strong> <span id="syncLastWrite">—</span></p>
                         <div style="margin-top: 10px;">
                             <button id="btnSyncNow">🔄 Wymuś sync</button>
                             <button id="btnForcePull">⬇️ Pobierz chmurę</button>
                             <button id="btnForcePush">⬆️ Wypchnij lokalne</button>
                         </div>
                         <small>Synchronizacja odbywa się automatycznie przy powrocie do karty i po odzyskaniu połączenia. <strong>Musisz być zalogowany/a przez Google aby synchronizacja działała między urządzeniami.</strong></small>
+                        <small style="display: block; margin-top: 10px; color: #ff6b6b;"><strong>Jeśli widzisz błąd "permission-denied", skontaktuj się - trzeba zaktualizować reguły Firestore!</strong></small>
                     </div>
                 </section>
 

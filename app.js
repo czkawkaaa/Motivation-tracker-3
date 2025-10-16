@@ -1949,6 +1949,29 @@ function initSyncUI() {
             realtimeStatusEl.textContent = hasRealtimeSync ? '✅ Aktywny' : (isLoggedIn ? '⚠️ Nieaktywny' : '—');
             realtimeStatusEl.style.color = hasRealtimeSync ? 'green' : 'orange';
         }
+        
+        // Show error diagnostics
+        const errorEl = document.getElementById('syncErrorStatus');
+        if (errorEl) {
+            if (window.firebaseLastError) {
+                errorEl.textContent = window.firebaseLastError;
+                errorEl.style.color = 'red';
+                errorEl.style.fontWeight = 'bold';
+            } else {
+                errorEl.textContent = '✅ Brak błędów';
+                errorEl.style.color = 'green';
+            }
+        }
+        
+        // Show last read/write attempts
+        const lastReadEl = document.getElementById('syncLastRead');
+        const lastWriteEl = document.getElementById('syncLastWrite');
+        if (lastReadEl && window.firebaseLastReadAttempt) {
+            lastReadEl.textContent = new Date(window.firebaseLastReadAttempt).toLocaleTimeString();
+        }
+        if (lastWriteEl && window.firebaseLastWriteAttempt) {
+            lastWriteEl.textContent = new Date(window.firebaseLastWriteAttempt).toLocaleTimeString();
+        }
     }
 
     // Try to read lastModified from AppData
