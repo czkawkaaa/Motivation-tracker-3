@@ -53,6 +53,15 @@
     <main>
         <!-- DASHBOARD VIEW -->
         <div class="view active" id="view-dashboard">
+            <!-- Date Indicator (hidden by default, shown when date is selected) -->
+            <div id="dateIndicator" class="date-indicator" style="display: none;">
+                <div class="date-indicator-content">
+                    <span class="date-indicator-icon">📅</span>
+                    <span class="selected-date-text">Wyświetlane dane dla: [Data]</span>
+                    <button class="btn-return-today" onclick="returnToToday()">✕ Wróć do dzisiaj</button>
+                </div>
+            </div>
+            
             <div class="dashboard-grid">
                 <!-- Wyzwanie Card -->
                 <section class="card card-challenge">

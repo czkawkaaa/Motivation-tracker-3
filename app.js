@@ -359,7 +359,8 @@ function initDashboard() {
     saveStepsBtn.addEventListener('click', () => {
         playSuccessSound(); // Dźwięk sukcesu
         const steps = parseInt(stepsInput.value) || 0;
-        AppData.steps[getTodayKey()] = steps;
+        const dateKey = getActiveDate(); // Use selected date instead of today
+        AppData.steps[dateKey] = steps;
         saveData();
         
         stepsSuccess.classList.add('show');
@@ -386,7 +387,8 @@ function initDashboard() {
     saveMoodBtn.addEventListener('click', () => {
         if (selectedMood) {
             playSuccessSound(); // Dźwięk sukcesu
-            AppData.mood[getTodayKey()] = selectedMood;
+            const dateKey = getActiveDate(); // Use selected date instead of today
+            AppData.mood[dateKey] = selectedMood;
             saveData();
             
             moodSuccess.classList.add('show');
@@ -410,7 +412,8 @@ function initDashboard() {
     saveStudyBtn.addEventListener('click', () => {
         playSuccessSound(); // Dźwięk sukcesu
         const hours = parseFloat(studyHoursInput.value) || 0;
-        AppData.studyHours[getTodayKey()] = hours;
+        const dateKey = getActiveDate(); // Use selected date instead of today
+        AppData.studyHours[dateKey] = hours;
         saveData();
         
         studySuccess.classList.add('show');
@@ -567,8 +570,8 @@ function renderTasks() {
     
     tasksList.innerHTML = '';
     
-    const today = getTodayKey();
-    const completedTasksToday = AppData.completedTasks[today] || [];
+    const dateKey = getActiveDate(); // Use selected date instead of just today
+    const completedTasksToday = AppData.completedTasks[dateKey] || [];
     
     // Backward compatibility: jeśli to jest liczba zamiast tablicy, konwertuj
     const completedIndices = Array.isArray(completedTasksToday) 
@@ -633,7 +636,8 @@ function updateTasksData() {
     const completedIndices = Array.from(taskCheckboxes)
         .map((cb, index) => cb.checked ? index : -1)
         .filter(index => index !== -1);
-    AppData.completedTasks[getTodayKey()] = completedIndices;
+    const dateKey = getActiveDate(); // Use selected date instead of today
+    AppData.completedTasks[dateKey] = completedIndices;
     saveData();
 }
 
@@ -1039,6 +1043,7 @@ function startQuoteRotation() {
 // CALENDAR
 // ======================
 let currentCalendarDate = new Date();
+let selectedDate = null; // Stores the currently selected date for editing
 
 function initCalendar() {
     document.getElementById('prevMonth').addEventListener('click', () => {
@@ -1054,6 +1059,56 @@ function initCalendar() {
     });
     
     renderCalendar();
+}
+
+function getActiveDate() {
+    return selectedDate || getTodayKey();
+}
+
+function loadDataForDate(dateKey) {
+    // Update all dashboard inputs with data for the selected date
+    
+    // Steps
+    const stepsInput = document.getElementById('stepsInput');
+    if (stepsInput) {
+        stepsInput.value = AppData.steps[dateKey] || '';
+    }
+    
+    // Mood
+    const moodButtons = document.querySelectorAll('.card-mood .mood-btn');
+    const savedMood = AppData.mood[dateKey];
+    moodButtons.forEach(btn => {
+        btn.classList.toggle('selected', btn.dataset.mood === String(savedMood));
+    });
+    
+    // Study hours
+    const studyHoursInput = document.getElementById('studyHoursInput');
+    if (studyHoursInput) {
+        studyHoursInput.value = AppData.studyHours[dateKey] || '';
+    }
+    
+    // Tasks - render with data for selected date
+    renderTasks();
+    
+    console.log(`📅 Loaded data for ${dateKey}`);
+}
+
+function returnToToday() {
+    selectedDate = null;
+    
+    // Hide date indicator
+    const dateIndicator = document.getElementById('dateIndicator');
+    if (dateIndicator) {
+        dateIndicator.style.display = 'none';
+    }
+    
+    // Reload data for today
+    loadDataForDate(getTodayKey());
+    
+    // Refresh calendar to update highlighting
+    renderCalendar();
+    
+    showNotification('📅 Powrócono do daty dzisiejszej', 'success');
 }
 
 function renderCalendar() {
@@ -1119,6 +1174,34 @@ function renderCalendar() {
         dayDiv.className = 'calendar-day';
         dayDiv.textContent = day;
         
+        // Make day clickable
+        dayDiv.style.cursor = 'pointer';
+        dayDiv.addEventListener('click', () => {
+            playClickSound();
+            selectedDate = dayKey;
+            
+            // Show date indicator
+            const dateIndicator = document.getElementById('dateIndicator');
+            if (dateIndicator) {
+                const dateObj = new Date(dayKey + 'T00:00:00');
+                const formattedDate = dateObj.toLocaleDateString('pl-PL', { 
+                    day: 'numeric', 
+                    month: 'long', 
+                    year: 'numeric' 
+                });
+                dateIndicator.querySelector('.selected-date-text').textContent = formattedDate;
+                dateIndicator.style.display = 'flex';
+            }
+            
+            // Load data for selected date
+            loadDataForDate(dayKey);
+            
+            // Refresh calendar to update highlighting
+            renderCalendar();
+            
+            showNotification(`📅 Wybrano datę: ${dayKey}`, 'success');
+        });
+        
         // Check if rest day
         if (isRestDayForDate(dayKey)) {
             dayDiv.classList.add('rest');
@@ -1126,6 +1209,11 @@ function renderCalendar() {
         
         if (dayKey === today) {
             dayDiv.classList.add('today');
+        }
+        
+        // Highlight selected date
+        if (dayKey === selectedDate) {
+            dayDiv.classList.add('selected');
         }
         
         // Check if day is in challenge range
