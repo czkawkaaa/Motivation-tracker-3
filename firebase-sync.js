@@ -504,7 +504,36 @@ function setupRealtimeSync() {
 }
 
 // Eksportuj funkcję dla użycia w app.js
-window.saveDataToFirestore = saveDataToFirestore;
+// Provide a throttled scheduler to avoid too-frequent writes
+let _saveTimer = null;
+let _savePendingResolve = null;
+function scheduleSaveToFirestore(delay = 800) {
+    // Return a promise that resolves when actual save completes
+    if (_saveTimer) {
+        clearTimeout(_saveTimer);
+        _saveTimer = null;
+        if (_savePendingResolve) {
+            // leave existing promise pending; we'll create a new one below
+            _savePendingResolve = null;
+        }
+    }
+
+    return new Promise((resolve) => {
+        _savePendingResolve = resolve;
+        _saveTimer = setTimeout(async () => {
+            _saveTimer = null;
+            try {
+                await saveDataToFirestore();
+            } catch (e) {
+                console.warn('⚠️ Scheduled saveDataToFirestore failed:', e);
+            }
+            if (typeof resolve === 'function') resolve();
+            _savePendingResolve = null;
+        }, delay);
+    });
+}
+
+window.saveDataToFirestore = scheduleSaveToFirestore;
 
 // Funkcja do usuwania wszystkich danych z Firestore
 async function deleteDataFromFirestore() {
@@ -565,6 +594,26 @@ function initFirebaseSync() {
         } else {
             console.log('❌ User logged out');
             onUserLogout();
+        }
+    });
+
+    // Auto-sync when page becomes visible or regains connectivity
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+            console.log('📶 Visibility regained - attempting sync');
+            if (typeof window.syncNow === 'function') window.syncNow();
+        }
+    });
+
+    window.addEventListener('online', () => {
+        console.log('🔌 Back online - attempting sync');
+        if (typeof window.syncNow === 'function') window.syncNow();
+    });
+
+    // Try to push local changes before unloading
+    window.addEventListener('beforeunload', (e) => {
+        if (typeof window.forcePush === 'function') {
+            try { window.forcePush(); } catch (err) {}
         }
     });
 }
