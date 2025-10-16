@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug App Data</title>
+    <style>
+        body { font-family: monospace; padding: 20px; }
+        pre { background: #f5f5f5; padding: 10px; border: 1px solid #ccc; }
+        button { margin: 5px; padding: 10px; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Debug Kawaii Quest Data</h1>
+    
+    <button onclick="loadData()">Load Data from localStorage</button>
+    <button onclick="clearData()">Clear localStorage</button>
+    <button onclick="testStreak()">Test Streak Calculation</button>
+    
+    <h2>Current Data:</h2>
+    <pre id="data">No data loaded</pre>
+    
+    <h2>Streak Calculation:</h2>
+    <pre id="streak">No calculation</pre>
+    
+    <script>
+        function loadData() {
+            const data = localStorage.getItem('kawaiiQuestData');
+            if (data) {
+                const parsed = JSON.parse(data);
+                document.getElementById('data').textContent = JSON.stringify(parsed, null, 2);
+            } else {
+                document.getElementById('data').textContent = 'No data in localStorage';
+            }
+        }
+        
+        function clearData() {
+            if (confirm('Are you sure you want to clear all data?')) {
+                localStorage.removeItem('kawaiiQuestData');
+                document.getElementById('data').textContent = 'Data cleared!';
+            }
+        }
+        
+        function testStreak() {
+            const data = localStorage.getItem('kawaiiQuestData');
+            if (!data) {
+                document.getElementById('streak').textContent = 'No data to test';
+                return;
+            }
+            
+            const parsed = JSON.parse(data);
+            const completedDays = parsed.challenge?.completedDays || [];
+            const today = new Date().toISOString().split('T')[0];
+            
+            let output = `Today: ${today}\n`;
+            output += `Completed Days: ${JSON.stringify(completedDays)}\n\n`;
+            
+            if (completedDays.length === 0) {
+                output += 'Streak: 0 (no completed days)';
+            } else {
+                const sorted = [...completedDays].sort().reverse();
+                const todayDate = new Date(today + 'T12:00:00');
+                const latestDate = new Date(sorted[0] + 'T12:00:00');
+                const diff = Math.floor((todayDate - latestDate) / (1000 * 60 * 60 * 24));
+                
+                output += `Latest completed: ${sorted[0]}\n`;
+                output += `Days since latest: ${diff}\n\n`;
+                
+                if (diff > 1) {
+                    output += 'Streak: 0 (gap too large, need to complete today or yesterday)';
+                } else {
+                    let streak = 1;
+                    let currentDate = latestDate;
+                    
+                    for (let i = 1; i < sorted.length; i++) {
+                        const prevDate = new Date(sorted[i] + 'T12:00:00');
+                        const dayDiff = Math.floor((currentDate - prevDate) / (1000 * 60 * 60 * 24));
+                        
+                        output += `${sorted[i-1]} → ${sorted[i]}: ${dayDiff} day(s)\n`;
+                        
+                        if (dayDiff === 1) {
+                            streak++;
+                            currentDate = prevDate;
+                        } else {
+                            output += `Streak broken at ${sorted[i]}\n`;
+                            break;
+                        }
+                    }
+                    
+                    output += `\nFinal Streak: ${streak}`;
+                }
+            }
+            
+            document.getElementById('streak').textContent = output;
+        }
+        
+        // Auto-load on page load
+        loadData();
+    </script>
+</body>
+</html>

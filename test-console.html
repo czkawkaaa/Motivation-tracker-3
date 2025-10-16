@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Console Test</title>
+    <style>
+        body { font-family: Arial; padding: 20px; }
+        .log { padding: 10px; margin: 5px 0; border-radius: 5px; }
+        .error { background: #ffebee; color: #c62828; }
+        .warn { background: #fff3e0; color: #ef6c00; }
+        .info { background: #e3f2fd; color: #1565c0; }
+    </style>
+</head>
+<body>
+    <h1>Console Test</h1>
+    <button onclick="location.href='index.html'">Open Main App</button>
+    <div id="logs"></div>
+    
+    <script>
+        const logsDiv = document.getElementById('logs');
+        
+        // Capture console errors
+        const originalError = console.error;
+        const originalWarn = console.warn;
+        const originalLog = console.log;
+        
+        console.error = function(...args) {
+            logsDiv.innerHTML += `<div class="log error">ERROR: ${args.join(' ')}</div>`;
+            originalError.apply(console, args);
+        };
+        
+        console.warn = function(...args) {
+            logsDiv.innerHTML += `<div class="log warn">WARN: ${args.join(' ')}</div>`;
+            originalWarn.apply(console, args);
+        };
+        
+        console.log = function(...args) {
+            logsDiv.innerHTML += `<div class="log info">LOG: ${args.join(' ')}</div>`;
+            originalLog.apply(console, args);
+        };
+        
+        // Capture unhandled errors
+        window.addEventListener('error', (e) => {
+            logsDiv.innerHTML += `<div class="log error">UNCAUGHT ERROR: ${e.message} at ${e.filename}:${e.lineno}</div>`;
+        });
+        
+        // Test loading app.js
+        const script = document.createElement('script');
+        script.src = 'app.js';
+        script.onerror = () => {
+            logsDiv.innerHTML += `<div class="log error">Failed to load app.js</div>`;
+        };
+        script.onload = () => {
+            logsDiv.innerHTML += `<div class="log info">✅ app.js loaded successfully</div>`;
+        };
+        document.head.appendChild(script);
+    </script>
+</body>
+</html>

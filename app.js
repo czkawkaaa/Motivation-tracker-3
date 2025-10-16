@@ -256,14 +256,13 @@ function getTodayKey() {
 }
 
 function isRestDay() {
-    const today = new Date();
-    const dayOfWeek = today.getDay();
-    const restDay = AppData.settings.restDay;
-    return restDay !== 'none' && parseInt(restDay) === dayOfWeek;
+    // Use active date (selected in calendar) or today
+    const dateKey = typeof getActiveDate === 'function' ? getActiveDate() : getTodayKey();
+    return isRestDayForDate(dateKey);
 }
 
 function isRestDayForDate(dateString) {
-    const date = new Date(dateString);
+    const date = new Date(dateString + 'T12:00:00'); // Use noon to avoid timezone issues
     const dayOfWeek = date.getDay();
     const restDay = AppData.settings.restDay;
     return restDay !== 'none' && parseInt(restDay) === dayOfWeek;
@@ -487,8 +486,8 @@ function initDashboard() {
     
     resetTasksBtn.addEventListener('click', () => {
         playClickSound(); // Dźwięk kliknięcia
-        const today = getTodayKey();
-        const wasCompleted = AppData.challenge.completedDays.includes(today);
+        const dateKey = getActiveDate(); // Use active date instead of today
+        const wasCompleted = AppData.challenge.completedDays.includes(dateKey);
         
         const taskCheckboxes = document.querySelectorAll('.task-checkbox');
         taskCheckboxes.forEach(cb => {
@@ -498,7 +497,7 @@ function initDashboard() {
         
         // Remove day from completed if it was there
         if (wasCompleted) {
-            const index = AppData.challenge.completedDays.indexOf(today);
+            const index = AppData.challenge.completedDays.indexOf(dateKey);
             if (index > -1) {
                 AppData.challenge.completedDays.splice(index, 1);
                 AppData.challenge.currentDay = Math.max(0, AppData.challenge.currentDay - 1);
@@ -551,9 +550,9 @@ function renderTasks() {
         
         // Auto-complete rest day if setting is enabled
         if (AppData.settings.countRestDays) {
-            const today = getTodayKey();
-            if (!AppData.challenge.completedDays.includes(today)) {
-                AppData.challenge.completedDays.push(today);
+            const dateKey = getActiveDate(); // Use active date instead of today
+            if (!AppData.challenge.completedDays.includes(dateKey)) {
+                AppData.challenge.completedDays.push(dateKey);
                 AppData.challenge.currentDay++;
                 calculateStreak();
                 saveData();
@@ -599,13 +598,26 @@ function renderTasks() {
             playCheckboxSound(); // Dźwięk checkboxa
             label.classList.toggle('completed', checkbox.checked);
             updateTasksData();
-            if (checkbox.checked) {
-                checkDayCompletion();
-            }
+            checkDayCompletion(); // Check after any checkbox change
         });
         
         tasksList.appendChild(label);
     });
+    
+    // If all tasks are already checked (e.g., loading past day data),
+    // mark day as completed but don't show notification
+    const allTasksChecked = Array.from(document.querySelectorAll('.task-checkbox')).every(cb => cb.checked);
+    if (allTasksChecked && AppData.tasks.length > 0) {
+        const dateKey = getActiveDate();
+        if (!AppData.challenge.completedDays.includes(dateKey)) {
+            AppData.challenge.completedDays.push(dateKey);
+            AppData.challenge.currentDay++;
+            calculateStreak();
+            saveData();
+            updateAllDisplays();
+            // No notification or confetti for silently marking completed days
+        }
+    }
 }
 
 function renderEditTasks() {
@@ -842,12 +854,12 @@ function updateBannerCountdown() {
 }
 
 function checkDayCompletion() {
-    const today = getTodayKey();
+    const dateKey = getActiveDate(); // Use active date instead of today
     const taskCheckboxes = document.querySelectorAll('.task-checkbox');
     const allCompleted = Array.from(taskCheckboxes).every(cb => cb.checked);
     
-    if (allCompleted && AppData.tasks.length > 0 && !AppData.challenge.completedDays.includes(today)) {
-        AppData.challenge.completedDays.push(today);
+    if (allCompleted && AppData.tasks.length > 0 && !AppData.challenge.completedDays.includes(dateKey)) {
+        AppData.challenge.completedDays.push(dateKey);
         AppData.challenge.currentDay++;
         
         // Sprawdź czy wyzwanie zostało ukończone
@@ -866,18 +878,48 @@ function checkDayCompletion() {
 }
 
 function calculateStreak() {
-    const sorted = AppData.challenge.completedDays.sort().reverse();
-    let streak = 0;
-    const today = new Date();
+    if (!AppData.challenge.completedDays || AppData.challenge.completedDays.length === 0) {
+        AppData.streak = 0;
+        return;
+    }
     
-    for (let i = 0; i < sorted.length; i++) {
-        const checkDate = new Date(today);
-        checkDate.setDate(checkDate.getDate() - i);
-        const checkKey = `${checkDate.getFullYear()}-${String(checkDate.getMonth() + 1).padStart(2, '0')}-${String(checkDate.getDate()).padStart(2, '0')}`;
+    // Sort completed days in descending order (newest first)
+    const sorted = [...AppData.challenge.completedDays].sort().reverse();
+    
+    const todayKey = getTodayKey();
+    const today = new Date(todayKey + 'T12:00:00');
+    
+    // Check if today or yesterday is completed (to start counting streak)
+    let currentDate = new Date(sorted[0] + 'T12:00:00');
+    const latestCompletedDate = new Date(sorted[0] + 'T12:00:00');
+    
+    // If latest completed day is more than 1 day ago, streak is broken
+    const daysSinceLastCompleted = Math.floor((today - latestCompletedDate) / (1000 * 60 * 60 * 24));
+    
+    if (daysSinceLastCompleted > 1) {
+        AppData.streak = 0;
+        return;
+    }
+    
+    // Count consecutive days
+    let streak = 1; // Start with 1 for the most recent day
+    
+    for (let i = 1; i < sorted.length; i++) {
+        const prevDate = new Date(sorted[i] + 'T12:00:00');
+        const diff = Math.floor((currentDate - prevDate) / (1000 * 60 * 60 * 24));
         
-        if (sorted.includes(checkKey)) {
+        // If difference is 1 day, continue streak
+        if (diff === 1) {
             streak++;
-        } else {
+            currentDate = prevDate;
+        } 
+        // If difference is 2 days and the skipped day was a rest day, continue streak
+        else if (diff === 2 && isRestDayForDate(sorted[i-1])) {
+            streak++;
+            currentDate = prevDate;
+        }
+        // Otherwise, streak is broken
+        else {
             break;
         }
     }
@@ -886,6 +928,7 @@ function calculateStreak() {
 }
 
 function updateAllDisplays() {
+    calculateStreak(); // Always recalculate streak when updating displays
     updateChallengeProgress();
     updateStreakDisplay();
     updateTodaySteps();
@@ -1145,25 +1188,36 @@ function renderCalendar() {
     // Days
     const today = getTodayKey();
     
-    // Calculate which days have streak
-    const sortedDays = AppData.challenge.completedDays.sort();
+    // Calculate which days are part of current streak (from today backwards)
     const streakDays = new Set();
     
-    for (let i = 0; i < sortedDays.length; i++) {
-        const currentDate = new Date(sortedDays[i]);
-        if (i === 0) {
-            streakDays.add(sortedDays[i]);
-        } else {
-            const prevDate = new Date(sortedDays[i - 1]);
-            const dayDiff = (currentDate - prevDate) / (1000 * 60 * 60 * 24);
-            if (dayDiff === 1 || (dayDiff === 2 && isRestDayForDate(sortedDays[i - 1]))) {
-                streakDays.add(sortedDays[i]);
-                if (streakDays.has(sortedDays[i - 1])) {
-                    streakDays.add(sortedDays[i]);
+    if (AppData.challenge.completedDays.length > 0) {
+        const sortedDaysDesc = [...AppData.challenge.completedDays].sort().reverse();
+        const todayDate = new Date(today + 'T12:00:00');
+        const latestCompletedDate = new Date(sortedDaysDesc[0] + 'T12:00:00');
+        
+        // Only calculate streak if latest completed day is today or yesterday
+        const daysSinceLastCompleted = Math.floor((todayDate - latestCompletedDate) / (1000 * 60 * 60 * 24));
+        
+        if (daysSinceLastCompleted <= 1) {
+            // Add the most recent day to streak
+            streakDays.add(sortedDaysDesc[0]);
+            let currentDate = latestCompletedDate;
+            
+            // Count backwards and add consecutive days
+            for (let i = 1; i < sortedDaysDesc.length; i++) {
+                const prevDate = new Date(sortedDaysDesc[i] + 'T12:00:00');
+                const diff = Math.floor((currentDate - prevDate) / (1000 * 60 * 60 * 24));
+                
+                if (diff === 1) {
+                    streakDays.add(sortedDaysDesc[i]);
+                    currentDate = prevDate;
+                } else if (diff === 2 && isRestDayForDate(sortedDaysDesc[i-1])) {
+                    streakDays.add(sortedDaysDesc[i]);
+                    currentDate = prevDate;
+                } else {
+                    break;
                 }
-            } else {
-                streakDays.clear();
-                streakDays.add(sortedDays[i]);
             }
         }
     }
@@ -1250,9 +1304,10 @@ function updateStats() {
 }
 
 function updateStepsChart() {
-    const todaySteps = AppData.steps[getTodayKey()] || 0;
+    // Calculate TOTAL steps from entire challenge
+    const totalSteps = Object.values(AppData.steps).reduce((sum, s) => sum + s, 0);
     const goal = AppData.settings.stepsGoal;
-    let percent = Math.min((todaySteps / goal) * 100, 100);
+    let percent = Math.min((totalSteps / goal) * 100, 100);
     percent = Math.max(0, percent);
     
     const circle = document.getElementById('stepsCircle');
@@ -1262,7 +1317,7 @@ function updateStepsChart() {
     
     // Display one decimal
     document.getElementById('stepsPercent').textContent = percent.toFixed(1) + '%';
-    document.getElementById('stepsLabel').textContent = `${todaySteps.toLocaleString()}/${goal.toLocaleString()}`;
+    document.getElementById('stepsLabel').textContent = `${totalSteps.toLocaleString()}/${goal.toLocaleString()}`;
 }
 
 function updateMoodChart() {

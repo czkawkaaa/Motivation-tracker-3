@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Streak Logic</title>
+</head>
+<body>
+    <h1>Streak Test</h1>
+    <div id="output"></div>
+    
+    <script>
+        const output = document.getElementById('output');
+        
+        // Test case 1: Only Oct 15 completed
+        const test1 = {
+            completedDays: ['2025-10-15'],
+            today: '2025-10-16'
+        };
+        
+        // Test case 2: Oct 15 and 16 completed
+        const test2 = {
+            completedDays: ['2025-10-15', '2025-10-16'],
+            today: '2025-10-16'
+        };
+        
+        // Test case 3: Oct 14, 15 completed (not 16)
+        const test3 = {
+            completedDays: ['2025-10-14', '2025-10-15'],
+            today: '2025-10-16'
+        };
+        
+        function calculateStreak(completedDays, todayKey) {
+            if (!completedDays || completedDays.length === 0) {
+                return 0;
+            }
+            
+            const sorted = [...completedDays].sort().reverse();
+            const today = new Date(todayKey + 'T12:00:00');
+            const latestCompletedDate = new Date(sorted[0] + 'T12:00:00');
+            
+            const daysSinceLastCompleted = Math.floor((today - latestCompletedDate) / (1000 * 60 * 60 * 24));
+            
+            output.innerHTML += `<p>Latest completed: ${sorted[0]}, Days since: ${daysSinceLastCompleted}</p>`;
+            
+            if (daysSinceLastCompleted > 1) {
+                return 0;
+            }
+            
+            let streak = 1;
+            let currentDate = latestCompletedDate;
+            
+            for (let i = 1; i < sorted.length; i++) {
+                const prevDate = new Date(sorted[i] + 'T12:00:00');
+                const diff = Math.floor((currentDate - prevDate) / (1000 * 60 * 60 * 24));
+                
+                output.innerHTML += `<p>Compare ${sorted[i-1]} to ${sorted[i]}: diff=${diff}</p>`;
+                
+                if (diff === 1) {
+                    streak++;
+                    currentDate = prevDate;
+                } else {
+                    break;
+                }
+            }
+            
+            return streak;
+        }
+        
+        output.innerHTML += '<h2>Test 1: Only Oct 15 completed</h2>';
+        const result1 = calculateStreak(test1.completedDays, test1.today);
+        output.innerHTML += `<p><strong>Streak: ${result1}</strong> (Expected: 1 because yesterday was completed)</p><hr>`;
+        
+        output.innerHTML += '<h2>Test 2: Oct 15 and 16 completed</h2>';
+        const result2 = calculateStreak(test2.completedDays, test2.today);
+        output.innerHTML += `<p><strong>Streak: ${result2}</strong> (Expected: 2)</p><hr>`;
+        
+        output.innerHTML += '<h2>Test 3: Oct 14, 15 completed (not 16)</h2>';
+        const result3 = calculateStreak(test3.completedDays, test3.today);
+        output.innerHTML += `<p><strong>Streak: ${result3}</strong> (Expected: 2 because yesterday was completed)</p><hr>`;
+    </script>
+</body>
+</html>
