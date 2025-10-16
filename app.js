@@ -143,6 +143,39 @@ function loadData() {
             
             if (hasData) {
                 Object.assign(AppData, data);
+                // Normalize any date keys from older formats (with time or different formats)
+                // Normalize completedDays array
+                if (Array.isArray(AppData.challenge?.completedDays)) {
+                    const normalized = AppData.challenge.completedDays
+                        .map(d => normalizeDateKey(d))
+                        .filter(Boolean);
+                    // dedupe
+                    AppData.challenge.completedDays = Array.from(new Set(normalized)).sort();
+                }
+
+                // Normalize per-day maps (steps, studyHours, mood, completedTasks)
+                const mapsToNormalize = ['steps', 'studyHours', 'mood', 'completedTasks'];
+                mapsToNormalize.forEach(mapName => {
+                    if (AppData[mapName] && typeof AppData[mapName] === 'object') {
+                        const newMap = {};
+                        Object.keys(AppData[mapName]).forEach(k => {
+                            const nk = normalizeDateKey(k);
+                            if (!nk) return;
+                            const val = AppData[mapName][k];
+                            if (mapName === 'completedTasks') {
+                                // Merge arrays of indices if duplicate keys
+                                const existing = newMap[nk] || [];
+                                const incoming = Array.isArray(val) ? val : [];
+                                const merged = Array.from(new Set([...existing, ...incoming])).sort((a,b)=>a-b);
+                                newMap[nk] = merged;
+                            } else {
+                                // For numeric/string maps, last one wins
+                                newMap[nk] = val;
+                            }
+                        });
+                        AppData[mapName] = newMap;
+                    }
+                });
                 console.log('📱 Loaded data from localStorage');
             } else {
                 console.warn('⚠️ localStorage contains empty data - using defaults');
@@ -255,6 +288,19 @@ function getTodayKey() {
     return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 }
 
+// Normalize a date key to YYYY-MM-DD (accepts Date or string)
+function normalizeDateKey(input) {
+    if (!input) return null;
+    if (input instanceof Date) {
+        const d = input;
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    }
+    // If string like '2025-10-15' or with time, parse and reformat
+    const parsed = new Date(input);
+    if (isNaN(parsed.getTime())) return null;
+    return `${parsed.getFullYear()}-${String(parsed.getMonth() + 1).padStart(2, '0')}-${String(parsed.getDate()).padStart(2, '0')}`;
+}
+
 function isRestDay() {
     // Use active date (selected in calendar) or today
     const dateKey = typeof getActiveDate === 'function' ? getActiveDate() : getTodayKey();
@@ -358,7 +404,8 @@ function initDashboard() {
     saveStepsBtn.addEventListener('click', () => {
         playSuccessSound(); // Dźwięk sukcesu
         const steps = parseInt(stepsInput.value) || 0;
-        const dateKey = getActiveDate(); // Use selected date instead of today
+        const dateKey = normalizeDateKey(getActiveDate()); // Normalize
+        if (!dateKey) return;
         AppData.steps[dateKey] = steps;
         saveData();
         
@@ -386,7 +433,8 @@ function initDashboard() {
     saveMoodBtn.addEventListener('click', () => {
         if (selectedMood) {
             playSuccessSound(); // Dźwięk sukcesu
-            const dateKey = getActiveDate(); // Use selected date instead of today
+            const dateKey = normalizeDateKey(getActiveDate()); // Normalize
+            if (!dateKey) return;
             AppData.mood[dateKey] = selectedMood;
             saveData();
             
@@ -411,7 +459,8 @@ function initDashboard() {
     saveStudyBtn.addEventListener('click', () => {
         playSuccessSound(); // Dźwięk sukcesu
         const hours = parseFloat(studyHoursInput.value) || 0;
-        const dateKey = getActiveDate(); // Use selected date instead of today
+        const dateKey = normalizeDateKey(getActiveDate()); // Normalize
+        if (!dateKey) return;
         AppData.studyHours[dateKey] = hours;
         saveData();
         
@@ -486,8 +535,8 @@ function initDashboard() {
     
     resetTasksBtn.addEventListener('click', () => {
         playClickSound(); // Dźwięk kliknięcia
-        const dateKey = getActiveDate(); // Use active date instead of today
-        const wasCompleted = AppData.challenge.completedDays.includes(dateKey);
+    const dateKey = normalizeDateKey(getActiveDate()); // Normalize
+    const wasCompleted = AppData.challenge.completedDays.includes(dateKey);
         
         const taskCheckboxes = document.querySelectorAll('.task-checkbox');
         taskCheckboxes.forEach(cb => {
@@ -550,8 +599,8 @@ function renderTasks() {
         
         // Auto-complete rest day if setting is enabled
         if (AppData.settings.countRestDays) {
-            const dateKey = getActiveDate(); // Use active date instead of today
-            if (!AppData.challenge.completedDays.includes(dateKey)) {
+            const dateKey = normalizeDateKey(getActiveDate()); // Normalize
+            if (dateKey && !AppData.challenge.completedDays.includes(dateKey)) {
                 AppData.challenge.completedDays.push(dateKey);
                 AppData.challenge.currentDay++;
                 calculateStreak();
@@ -569,7 +618,7 @@ function renderTasks() {
     
     tasksList.innerHTML = '';
     
-    const dateKey = getActiveDate(); // Use selected date instead of just today
+    const dateKey = normalizeDateKey(getActiveDate()); // Use selected date instead of just today
     const completedTasksToday = AppData.completedTasks[dateKey] || [];
     
     // Backward compatibility: jeśli to jest liczba zamiast tablicy, konwertuj
@@ -608,9 +657,9 @@ function renderTasks() {
     // mark day as completed but don't show notification
     const allTasksChecked = Array.from(document.querySelectorAll('.task-checkbox')).every(cb => cb.checked);
     if (allTasksChecked && AppData.tasks.length > 0) {
-        const dateKey = getActiveDate();
-        if (!AppData.challenge.completedDays.includes(dateKey)) {
-            AppData.challenge.completedDays.push(dateKey);
+        const markDateKey = normalizeDateKey(getActiveDate());
+        if (markDateKey && !AppData.challenge.completedDays.includes(markDateKey)) {
+            AppData.challenge.completedDays.push(markDateKey);
             AppData.challenge.currentDay++;
             calculateStreak();
             saveData();
@@ -648,7 +697,8 @@ function updateTasksData() {
     const completedIndices = Array.from(taskCheckboxes)
         .map((cb, index) => cb.checked ? index : -1)
         .filter(index => index !== -1);
-    const dateKey = getActiveDate(); // Use selected date instead of today
+    const dateKey = normalizeDateKey(getActiveDate()); // Normalize date
+    if (!dateKey) return;
     AppData.completedTasks[dateKey] = completedIndices;
     saveData();
 }
@@ -854,26 +904,40 @@ function updateBannerCountdown() {
 }
 
 function checkDayCompletion() {
-    const dateKey = getActiveDate(); // Use active date instead of today
+    const dateKey = normalizeDateKey(getActiveDate()); // Use active date instead of today, normalized
+    if (!dateKey) return;
     const taskCheckboxes = document.querySelectorAll('.task-checkbox');
     const allCompleted = Array.from(taskCheckboxes).every(cb => cb.checked);
-    
-    if (allCompleted && AppData.tasks.length > 0 && !AppData.challenge.completedDays.includes(dateKey)) {
-        AppData.challenge.completedDays.push(dateKey);
-        AppData.challenge.currentDay++;
-        
-        // Sprawdź czy wyzwanie zostało ukończone
-        if (AppData.challenge.currentDay >= AppData.challenge.totalDays) {
-            handleChallengeCompletion();
+
+    if (allCompleted && AppData.tasks.length > 0) {
+        if (!AppData.challenge.completedDays.includes(dateKey)) {
+            AppData.challenge.completedDays.push(dateKey);
+            AppData.challenge.currentDay++;
+
+            // Sprawdź czy wyzwanie zostało ukończone
+            if (AppData.challenge.currentDay >= AppData.challenge.totalDays) {
+                handleChallengeCompletion();
+            }
+
+            calculateStreak();
+            saveData();
+            updateAllDisplays();
+            showNotification('🎉 Dzień ukończony! Świetna robota!', 'success');
+
+            // Trigger confetti animation
+            createConfetti();
         }
-        
-        calculateStreak();
-        saveData();
-        updateAllDisplays();
-        showNotification('🎉 Dzień ukończony! Świetna robota!', 'success');
-        
-        // Trigger confetti animation
-        createConfetti();
+    } else {
+        // If not all completed, ensure it's removed from completedDays if present
+        const idx = AppData.challenge.completedDays.indexOf(dateKey);
+        if (idx !== -1) {
+            AppData.challenge.completedDays.splice(idx, 1);
+            // Adjust currentDay (do not go below 0)
+            AppData.challenge.currentDay = Math.max(0, AppData.challenge.currentDay - 1);
+            calculateStreak();
+            saveData();
+            updateAllDisplays();
+        }
     }
 }
 
