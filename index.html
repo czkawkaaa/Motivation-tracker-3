@@ -502,7 +502,85 @@
                 </section>
 
                 <section class="settings-section">
-                    <h2>📊 Eksport danych</h2>
+                    <h2>� Zadania tygodniowe</h2>
+                    <div class="setting-item">
+                        <label>
+                            <input type="checkbox" id="weeklyTasksToggle">
+                            Dostosuj zadania do dnia tygodnia
+                        </label>
+                        <small style="display: block; margin-top: 0.5rem;">Zamiast tych samych zadań każdego dnia, możesz ustawić różne zadania dla każdego dnia tygodnia 🗓️</small>
+                    </div>
+                    <div id="weeklyTasksConfig" style="display: none; margin-top: 1rem;">
+                        <div class="weekly-tasks-editor">
+                            <!-- Poniedziałek -->
+                            <div class="day-tasks-section">
+                                <h4>🌟 Poniedziałek</h4>
+                                <div id="mondayTasksList" class="day-tasks-list"></div>
+                                <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                                    <input type="text" id="mondayTaskInput" placeholder="Nowe zadanie..." style="flex: 1;">
+                                    <button class="btn-add-day-task" data-day="monday">➕</button>
+                                </div>
+                            </div>
+                            <!-- Wtorek -->
+                            <div class="day-tasks-section">
+                                <h4>💪 Wtorek</h4>
+                                <div id="tuesdayTasksList" class="day-tasks-list"></div>
+                                <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                                    <input type="text" id="tuesdayTaskInput" placeholder="Nowe zadanie..." style="flex: 1;">
+                                    <button class="btn-add-day-task" data-day="tuesday">➕</button>
+                                </div>
+                            </div>
+                            <!-- Środa -->
+                            <div class="day-tasks-section">
+                                <h4>🌸 Środa</h4>
+                                <div id="wednesdayTasksList" class="day-tasks-list"></div>
+                                <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                                    <input type="text" id="wednesdayTaskInput" placeholder="Nowe zadanie..." style="flex: 1;">
+                                    <button class="btn-add-day-task" data-day="wednesday">➕</button>
+                                </div>
+                            </div>
+                            <!-- Czwartek -->
+                            <div class="day-tasks-section">
+                                <h4>⚡ Czwartek</h4>
+                                <div id="thursdayTasksList" class="day-tasks-list"></div>
+                                <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                                    <input type="text" id="thursdayTaskInput" placeholder="Nowe zadanie..." style="flex: 1;">
+                                    <button class="btn-add-day-task" data-day="thursday">➕</button>
+                                </div>
+                            </div>
+                            <!-- Piątek -->
+                            <div class="day-tasks-section">
+                                <h4>🎉 Piątek</h4>
+                                <div id="fridayTasksList" class="day-tasks-list"></div>
+                                <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                                    <input type="text" id="fridayTaskInput" placeholder="Nowe zadanie..." style="flex: 1;">
+                                    <button class="btn-add-day-task" data-day="friday">➕</button>
+                                </div>
+                            </div>
+                            <!-- Sobota -->
+                            <div class="day-tasks-section">
+                                <h4>🌈 Sobota</h4>
+                                <div id="saturdayTasksList" class="day-tasks-list"></div>
+                                <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                                    <input type="text" id="saturdayTaskInput" placeholder="Nowe zadanie..." style="flex: 1;">
+                                    <button class="btn-add-day-task" data-day="saturday">➕</button>
+                                </div>
+                            </div>
+                            <!-- Niedziela -->
+                            <div class="day-tasks-section">
+                                <h4>✨ Niedziela</h4>
+                                <div id="sundayTasksList" class="day-tasks-list"></div>
+                                <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                                    <input type="text" id="sundayTaskInput" placeholder="Nowe zadanie..." style="flex: 1;">
+                                    <button class="btn-add-day-task" data-day="sunday">➕</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="settings-section">
+                    <h2>�📊 Eksport danych</h2>
                     <div class="setting-item">
                         <button class="btn-export" id="exportDataBtn">📥 Pobierz raport postępów (HTML)</button>
                         <small>Pobierz pełny raport z wykresami i statystykami. Możesz go wydrukować do PDF z przeglądarki (Ctrl+P).</small>

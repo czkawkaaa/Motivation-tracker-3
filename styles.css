@@ -1882,6 +1882,89 @@ footer p {
     margin: 0;
 }
 
+/* Weekly Tasks Configuration */
+.weekly-tasks-editor {
+    display: grid;
+    gap: 1.5rem;
+}
+
+.day-tasks-section {
+    background: var(--progress-bg);
+    padding: 1.5rem;
+    border-radius: 12px;
+    transition: var(--transition);
+}
+
+.day-tasks-section:hover {
+    box-shadow: var(--shadow);
+}
+
+.day-tasks-section h4 {
+    margin: 0 0 1rem 0;
+    color: var(--primary-color);
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.day-tasks-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.day-task-item {
+    background: white;
+    padding: 0.8rem 1rem;
+    border-radius: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.day-task-text {
+    flex: 1;
+    color: var(--text-primary);
+}
+
+.btn-remove-day-task {
+    background: #ff6b6b;
+    color: white;
+    border: none;
+    padding: 0.4rem 0.8rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: var(--transition);
+}
+
+.btn-remove-day-task:hover {
+    background: #ff5252;
+    transform: scale(1.05);
+}
+
+.btn-add-day-task {
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 0.8rem 1.2rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1.2rem;
+    transition: var(--transition);
+    min-width: 50px;
+}
+
+.btn-add-day-task:hover {
+    background: var(--primary-color);
+    filter: brightness(1.1);
+    transform: scale(1.05);
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
     .completion-modal-content {

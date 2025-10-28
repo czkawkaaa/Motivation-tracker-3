@@ -22,6 +22,16 @@ const AppData = {
         "Zjedz prawdziwe/nieprzetworzone jedzenie",
         "Przynajmniej 1 litr wody"
     ],
+    weeklyTasks: {
+        enabled: false,
+        monday: [],
+        tuesday: [],
+        wednesday: [],
+        thursday: [],
+        friday: [],
+        saturday: [],
+        sunday: []
+    },
     completedTasks: {},
     gallery: [],
     badges: {},
@@ -697,7 +707,20 @@ function renderTasks() {
         ? completedTasksToday 
         : Array.from({length: completedTasksToday}, (_, i) => i);
     
-    AppData.tasks.forEach((task, index) => {
+    // Pobierz zadania dla danego dnia
+    let tasksToShow = AppData.tasks;
+    if (AppData.weeklyTasks && AppData.weeklyTasks.enabled) {
+        const date = new Date(dateKey + 'T12:00:00');
+        const dayOfWeek = date.getDay(); // 0 = Sunday, 1 = Monday, etc.
+        const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+        const dayName = dayNames[dayOfWeek];
+        
+        if (AppData.weeklyTasks[dayName] && AppData.weeklyTasks[dayName].length > 0) {
+            tasksToShow = AppData.weeklyTasks[dayName];
+        }
+    }
+    
+    tasksToShow.forEach((task, index) => {
         const label = document.createElement('label');
         label.className = 'task-item';
         
@@ -727,7 +750,7 @@ function renderTasks() {
     // If all tasks are already checked (e.g., loading past day data),
     // mark day as completed but don't show notification
     const allTasksChecked = Array.from(document.querySelectorAll('.task-checkbox')).every(cb => cb.checked);
-    if (allTasksChecked && AppData.tasks.length > 0) {
+    if (allTasksChecked && tasksToShow.length > 0) {
         const markDateKey = normalizeDateKey(getActiveDate());
         if (markDateKey && !AppData.challenge.completedDays.includes(markDateKey)) {
             AppData.challenge.completedDays.push(markDateKey);
@@ -979,8 +1002,11 @@ function checkDayCompletion() {
     if (!dateKey) return;
     const taskCheckboxes = document.querySelectorAll('.task-checkbox');
     const allCompleted = Array.from(taskCheckboxes).every(cb => cb.checked);
+    
+    // Sprawdź ile zadań powinno być dla tego dnia
+    const hasTasks = taskCheckboxes.length > 0;
 
-    if (allCompleted && AppData.tasks.length > 0) {
+    if (allCompleted && hasTasks) {
         if (!AppData.challenge.completedDays.includes(dateKey)) {
             AppData.challenge.completedDays.push(dateKey);
             AppData.challenge.currentDay++;
@@ -1930,6 +1956,69 @@ function initSettings() {
         }, 150);
     });
     
+    // Weekly tasks toggle
+    const weeklyTasksToggle = document.getElementById('weeklyTasksToggle');
+    const weeklyTasksConfig = document.getElementById('weeklyTasksConfig');
+    
+    // Initialize weeklyTasks if not exists
+    if (!AppData.weeklyTasks) {
+        AppData.weeklyTasks = {
+            enabled: false,
+            monday: [],
+            tuesday: [],
+            wednesday: [],
+            thursday: [],
+            friday: [],
+            saturday: [],
+            sunday: []
+        };
+    }
+    
+    weeklyTasksToggle.checked = AppData.weeklyTasks.enabled || false;
+    weeklyTasksConfig.style.display = AppData.weeklyTasks.enabled ? 'block' : 'none';
+    
+    weeklyTasksToggle.addEventListener('change', (e) => {
+        AppData.weeklyTasks.enabled = e.target.checked;
+        weeklyTasksConfig.style.display = e.target.checked ? 'block' : 'none';
+        saveData();
+        renderTasks(); // Odśwież zadania
+        if (e.target.checked) {
+            playSuccessSound();
+            showNotification('✨ Zadania tygodniowe włączone! Ustaw zadania dla każdego dnia 🗓️', 'success');
+        }
+    });
+    
+    // Initialize weekly tasks editors
+    const dayNames = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+    dayNames.forEach(day => {
+        renderDayTasks(day);
+        
+        // Add task button
+        const addBtn = document.querySelector(`.btn-add-day-task[data-day="${day}"]`);
+        const input = document.getElementById(`${day}TaskInput`);
+        
+        if (addBtn && input) {
+            addBtn.addEventListener('click', () => {
+                const taskText = input.value.trim();
+                if (taskText) {
+                    playClickSound();
+                    if (!AppData.weeklyTasks[day]) AppData.weeklyTasks[day] = [];
+                    AppData.weeklyTasks[day].push(taskText);
+                    input.value = '';
+                    saveData();
+                    renderDayTasks(day);
+                    renderTasks(); // Odśwież główny widok zadań
+                }
+            });
+            
+            input.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    addBtn.click();
+                }
+            });
+        }
+    });
+    
     // Reset button
     const resetAllBtn = document.getElementById('resetAllBtn');
     resetAllBtn.addEventListener('click', async () => {
@@ -1958,6 +2047,34 @@ function initSettings() {
     exportDataBtn.addEventListener('click', () => {
         playClickSound(); // Dźwięk kliknięcia
         exportDataAsHTML();
+    });
+}
+
+function renderDayTasks(day) {
+    const tasksList = document.getElementById(`${day}TasksList`);
+    if (!tasksList) return;
+    
+    tasksList.innerHTML = '';
+    
+    const tasks = AppData.weeklyTasks[day] || [];
+    tasks.forEach((task, index) => {
+        const taskItem = document.createElement('div');
+        taskItem.className = 'day-task-item';
+        taskItem.innerHTML = `
+            <span class="day-task-text">${task}</span>
+            <button class="btn-remove-day-task" data-day="${day}" data-index="${index}">🗑️</button>
+        `;
+        
+        const removeBtn = taskItem.querySelector('.btn-remove-day-task');
+        removeBtn.addEventListener('click', () => {
+            playClickSound();
+            AppData.weeklyTasks[day].splice(index, 1);
+            saveData();
+            renderDayTasks(day);
+            renderTasks(); // Odśwież główny widok zadań
+        });
+        
+        tasksList.appendChild(taskItem);
     });
 }
 
@@ -2570,9 +2687,28 @@ function exportDataAsHTML() {
         
         <section>
             <h2>📝 Zadania</h2>
-            <ul class="task-list">
-                ${data.tasks.map(task => `<li class="task-item">${task}</li>`).join('')}
-            </ul>
+            ${data.weeklyTasks && data.weeklyTasks.enabled ? `
+                <p style="margin-bottom: 1rem; color: #666;">Zadania są dostosowane do dnia tygodnia:</p>
+                <div style="display: grid; gap: 1rem;">
+                    ${['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map((day, index) => {
+                        const dayNames = ['Poniedziałek 🌟', 'Wtorek 💪', 'Środa 🌸', 'Czwartek ⚡', 'Piątek 🎉', 'Sobota 🌈', 'Niedziela ✨'];
+                        const tasks = data.weeklyTasks[day] || [];
+                        if (tasks.length === 0) return '';
+                        return `
+                            <div style="background: #f8f9fa; padding: 1rem; border-radius: 8px; border-left: 4px solid #ff9ac2;">
+                                <h4 style="margin: 0 0 0.5rem 0; color: #ff9ac2;">${dayNames[index]}</h4>
+                                <ul style="list-style: none; padding-left: 0; margin: 0;">
+                                    ${tasks.map(task => `<li style="padding: 0.3rem 0;">✓ ${task}</li>`).join('')}
+                                </ul>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            ` : `
+                <ul class="task-list">
+                    ${data.tasks.map(task => `<li class="task-item">${task}</li>`).join('')}
+                </ul>
+            `}
         </section>
         
         <section>
