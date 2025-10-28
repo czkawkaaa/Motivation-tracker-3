@@ -10,6 +10,7 @@ const AppData = {
         completedDays: []
     },
     streak: 0,
+    longestStreak: 0,
     steps: {},
     mood: {},
     studyHours: {},
@@ -78,7 +79,51 @@ const motivationalQuotes = [
     "Ból dzisiaj = Siła jutro! 💪",
     "Nie bój się porażki, bój się braku prób! 🎲",
     "Jeśli to było łatwe, każdy by to robił! 🔥",
-    "Jesteś JEDNĄ decyzją od zmiany życia! 🔄"
+    "Jesteś JEDNĄ decyzją od zmiany życia! 🔄",
+    // Nowe cytaty - kawaii & pozytywne
+    "Małe kroki każdego dnia tworzą wielkie zmiany! 🌱",
+    "Uśmiechnij się - robisz to świetnie! 😊",
+    "Twoja energia przyciąga cuda! ✨💫",
+    "Dziś jest idealny dzień na nowy początek! 🌅",
+    "Jesteś swoją największą inspiracją! 🌟",
+    "Błyszczeć to Twoja druga natura! 💎",
+    "Każdy dzień to nowa szansa! 🎁",
+    "Twoja determinacja jest piękna! 🌺",
+    "Wierzę w magię Twoich marzeń! 🦄",
+    "Jesteś gwiazdą swojego życia! ⭐",
+    // Motywacyjne - mocne
+    "Przestań czekać na znak - to ON! 🎯",
+    "Twoje 'jutro' zaczyna się dzisiaj! 📅",
+    "Nie szukaj motywacji - bądź nią! 🔥",
+    "Porażka to tylko opinia, nie fakt! 💭",
+    "Twoja historia dopiero się zaczyna! 📖",
+    "Konsystencja > Perfekcja! 🎯",
+    "Każdy ekspert był kiedyś początkującym! 🌟",
+    "Nie poddawaj się, to właśnie tu magia się dzieje! ✨",
+    "Twoją supermocą jest wytrwałość! 🦸‍♀️",
+    "Nie pytaj czy możesz - pokaż, że potrafisz! 💪",
+    // Inspirujące
+    "Kwitnij tam, gdzie jesteś posadzona! 🌸",
+    "Twoja droga jest unikalna - celebruj ją! 🛤️✨",
+    "Cierpliwość i pasja tworzą mistrzostwo! 🎨",
+    "Jesteś dziełem w toku - i to jest piękne! 🖼️",
+    "Twój potencjał nie ma granic! 🚀",
+    "Drobne postępy to wciąż postępy! 📈",
+    "Uwierz w siebie tak mocno jak ja w Ciebie wierzę! 💕",
+    "Trudności są dowodem, że się rozwijasz! 🌱",
+    "Twoja energia tworzy rzeczywistość! ⚡✨",
+    "Nie porównuj się - inspiruj się! 🌈",
+    // Pozytywne afirmacje
+    "Zasługujesz na wszystkie dobre rzeczy! 💖",
+    "Jesteś wystarczająca dokładnie taka, jaka jesteś! 🌟",
+    "Twój głos ma znaczenie! 📢",
+    "Jesteś liderką swojego życia! 👑",
+    "Gratulacje - pokazałaś dzisiaj! 🎉",
+    "Twoja obecność robi różnicę! 💫",
+    "Jesteś dumą dla siebie z przeszłości! ⏮️💕",
+    "Każdy dzień z Tobą to prezent! 🎁",
+    "Wybierasz szczęście - i to piękne! 😊🌸",
+    "Jesteś już na dobrej drodze! 🛣️✨"
 ];
 
 // ======================
@@ -1015,6 +1060,11 @@ function calculateStreak() {
     }
     
     AppData.streak = streak;
+    
+    // Update longest streak if current is better
+    if (streak > (AppData.longestStreak || 0)) {
+        AppData.longestStreak = streak;
+    }
 }
 
 function updateAllDisplays() {
@@ -2270,8 +2320,8 @@ function exportDataAsHTML() {
     const totalStudyHours = Object.values(data.studyHours).reduce((sum, val) => sum + val, 0);
     const completedDays = data.challenge.completedDays.length;
     const completionRate = ((completedDays / data.challenge.totalDays) * 100).toFixed(1);
-    const currentStreak = data.challenge.currentStreak || 0;
-    const longestStreak = data.challenge.longestStreak || 0;
+    const currentStreak = data.streak || 0;
+    const longestStreak = data.longestStreak || data.streak || 0;
     
     // Count unlocked badges
     const unlockedBadges = Object.values(data.badges).filter(b => b.unlocked).length;
@@ -2543,7 +2593,7 @@ function exportDataAsHTML() {
             <div class="gallery-grid">
                 ${data.gallery.slice(0, 20).map(photo => `
                     <div class="gallery-item">
-                        <img src="${photo.url}" alt="${photo.date}">
+                        <img src="${typeof photo === 'string' ? photo : photo.url || photo}" alt="Zdjęcie z galerii">
                     </div>
                 `).join('')}
             </div>

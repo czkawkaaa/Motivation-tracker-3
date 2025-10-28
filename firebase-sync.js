@@ -257,12 +257,13 @@ async function loadDataFromFirestore() {
                 }
 
                 // Pokaż powiadomienie TYLKO raz (jeśli nie było wcześniej ustawione)
-                if (!alreadyNotifiedDeletion) {
-                    sessionStorage.setItem('cloudDeletionPending', 'true');
-                    if (typeof showNotification === 'function') {
-                        showNotification('⚠️ Twoje dane zostały usunięte z chmury. Lokalna kopia została zapisana jako backup. Sprawdź ustawienia synchronizacji.', 'warning');
-                    }
-                }
+                // KOMUNIKAT USUNIĘTY - nie pokazuj ostrzeżeń które mogą być mylące
+                // if (!alreadyNotifiedDeletion) {
+                //     sessionStorage.setItem('cloudDeletionPending', 'true');
+                //     if (typeof showNotification === 'function') {
+                //         showNotification('⚠️ Twoje dane zostały usunięte z chmury. Lokalna kopia została zapisana jako backup. Sprawdź ustawienia synchronizacji.', 'warning');
+                //     }
+                // }
 
                 // Zwróć false żeby caller wiedział, że pominięto ładowanie
                 return false;
@@ -331,9 +332,8 @@ async function loadDataFromFirestore() {
                 showNotification('🔒 Brak uprawnień odczytu Firestore! Sprawdź reguły bezpieczeństwa.', 'error');
             }
         } else {
-            if (typeof showNotification === 'function') {
-                showNotification('⚠️ Błąd ładowania danych z chmury: ' + error.code, 'warning');
-            }
+            // Komunikat usunięty - nie pokazuj ostrzeżenia jeśli to tylko tymczasowy błąd sieci
+            console.log('ℹ️ Błąd ładowania z chmury (może być tymczasowy):', error.code);
         }
         return false;
     }
@@ -441,9 +441,8 @@ async function saveDataToFirestore() {
                 showNotification('🔒 Brak uprawnień zapisu Firestore! Sprawdź reguły bezpieczeństwa.', 'error');
             }
         } else {
-            if (typeof showNotification === 'function') {
-                showNotification('⚠️ Błąd zapisu do chmury: ' + error.code, 'warning');
-            }
+            // Komunikat usunięty - nie pokazuj ostrzeżenia jeśli to tylko tymczasowy błąd sieci
+            console.log('ℹ️ Błąd zapisu do chmury (może być tymczasowy):', error.code);
         }
     }
 }
@@ -504,11 +503,12 @@ function setupRealtimeSync() {
                 }
 
                 // Ustaw flagę że chmura zgłosiła usunięcie - pokaż powiadomienie TYLKO raz
-                sessionStorage.setItem('cloudDeletionPending', 'true');
+                // KOMUNIKAT USUNIĘTY - nie pokazuj ostrzeżeń które mogą być mylące
+                // sessionStorage.setItem('cloudDeletionPending', 'true');
 
-                if (typeof showNotification === 'function') {
-                    showNotification('⚠️ Twoje dane zostały usunięte w chmurze. Lokalna kopia została zapisana jako backup. Sprawdź ustawienia synchronizacji.', 'warning');
-                }
+                // if (typeof showNotification === 'function') {
+                //     showNotification('⚠️ Twoje dane zostały usunięte w chmurze. Lokalna kopia została zapisana jako backup. Sprawdź ustawienia synchronizacji.', 'warning');
+                // }
 
                 console.log('DEBUG: onSnapshot detected deletion. cloudDeletionPending set. uid=', currentUser && currentUser.uid);
 
