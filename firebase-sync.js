@@ -70,9 +70,36 @@ function smartMergeData(local, cloud, cloudLastModified = 0) {
         merged.challenge.currentDay = cloud.challenge.currentDay;
     }
     merged.challenge.totalDays = cloud.challenge?.totalDays || local.challenge?.totalDays || merged.challenge.totalDays || 75;
+    
+    // Preserve startDate - zawsze zachowaj z local jeśli istnieje
+    merged.challenge.startDate = local.challenge?.startDate || cloud.challenge?.startDate;
+    
+    // Preserve completion/reset times
+    if (local.challenge?.completionTime || cloud.challenge?.completionTime) {
+        merged.challenge.completionTime = local.challenge?.completionTime || cloud.challenge?.completionTime;
+    }
+    if (local.challenge?.resetScheduled || cloud.challenge?.resetScheduled) {
+        merged.challenge.resetScheduled = local.challenge?.resetScheduled || cloud.challenge?.resetScheduled;
+    }
 
     // Merge tasks array (prefer longest / cloud if conflict)
     merged.tasks = cloud.tasks || local.tasks;
+    
+    // Merge weeklyTasks - zachowaj pełną strukturę
+    if (local.weeklyTasks || cloud.weeklyTasks) {
+        merged.weeklyTasks = {
+            enabled: (cloudLastModified > (local.lastModified || 0)) 
+                ? (cloud.weeklyTasks?.enabled ?? local.weeklyTasks?.enabled ?? false)
+                : (local.weeklyTasks?.enabled ?? cloud.weeklyTasks?.enabled ?? false),
+            monday: [...new Set([...(local.weeklyTasks?.monday || []), ...(cloud.weeklyTasks?.monday || [])])],
+            tuesday: [...new Set([...(local.weeklyTasks?.tuesday || []), ...(cloud.weeklyTasks?.tuesday || [])])],
+            wednesday: [...new Set([...(local.weeklyTasks?.wednesday || []), ...(cloud.weeklyTasks?.wednesday || [])])],
+            thursday: [...new Set([...(local.weeklyTasks?.thursday || []), ...(cloud.weeklyTasks?.thursday || [])])],
+            friday: [...new Set([...(local.weeklyTasks?.friday || []), ...(cloud.weeklyTasks?.friday || [])])],
+            saturday: [...new Set([...(local.weeklyTasks?.saturday || []), ...(cloud.weeklyTasks?.saturday || [])])],
+            sunday: [...new Set([...(local.weeklyTasks?.sunday || []), ...(cloud.weeklyTasks?.sunday || [])])]
+        };
+    }
 
     // Merge badges and gallery (shallow merge)
     merged.badges = { ...(local.badges || {}), ...(cloud.badges || {}) };
@@ -80,11 +107,18 @@ function smartMergeData(local, cloud, cloudLastModified = 0) {
         ? Array.from(new Set([...(local.gallery || []), ...(cloud.gallery || [])]))
         : (cloud.gallery || local.gallery);
 
-    // Merge settings: cloud overrides local when cloud is newer
-    merged.settings = { ...(local.settings || {}), ...(cloud.settings || {}) };
+    // Merge settings: inteligentne łączenie, preferuj lokalne gdy są nowsze
+    if (cloudLastModified > (local.lastModified || 0)) {
+        // Cloud jest nowszy - użyj cloud, ale zachowaj lokalne jeśli cloud nie ma
+        merged.settings = { ...(local.settings || {}), ...(cloud.settings || {}) };
+    } else {
+        // Local jest nowszy - użyj local, ale zachowaj cloud jeśli local nie ma
+        merged.settings = { ...(cloud.settings || {}), ...(local.settings || {}) };
+    }
 
-    // Streak & lastModified
-    merged.streak = cloud.streak ?? local.streak;
+    // Streak & longestStreak - zawsze bierz większe wartości (najlepsze osiągnięcia)
+    merged.streak = Math.max(cloud.streak || 0, local.streak || 0);
+    merged.longestStreak = Math.max(cloud.longestStreak || 0, local.longestStreak || 0);
     merged.lastModified = Math.max(local.lastModified || 0, cloud.lastModified || 0, Date.now());
 
     return merged;
