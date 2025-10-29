@@ -59,6 +59,32 @@
 - Vanilla JavaScript
 - localStorage do przechowywania danych
 - Google Fonts
+- **PWA (Progressive Web App)** - możliwość instalacji na iOS i Android
+- **Firebase** - synchronizacja danych w chmurze
+- **Service Worker** - wsparcie offline i cache
+
+---
+
+## 📱 Instalacja jako aplikacja
+
+### iOS (iPhone/iPad)
+Aplikacja może być zainstalowana jak natywna aplikacja!
+
+**Instrukcja:**
+1. Otwórz aplikację w **Safari**
+2. Kliknij przycisk "Udostępnij" (ikona ⬆️)
+3. Wybierz "Dodaj do ekranu początkowego"
+4. Gotowe! Aplikacja pojawi się na ekranie głównym
+
+📖 Szczegółowa instrukcja: [INSTALACJA_iOS.md](INSTALACJA_iOS.md)
+
+### Android
+Aplikacja wspiera pełną funkcjonalność PWA:
+1. Otwórz aplikację w **Chrome**
+2. Kliknij menu (⋮) → "Zainstaluj aplikację" lub "Dodaj do ekranu głównego"
+3. Aplikacja pojawi się w menu aplikacji
+
+📖 Instrukcja widgetów: [WIDGETY_INSTRUKCJA.md](WIDGETY_INSTRUKCJA.md)
 
 ---
 

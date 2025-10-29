@@ -11,6 +11,7 @@ const urlsToCache = [
   '/Motivation-tracker-3/firebase-config.js',
   '/Motivation-tracker-3/firebase-sync.js',
   '/Motivation-tracker-3/icon.svg',
+  '/Motivation-tracker-3/icon-180.png',
   '/Motivation-tracker-3/icon-192.png',
   '/Motivation-tracker-3/icon-512.png',
   '/Motivation-tracker-3/manifest.json',
