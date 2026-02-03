@@ -1,7 +1,7 @@
 // 🔥 Firebase Synchronization Module - Modular SDK
 // Obsługuje logowanie i synchronizację danych między urządzeniami
 
-import { auth, db, onAuthStateChanged } from './firebase-config.js';
+import { app, auth, db, onAuthStateChanged } from './firebase-config.js';
 import { 
     signInWithPopup, 
     GoogleAuthProvider, 
