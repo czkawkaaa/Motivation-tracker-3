@@ -61,11 +61,23 @@ self.addEventListener('fetch', (event) => {
             return response;
           }
           
+          // Sprawdź czy URL używa supportowanego schematu
+          const url = new URL(event.request.url);
+          if (!url.protocol.startsWith('http')) {
+            // Ignoruj chrome-extension, moz-extension, itp.
+            return response;
+          }
+          
           const responseToCache = response.clone();
           
           caches.open(CACHE_NAME)
             .then((cache) => {
-              cache.put(event.request, responseToCache);
+              cache.put(event.request, responseToCache).catch((error) => {
+                console.warn('⚠️ Cache.put failed (non-critical):', error);
+              });
+            })
+            .catch((error) => {
+              console.warn('⚠️ Caches.open failed (non-critical):', error);
             });
           
           return response;
