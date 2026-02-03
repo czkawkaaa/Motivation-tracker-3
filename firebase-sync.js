@@ -184,6 +184,11 @@ async function loginWithGoogle() {
     console.log('🔐 loginWithGoogle called!');
     const provider = new GoogleAuthProvider();
     
+    // Wymuś pokazanie okna wyboru konta
+    provider.setCustomParameters({
+        prompt: 'select_account'
+    });
+    
     try {
         updateSyncStatus('syncing', 'Logowanie...', '⏳');
         if (typeof playClickSound === 'function') playClickSound();
