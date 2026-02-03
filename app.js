@@ -688,7 +688,7 @@ function initDashboard() {
             const index = AppData.challenge.completedDays.indexOf(dateKey);
             if (index > -1) {
                 AppData.challenge.completedDays.splice(index, 1);
-                AppData.challenge.currentDay = Math.max(0, AppData.challenge.currentDay - 1);
+                // Don't decrement currentDay - it should always track calendar days, not completed days
             }
             // Recalculate streak
             calculateStreak();
@@ -1244,11 +1244,11 @@ function syncChallengeByDates() {
     // currentDay represents the current day NUMBER (1-based: day 1, day 2, etc.)
     // daysPassed is 0-based (0 on start day, 1 next day, etc.)
     // So currentDay should be daysPassed + 1, clamped to total
-    const minCurrentDay = Math.max(1, Math.min(daysPassed + 1, total));
+    const correctCurrentDay = Math.max(1, Math.min(daysPassed + 1, total));
     
-    // Always sync currentDay to match calendar
-    if (minCurrentDay > AppData.challenge.currentDay) {
-        AppData.challenge.currentDay = minCurrentDay;
+    // Always sync currentDay to match calendar (not just when it's greater)
+    if (correctCurrentDay !== AppData.challenge.currentDay) {
+        AppData.challenge.currentDay = correctCurrentDay;
         saveData();
         updateAllDisplays();
     }
