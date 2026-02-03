@@ -15,12 +15,14 @@ const AppData = {
     mood: {},
     studyHours: {},
     tasks: [
-        "15 minut aktywności",
-        "Wpis w dzienniku",
-        "Sen - przynajmniej 6 godzin",
-        "Przynajmniej 10 minut czytania książki",
-        "Zjedz prawdziwe/nieprzetworzone jedzenie",
-        "Przynajmniej 1 litr wody"
+        "Codzienny trening",
+        "Spacer minimum 20 minut",
+        "Rozciąganie",
+        "Sen - minimum 7 godzin",
+        "10 minut czytania lub słuchania książki",
+        "Jeden zdrowy posiłek domowy",
+        "Zero słodzonych napojów",
+        "Picie większej ilości wody"
     ],
     weeklyTasks: {
         enabled: false,
@@ -315,8 +317,47 @@ function loadData() {
             delete AppData.challenge.resetScheduled;
             console.log('🧹 Wyczyszczono zaplanowany reset (feature wyłączony)');
         }
+        
+        // MIGRACJA: Zaktualizuj stare zadania do nowych
+        const oldTasks = [
+            "15 minut aktywności",
+            "Wpis w dzienniku",
+            "Sen - przynajmniej 6 godzin",
+            "Przynajmniej 10 minut czytania książki",
+            "Zjedz prawdziwe/nieprzetworzone jedzenie",
+            "Przynajmniej 1 litr wody"
+        ];
+        const newTasks = [
+            "Codzienny trening",
+            "Spacer minimum 20 minut",
+            "Rozciąganie",
+            "Sen - minimum 7 godzin",
+            "10 minut czytania lub słuchania książki",
+            "Jeden zdrowy posiłek domowy",
+            "Zero słodzonych napojów",
+            "Picie większej ilości wody"
+        ];
+        
+        // Sprawdź czy użytkownik ma stare zadania
+        const hasOldTasks = AppData.tasks && AppData.tasks.length === 6 && 
+                           AppData.tasks[0] === "15 minut aktywności";
+        
+        if (hasOldTasks) {
+            AppData.tasks = newTasks;
+            console.log('🔄 Zaktualizowano zadania do nowej wersji');
+            saveData();
+        }
+        
+        // Inicjalizuj śledzenie motywów dla odznak
+        if (!AppData.settings.themesUsed) {
+            AppData.settings.themesUsed = [AppData.settings.theme];
+        }
     } else {
         console.log('💾 No saved data found - using defaults');
+        // Inicjalizuj śledzenie motywów dla nowych użytkowników
+        if (!AppData.settings.themesUsed) {
+            AppData.settings.themesUsed = [AppData.settings.theme];
+        }
     }
     applySettings();
 }
@@ -496,6 +537,8 @@ function switchView(viewName) {
         // Update specific view when switched
         if (viewName === 'calendar') renderCalendar();
         if (viewName === 'stats') updateStats();
+        if (viewName === 'rules') renderRulesView();
+        if (viewName === 'settings') renderRulesSettings();
         if (viewName === 'badges') {
             updateBadgesDisplay();
             markBadgesAsViewed(); // Usuń glow po wejściu w widok
@@ -1878,8 +1921,17 @@ function checkBadges() {
     if (AppData.streak >= 14) {
         unlockBadge('14-day-streak');
     }
+    if (AppData.streak >= 21) {
+        unlockBadge('no-days-off');
+    }
     if (AppData.streak >= 30) {
         unlockBadge('30-day-streak');
+    }
+    if (AppData.streak >= 50) {
+        unlockBadge('goku-ultra'); // Dragon Ball reference!
+    }
+    if (AppData.streak >= 60) {
+        unlockBadge('plus-ultra'); // My Hero Academia reference!
     }
     
     // === ZADANIA ===
@@ -1935,13 +1987,199 @@ function checkBadges() {
     if (totalSteps >= 250000) {
         unlockBadge('steps-250k');
     }
+    if (totalSteps >= 500000) {
+        unlockBadge('rocky-balboa'); // Rocky reference!
+    }
     
     // === GALERIA ===
     if (AppData.gallery.length >= 10) {
         unlockBadge('photographer');
     }
+    if (AppData.gallery.length >= 25) {
+        unlockBadge('social-butterfly');
+    }
     if (AppData.gallery.length >= 50) {
         unlockBadge('memory-keeper');
+    }
+    
+    // === TRENINGI ===
+    const totalWorkouts = Object.values(AppData.completedWorkouts).reduce((sum, workouts) => {
+        return sum + (Array.isArray(workouts) ? workouts.length : (workouts || 0));
+    }, 0);
+    
+    if (totalWorkouts >= 1) {
+        unlockBadge('workout-beginner');
+    }
+    if (totalWorkouts >= 10) {
+        unlockBadge('workout-warrior');
+    }
+    if (totalWorkouts >= 30) {
+        unlockBadge('workout-beast');
+    }
+    if (totalWorkouts >= 75) {
+        unlockBadge('workout-legend');
+    }
+    if (totalWorkouts >= 100) {
+        unlockBadge('one-punch'); // One Punch Man reference!
+    }
+    
+    // Sprawdź 7-dniową passę treningową
+    const today = new Date();
+    let consecutiveWorkouts = 0;
+    for (let i = 0; i < 7; i++) {
+        const checkDate = new Date(today);
+        checkDate.setDate(checkDate.getDate() - i);
+        const dateStr = checkDate.toISOString().split('T')[0];
+        const workoutsOnDay = AppData.completedWorkouts[dateStr];
+        if (workoutsOnDay && (Array.isArray(workoutsOnDay) ? workoutsOnDay.length > 0 : workoutsOnDay > 0)) {
+            consecutiveWorkouts++;
+        } else {
+            break;
+        }
+    }
+    if (consecutiveWorkouts >= 7) {
+        unlockBadge('iron-dedication');
+    }
+    
+    // === MOTYWY ===
+    // Śledzenie użytych motywów
+    if (!AppData.settings.themesUsed) {
+        AppData.settings.themesUsed = [AppData.settings.theme];
+    }
+    
+    if (AppData.settings.theme === 'transformers') {
+        unlockBadge('optimus-prime');
+    }
+    if (AppData.settings.theme === 'yellow') {
+        unlockBadge('bumblebee');
+    }
+    if (AppData.settings.theme === 'black') {
+        unlockBadge('dark-knight');
+    }
+    
+    const uniqueThemes = new Set(AppData.settings.themesUsed || []);
+    if (uniqueThemes.size >= 5) {
+        unlockBadge('rainbow-master');
+    }
+    if (uniqueThemes.size >= 12) { // Wszystkie motywy
+        unlockBadge('theme-explorer');
+    }
+    
+    // === FUN ODZNAKI ===
+    // Perfekcjonista - 10 dni z wszystkimi zadaniami (min 3)
+    const perfectDays = Object.values(AppData.completedTasks).filter(tasks => {
+        const count = Array.isArray(tasks) ? tasks.length : tasks;
+        return count >= AppData.tasks.length;
+    }).length;
+    if (perfectDays >= 10) {
+        unlockBadge('perfectionist');
+    }
+    if (perfectDays >= 50) {
+        unlockBadge('discipline-master');
+    }
+    
+    // Król powrotu - odzyskaj streak po jego zerwaniu
+    if (AppData.longestStreak > 0 && AppData.streak >= 3 && AppData.streak !== AppData.longestStreak) {
+        // Sprawdź czy był restart (streak był na 0 lub 1)
+        unlockBadge('comeback-king');
+    }
+    
+    // Wojownik weekendu - trening w sobotę i niedzielę
+    const todayDate = new Date();
+    const dayOfWeek = todayDate.getDay(); // 0 = Niedziela, 6 = Sobota
+    
+    // Sprawdź ostatni weekend
+    let saturdayDate = new Date(todayDate);
+    let sundayDate = new Date(todayDate);
+    
+    if (dayOfWeek === 0) { // Niedziela
+        saturdayDate.setDate(todayDate.getDate() - 1);
+    } else if (dayOfWeek === 6) { // Sobota
+        sundayDate.setDate(todayDate.getDate() + 1);
+    } else {
+        // Znajdź poprzedni weekend
+        const daysToSaturday = (dayOfWeek + 1) % 7;
+        saturdayDate.setDate(todayDate.getDate() - daysToSaturday);
+        sundayDate.setDate(saturdayDate.getDate() + 1);
+    }
+    
+    const saturdayStr = saturdayDate.toISOString().split('T')[0];
+    const sundayStr = sundayDate.toISOString().split('T')[0];
+    
+    const saturdayWorkouts = AppData.completedWorkouts[saturdayStr];
+    const sundayWorkouts = AppData.completedWorkouts[sundayStr];
+    
+    if (saturdayWorkouts && sundayWorkouts) {
+        const satCount = Array.isArray(saturdayWorkouts) ? saturdayWorkouts.length : saturdayWorkouts;
+        const sunCount = Array.isArray(sundayWorkouts) ? sundayWorkouts.length : sundayWorkouts;
+        if (satCount > 0 && sunCount > 0) {
+            unlockBadge('weekend-warrior');
+        }
+    }
+    
+    // Megatron - czerwony lub fioletowy motyw
+    if (AppData.settings.theme === 'red' || AppData.settings.theme === 'purple') {
+        unlockBadge('megatron');
+    }
+    
+    // Emocjonalna huśtawka - wszystkie 5 typów nastroju
+    const uniqueMoods = new Set(Object.values(AppData.mood));
+    if (uniqueMoods.size >= 5) {
+        unlockBadge('mood-swinger');
+    }
+    
+    // Mistrz konsystencji - 14 dni z rzędu z jakimiś danymi
+    let consecutiveDays = 0;
+    const todayForConsistency = new Date();
+    for (let i = 0; i < 14; i++) {
+        const checkDate = new Date(todayForConsistency);
+        checkDate.setDate(checkDate.getDate() - i);
+        const dateStr = checkDate.toISOString().split('T')[0];
+        
+        // Sprawdź czy są jakieś dane tego dnia
+        const hasSteps = AppData.steps[dateStr] && AppData.steps[dateStr] > 0;
+        const hasMood = AppData.mood[dateStr];
+        const hasTasks = AppData.completedTasks[dateStr] && AppData.completedTasks[dateStr].length > 0;
+        const hasWorkouts = AppData.completedWorkouts[dateStr] && 
+            (Array.isArray(AppData.completedWorkouts[dateStr]) ? AppData.completedWorkouts[dateStr].length > 0 : AppData.completedWorkouts[dateStr] > 0);
+        
+        if (hasSteps || hasMood || hasTasks || hasWorkouts) {
+            consecutiveDays++;
+        } else {
+            break;
+        }
+    }
+    if (consecutiveDays >= 14) {
+        unlockBadge('consistency-champion');
+    }
+    
+    // Podróżnik w czasie - zapisuj dane o różnych porach
+    if (!AppData.activityTimes) {
+        AppData.activityTimes = [];
+    }
+    const currentTime = new Date().getHours();
+    if (!AppData.activityTimes.includes(currentTime)) {
+        AppData.activityTimes.push(currentTime);
+    }
+    // Sprawdź czy są dane z różnych pór dnia (rano, południe, wieczór, noc)
+    const morning = AppData.activityTimes.some(h => h >= 6 && h < 12);
+    const afternoon = AppData.activityTimes.some(h => h >= 12 && h < 18);
+    const evening = AppData.activityTimes.some(h => h >= 18 && h < 24);
+    const night = AppData.activityTimes.some(h => h >= 0 && h < 6);
+    
+    if ([morning, afternoon, evening, night].filter(Boolean).length >= 3) {
+        unlockBadge('time-traveler');
+    }
+    
+    // Iron Man - czerwony motyw + 30-dniowy streak
+    if (AppData.settings.theme === 'red' && AppData.streak >= 30) {
+        unlockBadge('iron-man');
+    }
+    
+    // Kolekcjoner legend - 50 odznak
+    const unlockedBadgesCount = Object.values(AppData.badges).filter(b => b && b.unlocked).length;
+    if (unlockedBadgesCount >= 50) {
+        unlockBadge('legend-collector');
     }
     
     // === WYZWANIE ===
@@ -2018,7 +2256,18 @@ function initSettings() {
     themeSelect.addEventListener('change', (e) => {
         setTheme(e.target.value);
         AppData.settings.theme = e.target.value;
+        
+        // Śledź użyte motywy dla odznak
+        if (!AppData.settings.themesUsed) {
+            AppData.settings.themesUsed = [];
+        }
+        if (!AppData.settings.themesUsed.includes(e.target.value)) {
+            AppData.settings.themesUsed.push(e.target.value);
+        }
+        
         saveData();
+        checkBadges(); // Sprawdź odznaki motywów
+        
         // Zmień cytaty gdy zmienisz motyw
         const quoteEl = document.getElementById('motivationalQuote');
         if (quoteEl) {
@@ -2730,14 +2979,31 @@ function exportDataAsHTML() {
     
     // Calculate statistics
     const totalSteps = Object.values(data.steps).reduce((sum, val) => sum + val, 0);
+    const avgSteps = totalSteps / Math.max(Object.keys(data.steps).length, 1);
+    const maxSteps = Math.max(...Object.values(data.steps), 0);
+    
     const totalStudyHours = Object.values(data.studyHours).reduce((sum, val) => sum + val, 0);
+    
+    const totalWorkouts = Object.values(data.completedWorkouts || {}).reduce((sum, workouts) => {
+        return sum + (Array.isArray(workouts) ? workouts.length : (workouts || 0));
+    }, 0);
+    
+    const totalTasks = Object.values(data.completedTasks).reduce((sum, tasks) => {
+        return sum + (Array.isArray(tasks) ? tasks.length : (tasks || 0));
+    }, 0);
+    
+    const perfectDays = Object.values(data.completedTasks).filter(tasks => {
+        const count = Array.isArray(tasks) ? tasks.length : tasks;
+        return count >= data.tasks.length;
+    }).length;
+    
     const completedDays = data.challenge.completedDays.length;
     const completionRate = ((completedDays / data.challenge.totalDays) * 100).toFixed(1);
     const currentStreak = data.streak || 0;
     const longestStreak = data.longestStreak || data.streak || 0;
     
     // Count unlocked badges
-    const unlockedBadges = Object.values(data.badges).filter(b => b.unlocked).length;
+    const unlockedBadges = Object.values(data.badges).filter(b => b && b.unlocked).length;
     const totalBadges = Object.keys(data.badges).length;
     
     // Get mood statistics
@@ -2746,6 +3012,9 @@ function exportDataAsHTML() {
     moodEntries.forEach(([_, mood]) => {
         moodCounts[mood] = (moodCounts[mood] || 0) + 1;
     });
+    const avgMood = moodEntries.length > 0 
+        ? (Object.keys(moodCounts).reduce((sum, mood) => sum + parseInt(mood) * moodCounts[mood], 0) / moodEntries.length).toFixed(1)
+        : 0;
     
     // Generate HTML
     const html = `
@@ -2798,8 +3067,8 @@ function exportDataAsHTML() {
         
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1.5rem;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1rem;
             margin-bottom: 3rem;
         }
         
@@ -2933,6 +3202,42 @@ function exportDataAsHTML() {
             .container {
                 box-shadow: none;
                 padding: 1rem;
+                max-width: 100%;
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+            
+            .stat-card {
+                page-break-inside: avoid;
+            }
+            
+            section {
+                page-break-inside: avoid;
+                margin-bottom: 2rem;
+            }
+            
+            h2 {
+                page-break-after: avoid;
+            }
+            
+            .badge-grid, .gallery-grid {
+                grid-template-columns: repeat(6, 1fr);
+                gap: 0.5rem;
+            }
+            
+            .badge-item {
+                padding: 0.5rem;
+                font-size: 0.8rem;
+            }
+            
+            .badge-icon {
+                font-size: 1.5rem;
+            }
+            
+            footer {
+                page-break-before: avoid;
             }
         }
     </style>
@@ -2956,11 +3261,11 @@ function exportDataAsHTML() {
                     <div class="stat-label">Postęp wyzwania</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-value">${currentStreak}</div>
+                    <div class="stat-value">${currentStreak} 🔥</div>
                     <div class="stat-label">Aktualna passa</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-value">${longestStreak}</div>
+                    <div class="stat-value">${longestStreak} ⚡</div>
                     <div class="stat-label">Najdłuższa passa</div>
                 </div>
                 <div class="stat-card">
@@ -2968,8 +3273,40 @@ function exportDataAsHTML() {
                     <div class="stat-label">Łącznie kroków</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-value">${totalStudyHours.toFixed(1)}</div>
-                    <div class="stat-label">Godzin nauki</div>
+                    <div class="stat-value">${Math.round(avgSteps).toLocaleString('pl-PL')}</div>
+                    <div class="stat-label">Średnio kroków/dzień</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${maxSteps.toLocaleString('pl-PL')}</div>
+                    <div class="stat-label">Rekord kroków</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${totalWorkouts}</div>
+                    <div class="stat-label">Treningi ukończone 💪</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${totalTasks}</div>
+                    <div class="stat-label">Zadania ukończone</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${perfectDays}</div>
+                    <div class="stat-label">Perfekcyjne dni 💯</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${totalStudyHours.toFixed(1)}h</div>
+                    <div class="stat-label">Godzin nauki 📚</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${avgMood} / 5</div>
+                    <div class="stat-label">Średni nastrój 😊</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${data.gallery.length}</div>
+                    <div class="stat-label">Zdjęcia w galerii 📸</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${unlockedBadges}</div>
+                    <div class="stat-label">Odznaki zdobyte 🏆</div>
                 </div>
             </div>
         </section>
@@ -3007,6 +3344,26 @@ function exportDataAsHTML() {
             `}
         </section>
         
+        ${data.settings && data.settings.workoutsEnabled && totalWorkouts > 0 ? `
+        <section>
+            <h2>💪 Treningi</h2>
+            <div style="background: linear-gradient(135deg, #ff9ac2, #ffc1e0); color: white; padding: 2rem; border-radius: 15px; text-align: center; margin-bottom: 1rem;">
+                <div style="font-size: 3rem; font-weight: bold;">${totalWorkouts}</div>
+                <div style="font-size: 1.2rem;">Treningów ukończonych</div>
+            </div>
+            ${data.settings.workouts && data.settings.workouts.length > 0 ? `
+                <h3 style="margin: 1.5rem 0 1rem 0; color: #ff9ac2;">Twoje treningi:</h3>
+                <div style="display: grid; gap: 0.5rem;">
+                    ${data.settings.workouts.map(w => `
+                        <div style="background: #f8f9fa; padding: 0.8rem; border-radius: 8px; border-left: 4px solid #ff9ac2;">
+                            ${w.name || w.title || 'Trening'}
+                        </div>
+                    `).join('')}
+                </div>
+            ` : ''}
+        </section>
+        ` : ''}
+        
         <section>
             <h2>😊 Statystyki nastroju</h2>
             <div class="mood-stats">
@@ -3033,6 +3390,20 @@ function exportDataAsHTML() {
         </section>
         ` : ''}
         
+        ${data.settings && data.settings.rules && data.settings.rules.length > 0 ? `
+        <section>
+            <h2>📜 Zasady wyzwania</h2>
+            <div style="display: grid; gap: 1rem;">
+                ${data.settings.rules.map(rule => `
+                    <div style="background: #f8f9fa; padding: 1.5rem; border-radius: 12px; border-left: 4px solid #ff9ac2;">
+                        <h3 style="margin: 0 0 0.5rem 0; color: #ff9ac2;">${rule.title}</h3>
+                        <p style="margin: 0; color: #666;">${rule.content}</p>
+                    </div>
+                `).join('')}
+            </div>
+        </section>
+        ` : ''}
+        
         <footer>
             <p>Made with 💖</p>
             <p style="margin-top: 0.5rem; font-size: 0.9rem;">
@@ -3047,33 +3418,80 @@ function exportDataAsHTML() {
     // Helper function to generate badges HTML
     function generateBadgesHTML(badges) {
         const badgeInfo = {
-            'steps-5k': { name: '5K Kroków', icon: '👟' },
-            'steps-10k': { name: '10K Kroków', icon: '🏃' },
-            'steps-50k': { name: '50K Kroków', icon: '🎯' },
-            'steps-100k': { name: '100K Kroków', icon: '⭐' },
-            'steps-250k': { name: '250K Kroków', icon: '🏆' },
-            'mood-week': { name: 'Tydzień nastrojów', icon: '😊' },
-            'mood-month': { name: 'Miesiąc nastrojów', icon: '🌟' },
-            'study-10h': { name: '10h Nauki', icon: '📚' },
-            'study-50h': { name: '50h Nauki', icon: '🎓' },
-            'study-100h': { name: '100h Nauki', icon: '🏅' },
-            'task-week': { name: 'Tydzień zadań', icon: '✅' },
-            'task-month': { name: 'Miesiąc zadań', icon: '💪' },
-            'streak-7': { name: '7 dni z rzędu', icon: '🔥' },
-            'streak-30': { name: '30 dni z rzędu', icon: '🌈' },
-            'photos-10': { name: '10 zdjęć', icon: '📷' },
-            'photos-50': { name: '50 zdjęć', icon: '🎨' },
-            'early-bird': { name: 'Ranny ptaszek', icon: '🌅' },
-            'night-owl': { name: 'Nocny marek', icon: '🦉' },
+            // Podstawowe
+            'first-steps': { name: 'Pierwsze kroki', icon: '👣' },
+            'first-mood': { name: 'Pierwsze wrażenie', icon: '💭' },
+            'first-photo': { name: 'Pierwsza chwila', icon: '📷' },
+            
+            // Streak
+            '3-day-streak': { name: 'Startowy ogień', icon: '🔥' },
+            '7-day-streak': { name: 'Tygodniowy płomień', icon: '🔥🔥' },
+            '14-day-streak': { name: 'Dwutygodniowa fala', icon: '🔥🔥🔥' },
+            'no-days-off': { name: 'No Days Off', icon: '🔥💯' },
+            '30-day-streak': { name: 'Miesięczny mistrz', icon: '🔥✨' },
+            'goku-ultra': { name: 'Ultra Instinct', icon: '👊⚡' },
+            'plus-ultra': { name: 'Plus Ultra!', icon: '⚡💪' },
+            
+            // Zadania
+            'task-beginner': { name: 'Początkujący', icon: '✅' },
+            'task-master': { name: 'Mistrz zadań', icon: '✅✅' },
+            'task-legend': { name: 'Legendarny wykonawca', icon: '✅👑' },
+            
+            // Nastrój
+            'mood-tracker': { name: 'Łowca nastrojów', icon: '😊' },
+            'mood-master': { name: 'Mistrz emocji', icon: '😊💖' },
+            'always-happy': { name: 'Promyk słońca', icon: '🥰' },
+            'mood-swinger': { name: 'Emocjonalna huśtawka', icon: '🎭' },
+            
+            // Kroki
+            'steps-5k': { name: 'Pierwsze kroki (5K)', icon: '🚶' },
+            'steps-10k': { name: 'Aktywny (10K)', icon: '🏃' },
+            'steps-50k': { name: 'Biegacz (50K)', icon: '🏃‍♀️' },
+            'steps-100k': { name: 'Maratończyk (100K)', icon: '🏃‍♀️💨' },
+            'steps-250k': { name: 'Legenda kroków (250K)', icon: '👟⚡' },
+            'rocky-balboa': { name: 'Rocky Balboa (500K)', icon: '🥊🏃' },
+            
+            // Galeria
+            'photographer': { name: 'Fotograf', icon: '📸' },
+            'social-butterfly': { name: 'Motyl społeczny', icon: '🦋✨' },
+            'memory-keeper': { name: 'Strażnik wspomnień', icon: '📸✨' },
+            
+            // Treningi
+            'workout-beginner': { name: 'Początkujący atleta', icon: '💪' },
+            'workout-warrior': { name: 'Wojownik siłowni', icon: '🏋️' },
+            'workout-beast': { name: 'Bestia treningu', icon: '🦍' },
+            'workout-legend': { name: 'Legenda fitnessu', icon: '🏆💪' },
+            'one-punch': { name: 'One Punch', icon: '🥊💥' },
+            'iron-dedication': { name: 'Żelazne zaangażowanie', icon: '⚡💪' },
+            'weekend-warrior': { name: 'Wojownik weekendu', icon: '💪🎉' },
+            
+            // Motywy
+            'optimus-prime': { name: 'Optimus Prime', icon: '🤖' },
+            'bumblebee': { name: 'Bumblebee', icon: '🐝⚡' },
+            'dark-knight': { name: 'Mroczny rycerz', icon: '🌙🦇' },
+            'rainbow-master': { name: 'Mistrz kolorów', icon: '🌈' },
+            'theme-explorer': { name: 'Odkrywca stylów', icon: '🎨✨' },
+            'megatron': { name: 'Megatron', icon: '🤖⚡' },
+            'iron-man': { name: 'Iron Man', icon: '🦾⚡' },
+            
+            // Fun odznaki
             'perfectionist': { name: 'Perfekcjonista', icon: '💯' },
-            'explorer': { name: 'Odkrywca', icon: '🗺️' },
-            'champion': { name: 'Mistrz', icon: '👑' },
-            'legend': { name: 'Legenda', icon: '⚡' }
+            'discipline-master': { name: 'Mistrz dyscypliny', icon: '🎯💎' },
+            'comeback-king': { name: 'Król powrotu', icon: '👑🔥' },
+            'consistency-champion': { name: 'Mistrz konsystencji', icon: '📅✨' },
+            'time-traveler': { name: 'Podróżnik w czasie', icon: '⏰🌀' },
+            'legend-collector': { name: 'Kolekcjoner legend', icon: '🏆✨' },
+            
+            // Wyzwanie
+            '15-day-warrior': { name: 'Początkujący wojownik', icon: '🛡️' },
+            '30-day-warrior': { name: '30-dniowy wojownik', icon: '⚔️' },
+            '50-day-champion': { name: 'Mistrz wyzwania', icon: '🏆' },
+            '75-day-legend': { name: 'Legenda 75 Hard', icon: '👑' }
         };
         
         return Object.entries(badges).map(([id, badge]) => {
             const info = badgeInfo[id] || { name: id, icon: '🏅' };
-            const unlocked = badge.unlocked ? 'unlocked' : '';
+            const unlocked = badge && badge.unlocked ? 'unlocked' : '';
             return `
                 <div class="badge-item ${unlocked}">
                     <div class="badge-icon">${info.icon}</div>
@@ -3092,9 +3510,20 @@ function exportDataAsHTML() {
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-    URL.revokeObjectURL(url);
     
-    showNotification('📥 Raport został pobrany! Otwórz plik i naciśnij Ctrl+P aby zapisać jako PDF', 'success');
+    // Otwórz w nowej karcie do drukowania
+    const printWindow = window.open(url, '_blank');
+    if (printWindow) {
+        printWindow.addEventListener('load', () => {
+            setTimeout(() => {
+                URL.revokeObjectURL(url);
+            }, 1000);
+        });
+    } else {
+        URL.revokeObjectURL(url);
+    }
+    
+    showNotification('📥 Raport został pobrany i otworzony w nowej karcie! Naciśnij Ctrl+P aby zapisać jako PDF', 'success');
 }
 
 // ========== WORKOUTS ==========
