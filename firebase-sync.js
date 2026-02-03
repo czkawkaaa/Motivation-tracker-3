@@ -181,20 +181,43 @@ function setupAuthUIElements() {
     
     if (loginBtn) {
         console.log('✅ Adding click listener to login button');
-        loginBtn.addEventListener('click', async (e) => {
+        // Usuń stare listenery jeśli istnieją
+        const newLoginBtn = loginBtn.cloneNode(true);
+        loginBtn.parentNode.replaceChild(newLoginBtn, loginBtn);
+        
+        newLoginBtn.addEventListener('click', async (e) => {
             e.preventDefault();
+            e.stopPropagation();
             console.log('🔐 Login button clicked!');
             await loginWithGoogle();
         });
+        
+        // Dodaj też bezpośrednio onclick jako fallback
+        newLoginBtn.onclick = async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('🔐 Login onclick triggered!');
+            await loginWithGoogle();
+        };
     } else {
         console.error('❌ Login button not found!');
     }
     
     if (logoutBtn) {
-        logoutBtn.addEventListener('click', async (e) => {
+        // Usuń stare listenery
+        const newLogoutBtn = logoutBtn.cloneNode(true);
+        logoutBtn.parentNode.replaceChild(newLogoutBtn, logoutBtn);
+        
+        newLogoutBtn.addEventListener('click', async (e) => {
             e.preventDefault();
+            e.stopPropagation();
             await logout();
         });
+        
+        newLogoutBtn.onclick = async (e) => {
+            e.preventDefault();
+            await logout();
+        };
     }
 }
 
@@ -253,6 +276,10 @@ async function logout() {
         }
     }
 }
+
+// Eksportuj funkcje do window dla dostępu z przycisków
+window.loginWithGoogle = loginWithGoogle;
+window.logoutUser = logout;
 
 // ======================
 // USER STATE CALLBACKS
