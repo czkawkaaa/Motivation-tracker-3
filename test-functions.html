@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Funkcji</title>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        body { padding: 20px; }
+        .test-btn { margin: 5px; padding: 10px 20px; cursor: pointer; }
+        .result { margin: 10px 0; padding: 10px; border: 1px solid #ccc; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        #log { background: #000; color: #0f0; padding: 20px; font-family: monospace; white-space: pre-wrap; max-height: 400px; overflow-y: auto; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Test Funkcji Aplikacji</h1>
+    
+    <h2>1. Zmiana Motywu</h2>
+    <button class="test-btn" onclick="testTheme('pink')">Pink</button>
+    <button class="test-btn" onclick="testTheme('transformers')">Transformers</button>
+    <button class="test-btn" onclick="testTheme('ocean')">Ocean</button>
+    <button class="test-btn" onclick="testTheme('black')">Dark</button>
+    
+    <h2>2. Ukrywanie Sekcji</h2>
+    <button class="test-btn" onclick="testToggleSteps()">Toggle Kroki</button>
+    <button class="test-btn" onclick="testToggleStudy()">Toggle Nauka</button>
+    
+    <h2>3. Video Modal</h2>
+    <button class="test-btn" onclick="testVideoModal()">Otwórz Video Modal</button>
+    
+    <h2>Log:</h2>
+    <div id="log"></div>
+    
+    <script>
+        function log(msg) {
+            const logDiv = document.getElementById('log');
+            logDiv.textContent += new Date().toLocaleTimeString() + ': ' + msg + '\n';
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+        
+        window.onerror = function(msg, url, line) {
+            log('❌ BŁĄD: ' + msg + ' (linia ' + line + ')');
+        };
+        
+        log('Strona testowa załadowana');
+    </script>
+    
+    <script src="app.js"></script>
+    
+    <script>
+        log('app.js załadowany');
+        
+        // Sprawdź funkcje
+        log('setTheme: ' + (typeof setTheme));
+        log('closeVideoModal: ' + (typeof closeVideoModal));
+        log('openVideoModal: ' + (typeof openVideoModal));
+        log('updateSectionsVisibility: ' + (typeof updateSectionsVisibility));
+        log('AppData: ' + (typeof AppData));
+        
+        if (typeof AppData !== 'undefined') {
+            log('AppData.settings.theme: ' + AppData.settings.theme);
+            log('AppData.settings.showSteps: ' + AppData.settings.showSteps);
+            log('AppData.settings.showStudy: ' + AppData.settings.showStudy);
+        }
+        
+        function testTheme(theme) {
+            log('Próba zmiany motywu na: ' + theme);
+            try {
+                if (typeof setTheme === 'function') {
+                    setTheme(theme);
+                    AppData.settings.theme = theme;
+                    log('✅ Motyw zmieniony na: ' + theme);
+                    log('Body classes: ' + document.body.className);
+                } else {
+                    log('❌ Funkcja setTheme nie istnieje!');
+                }
+            } catch(e) {
+                log('❌ Błąd: ' + e.message);
+            }
+        }
+        
+        function testToggleSteps() {
+            log('Próba toggle kroków');
+            try {
+                AppData.settings.showSteps = !AppData.settings.showSteps;
+                log('showSteps = ' + AppData.settings.showSteps);
+                if (typeof updateSectionsVisibility === 'function') {
+                    updateSectionsVisibility();
+                    log('✅ updateSectionsVisibility wywołane');
+                } else {
+                    log('❌ Funkcja updateSectionsVisibility nie istnieje!');
+                }
+            } catch(e) {
+                log('❌ Błąd: ' + e.message);
+            }
+        }
+        
+        function testToggleStudy() {
+            log('Próba toggle nauki');
+            try {
+                AppData.settings.showStudy = !AppData.settings.showStudy;
+                log('showStudy = ' + AppData.settings.showStudy);
+                if (typeof updateSectionsVisibility === 'function') {
+                    updateSectionsVisibility();
+                    log('✅ updateSectionsVisibility wywołane');
+                }
+            } catch(e) {
+                log('❌ Błąd: ' + e.message);
+            }
+        }
+        
+        function testVideoModal() {
+            log('Próba otwarcia video modal');
+            try {
+                if (typeof openVideoModal === 'function') {
+                    openVideoModal('https://www.youtube.com/watch?v=dQw4w9WgXcQ');
+                    log('✅ openVideoModal wywołane');
+                } else {
+                    log('❌ Funkcja openVideoModal nie istnieje!');
+                }
+            } catch(e) {
+                log('❌ Błąd: ' + e.message);
+            }
+        }
+    </script>
+</body>
+</html>

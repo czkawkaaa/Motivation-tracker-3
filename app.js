@@ -1283,29 +1283,19 @@ window.addEventListener('focus', () => {
 // On load, hide start button when challenge active
 document.addEventListener('DOMContentLoaded', () => {
     const startBtn = document.getElementById('startChallengeBtn');
+    const rulesWarning = document.getElementById('rulesWarning');
+    
     if (startBtn) {
         if (AppData.challenge && AppData.challenge.startDate && AppData.challenge.currentDay >= 0) {
             startBtn.style.display = 'none';
+            if (rulesWarning) rulesWarning.style.display = 'none';
         } else if (!AppData.settings.rulesAccepted) {
-            // Hide button if rules not accepted
+            // Hide button and show warning if rules not accepted
             startBtn.style.display = 'none';
-            // Show message instead
-            const btnContainer = startBtn.parentElement;
-            if (btnContainer && !document.getElementById('rulesWarning')) {
-                const warning = document.createElement('div');
-                warning.id = 'rulesWarning';
-                warning.style.cssText = 'padding: 1rem; background: #fff3cd; border-radius: 8px; text-align: center; margin-top: 1rem;';
-                warning.innerHTML = `
-                    <p style="margin: 0 0 0.5rem 0; color: #856404; font-weight: 600;">⚠️ Musisz najpierw zaakceptować zasady!</p>
-                    <p style="margin: 0; color: #856404; font-size: 0.9em;">Przejdź do zakładki <strong>📜 Zasady</strong> i kliknij "Zgadzam się"</p>
-                `;
-                btnContainer.appendChild(warning);
-            }
+            if (rulesWarning) rulesWarning.style.display = 'block';
         } else {
             startBtn.style.display = 'block';
-            // Remove warning if exists
-            const warning = document.getElementById('rulesWarning');
-            if (warning) warning.remove();
+            if (rulesWarning) rulesWarning.style.display = 'none';
         }
     }
     // Sync immediately on app load
@@ -3701,7 +3691,7 @@ function acceptRules() {
     const startBtn = document.getElementById('startChallengeBtn');
     const warning = document.getElementById('rulesWarning');
     if (startBtn) startBtn.style.display = 'block';
-    if (warning) warning.remove();
+    if (warning) warning.style.display = 'none';
     
     showNotification('✅ Zasady zaakceptowane! Możesz teraz rozpocząć wyzwanie klikając przycisk na stronie głównej!', 'success');
 }

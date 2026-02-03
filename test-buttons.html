@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Przycisków</title>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: Arial; padding: 20px; background: #1a1a1a; color: white; }
+        button { padding: 15px 30px; margin: 10px; font-size: 16px; cursor: pointer; border: none; border-radius: 8px; }
+        .btn-warning { background: #ff9800; color: white; }
+        .btn-danger { background: #f44336; color: white; }
+        #log { background: #000; color: #0f0; padding: 20px; margin-top: 20px; font-family: monospace; white-space: pre-wrap; min-height: 200px; }
+    </style>
+</head>
+<body>
+    <h1>Test Przycisków Danger Zone</h1>
+    
+    <button class="btn-warning" id="clearCacheBtn">🧹 Wyczyść cache przeglądarki</button>
+    <button class="btn-danger" id="resetAllBtn">🗑️ Resetuj cały postęp</button>
+    <button class="btn-danger" id="deleteAccountBtn">❌ Usuń konto</button>
+    
+    <div id="log"></div>
+    
+    <script>
+        function log(msg) {
+            document.getElementById('log').textContent += new Date().toLocaleTimeString() + ': ' + msg + '\n';
+        }
+        
+        window.onerror = function(msg, url, line) {
+            log('❌ ERROR: ' + msg + ' (line ' + line + ')');
+        };
+        
+        log('Strona załadowana');
+        
+        // Prosty test bez app.js
+        document.getElementById('clearCacheBtn').addEventListener('click', async () => {
+            log('🧹 Clear Cache kliknięty!');
+            if (confirm('Wyczyścić cache?')) {
+                log('Potwierdzono - czyszczę cache...');
+                try {
+                    if ('serviceWorker' in navigator) {
+                        const regs = await navigator.serviceWorker.getRegistrations();
+                        log('Znaleziono ' + regs.length + ' Service Workerów');
+                        for (const reg of regs) {
+                            await reg.unregister();
+                            log('✅ SW wyrejestrowany');
+                        }
+                    }
+                    if ('caches' in window) {
+                        const names = await caches.keys();
+                        log('Znaleziono ' + names.length + ' cache\'ów');
+                        for (const name of names) {
+                            await caches.delete(name);
+                            log('✅ Cache usunięty: ' + name);
+                        }
+                    }
+                    log('✅ Gotowe! Przeładowuję za 2s...');
+                    setTimeout(() => location.reload(true), 2000);
+                } catch(e) {
+                    log('❌ Błąd: ' + e.message);
+                }
+            }
+        });
+        
+        document.getElementById('resetAllBtn').addEventListener('click', () => {
+            log('🗑️ Reset kliknięty!');
+            if (confirm('Resetować dane?')) {
+                log('Czyszczę localStorage...');
+                localStorage.clear();
+                log('✅ Gotowe! Przeładowuję...');
+                setTimeout(() => location.reload(), 1000);
+            }
+        });
+        
+        document.getElementById('deleteAccountBtn').addEventListener('click', () => {
+            log('❌ Delete Account kliknięty!');
+            alert('Ta funkcja wymaga Firebase - test tylko potwierdza że przycisk działa');
+        });
+        
+        log('Event listenery dodane');
+    </script>
+</body>
+</html>

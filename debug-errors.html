@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Errors</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #1a1a1a; color: #0f0; }
+        .error { color: #f00; margin: 10px 0; padding: 10px; background: #300; border-radius: 5px; }
+        .success { color: #0f0; margin: 10px 0; padding: 10px; background: #030; border-radius: 5px; }
+        h1 { color: #fff; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Debug - Sprawdzanie błędów JavaScript</h1>
+    <div id="output"></div>
+    
+    <script>
+        const output = document.getElementById('output');
+        
+        function log(msg, isError = false) {
+            const div = document.createElement('div');
+            div.className = isError ? 'error' : 'success';
+            div.textContent = msg;
+            output.appendChild(div);
+        }
+        
+        // Przechwytuj błędy
+        window.onerror = function(msg, url, line, col, error) {
+            log(`❌ BŁĄD: ${msg} (linia ${line}, kolumna ${col})`, true);
+            return false;
+        };
+        
+        log('✅ Strona testowa załadowana');
+    </script>
+    
+    <!-- Ładuj CSS -->
+    <link rel="stylesheet" href="styles.css">
+    
+    <!-- Ładuj główny skrypt -->
+    <script>
+        log('⏳ Ładuję app.js...');
+    </script>
+    <script src="app.js"></script>
+    <script>
+        log('✅ app.js załadowany bez błędów składni');
+        
+        // Sprawdź kluczowe funkcje
+        const functions = [
+            'setTheme', 'initSettings', 'updateWorkoutsDisplay', 
+            'closeVideoModal', 'openVideoModal', 'extractYouTubeVideoId',
+            'updateSectionsVisibility', 'saveData', 'loadData'
+        ];
+        
+        functions.forEach(fn => {
+            if (typeof window[fn] === 'function') {
+                log(`✅ Funkcja ${fn}() istnieje`);
+            } else {
+                log(`❌ Funkcja ${fn}() NIE ISTNIEJE!`, true);
+            }
+        });
+        
+        // Sprawdź AppData
+        if (typeof AppData !== 'undefined') {
+            log('✅ AppData istnieje');
+            log('   - settings.showSteps: ' + AppData.settings.showSteps);
+            log('   - settings.showStudy: ' + AppData.settings.showStudy);
+        } else {
+            log('❌ AppData NIE ISTNIEJE!', true);
+        }
+    </script>
+</body>
+</html>
