@@ -7,16 +7,9 @@ const urlsToCache = [
   '/Motivation-tracker-3/index.html',
   '/Motivation-tracker-3/styles.css',
   '/Motivation-tracker-3/app.js',
-  '/Motivation-tracker-3/script.js',
   '/Motivation-tracker-3/firebase-config.js',
   '/Motivation-tracker-3/firebase-sync.js',
-  '/Motivation-tracker-3/icon.svg',
-  '/Motivation-tracker-3/icon-192.png',
-  '/Motivation-tracker-3/icon-512.png',
-  '/Motivation-tracker-3/manifest.json',
-  '/Motivation-tracker-3/widget-progress.json',
-  '/Motivation-tracker-3/widget-tasks.json',
-  '/Motivation-tracker-3/widget-data.json'
+  '/Motivation-tracker-3/manifest.json'
 ];
 
 // Instalacja Service Worker
@@ -26,7 +19,11 @@ self.addEventListener('install', (event) => {
     caches.open(CACHE_NAME)
       .then((cache) => {
         console.log('📦 Caching app shell');
-        return cache.addAll(urlsToCache);
+        return cache.addAll(urlsToCache).catch((error) => {
+          console.error('⚠️ Cache error (non-critical):', error);
+          // Kontynuuj mimo błędu - strona będzie działać
+          return Promise.resolve();
+        });
       })
   );
   self.skipWaiting();
