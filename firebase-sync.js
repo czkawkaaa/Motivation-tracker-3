@@ -25,6 +25,38 @@ window.firebaseLastError = null;
 window.firebaseLastWriteAttempt = null;
 window.firebaseLastReadAttempt = null;
 
+// Update sync status in UI
+function updateSyncStatus(status, message, icon) {
+    const syncStatus = document.getElementById('syncStatus');
+    const syncStatusIcon = document.getElementById('syncStatusIcon');
+    const syncStatusText = document.getElementById('syncStatusText');
+    
+    if (syncStatus && syncStatusIcon && syncStatusText) {
+        syncStatus.style.display = 'flex';
+        syncStatus.style.alignItems = 'center';
+        syncStatus.style.gap = '0.5rem';
+        syncStatusIcon.textContent = icon;
+        syncStatusText.textContent = message;
+        
+        // Color based on status
+        if (status === 'connected') {
+            syncStatus.style.background = '#d4edda';
+            syncStatus.style.color = '#155724';
+        } else if (status === 'error') {
+            syncStatus.style.background = '#f8d7da';
+            syncStatus.style.color = '#721c24';
+        } else if (status === 'syncing') {
+            syncStatus.style.background = '#fff3cd';
+            syncStatus.style.color = '#856404';
+        } else {
+            syncStatus.style.background = 'var(--hover-bg)';
+            syncStatus.style.color = 'var(--text-primary)';
+        }
+    }
+}
+
+window.updateSyncStatus = updateSyncStatus;
+
 // Smart merge helper: merges local and cloud data structures with simple rules:
 // - For per-day maps (steps, studyHours, mood, completedTasks): union keys; for conflicts prefer source with newer lastModified timestamps if present, otherwise prefer non-empty values and cloud by default.
 // - For arrays like completedDays: union + dedupe + sort.
@@ -152,20 +184,25 @@ async function loginWithGoogle() {
     const provider = new GoogleAuthProvider();
     
     try {
+        updateSyncStatus('syncing', 'Logowanie...', '⏳');
         if (typeof playClickSound === 'function') playClickSound();
         const result = await signInWithPopup(auth, provider);
         console.log('✅ Logged in as:', result.user.email);
+        updateSyncStatus('connected', 'Połączono', '✅');
         if (typeof showNotification === 'function') {
             showNotification('🎉 Zalogowano pomyślnie!', 'success');
         }
     } catch (error) {
         console.error('❌ Login error:', error);
+        window.firebaseLastError = error.message;
+        updateSyncStatus('error', 'Błąd logowania', '❌');
         
         if (error.code === 'auth/popup-blocked') {
             if (typeof showNotification === 'function') {
                 showNotification('⚠️ Odblokuj wyskakujące okna aby się zalogować', 'warning');
             }
         } else if (error.code === 'auth/cancelled-popup-request' || error.code === 'auth/popup-closed-by-user') {
+            updateSyncStatus('disconnected', 'Anulowano', '⚠️');
             // User zamknął okno - nic nie rób
         } else {
             if (typeof showNotification === 'function') {
@@ -179,11 +216,14 @@ async function logout() {
     try {
         if (typeof playClickSound === 'function') playClickSound();
         await signOut(auth);
+        updateSyncStatus('disconnected', 'Rozłączono', '⚠️');
         if (typeof showNotification === 'function') {
             showNotification('👋 Wylogowano pomyślnie', 'success');
         }
     } catch (error) {
         console.error('❌ Logout error:', error);
+        window.firebaseLastError = error.message;
+        updateSyncStatus('error', 'Błąd wylogowania', '❌');
         if (typeof showNotification === 'function') {
             showNotification('❌ Błąd wylogowania', 'error');
         }
@@ -212,9 +252,13 @@ function onUserLogin(user) {
     // Załaduj dane z Firestore i ZAWSZE uruchom realtime sync
     (async () => {
         try {
+            updateSyncStatus('syncing', 'Synchronizacja...', '🔄');
             await loadDataFromFirestore();
+            updateSyncStatus('connected', 'Połączono', '✅');
         } catch (err) {
             console.error('❌ Error during initial cloud load:', err);
+            window.firebaseLastError = err.message;
+            updateSyncStatus('error', 'Błąd synchronizacji', '❌');
         }
         
         // ZAWSZE uruchom realtime sync po zalogowaniu
@@ -222,8 +266,11 @@ function onUserLogin(user) {
         try {
             setupRealtimeSync();
             console.log('✅ Realtime sync setup completed');
+            updateSyncStatus('connected', 'Synchronizacja aktywna', '✅');
         } catch (e) {
             console.error('❌ Failed to setup realtime sync:', e);
+            window.firebaseLastError = e.message;
+            updateSyncStatus('error', 'Błąd realtime sync', '❌');
         }
     })();
 }
@@ -232,6 +279,10 @@ function onUserLogout() {
     currentUser = null;
     window.firebaseCurrentUser = null; // Clear diagnostics
     window.firebaseRealtimeSyncActive = false;
+    
+    // Hide sync status
+    const syncStatus = document.getElementById('syncStatus');
+    if (syncStatus) syncStatus.style.display = 'none';
     
     // Pokaż przycisk logowania
     const loginBtn = document.getElementById('loginBtn');
@@ -694,6 +745,17 @@ window.deleteDataFromFirestore = deleteDataFromFirestore;
 // Inicjalizuj po załadowaniu DOM
 function initFirebaseSync() {
     console.log('🚀 Initializing Firebase sync...');
+    console.log('🔍 Firebase app:', app);
+    console.log('🔍 Auth instance:', auth);
+    console.log('🔍 Firestore instance:', db);
+    
+    // Test connection
+    auth.onAuthStateChanged(() => {
+        console.log('✅ Firebase Auth is responding');
+    }, (error) => {
+        console.error('❌ Firebase Auth error:', error);
+        window.firebaseLastError = error.message;
+    });
     
     // Ustaw UI autoryzacji
     setupAuthUI();
