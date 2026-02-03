@@ -236,10 +236,6 @@ async function logout() {
     }
 }
 
-// Eksportuj funkcje do window dla dostępu z przycisków
-window.loginWithGoogle = loginWithGoogle;
-window.logoutUser = logout;
-
 // ======================
 // USER STATE CALLBACKS
 // ======================
@@ -809,3 +805,14 @@ if (document.readyState === 'loading') {
     // DOM już załadowany
     initFirebaseSync();
 }
+
+// ======================
+// GLOBAL EXPORTS
+// ======================
+// Eksportuj funkcje do window na samym końcu
+window.loginWithGoogle = loginWithGoogle;
+window.logoutUser = logout;
+window.auth = auth;
+window.db = db;
+
+console.log('✅ Firebase sync module loaded - functions exported to window');

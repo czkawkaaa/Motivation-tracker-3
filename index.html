@@ -36,7 +36,7 @@
                     <span id="userName" class="user-name"></span>
                     <button id="logoutBtn" class="btn-logout">Wyloguj</button>
                 </div>
-                <button id="loginBtn" class="btn-login">🔐 Zaloguj przez Google</button>
+                <button id="loginBtn" class="btn-login" onclick="if(window.loginWithGoogle) { window.loginWithGoogle(); } else { console.error('loginWithGoogle not available!'); alert('Funkcja logowania nie jest jeszcze załadowana. Odśwież stronę.'); }">🔐 Zaloguj przez Google</button>
             </div>
             <button class="hamburger-btn" aria-label="Menu">
                 <span></span>
