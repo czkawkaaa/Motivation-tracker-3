@@ -161,17 +161,6 @@ function smartMergeData(local, cloud, cloudLastModified = 0) {
 // ======================
 
 function setupAuthUI() {
-    // Poczekaj na załadowanie DOM jeśli jeszcze nie jest gotowy
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', () => {
-            setupAuthUIElements();
-        });
-    } else {
-        setupAuthUIElements();
-    }
-}
-
-function setupAuthUIElements() {
     const loginBtn = document.getElementById('loginBtn');
     const logoutBtn = document.getElementById('logoutBtn');
     
@@ -181,43 +170,13 @@ function setupAuthUIElements() {
     
     if (loginBtn) {
         console.log('✅ Adding click listener to login button');
-        // Usuń stare listenery jeśli istnieją
-        const newLoginBtn = loginBtn.cloneNode(true);
-        loginBtn.parentNode.replaceChild(newLoginBtn, loginBtn);
-        
-        newLoginBtn.addEventListener('click', async (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            console.log('🔐 Login button clicked!');
-            await loginWithGoogle();
-        });
-        
-        // Dodaj też bezpośrednio onclick jako fallback
-        newLoginBtn.onclick = async (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            console.log('🔐 Login onclick triggered!');
-            await loginWithGoogle();
-        };
+        loginBtn.addEventListener('click', loginWithGoogle);
     } else {
         console.error('❌ Login button not found!');
     }
     
     if (logoutBtn) {
-        // Usuń stare listenery
-        const newLogoutBtn = logoutBtn.cloneNode(true);
-        logoutBtn.parentNode.replaceChild(newLogoutBtn, logoutBtn);
-        
-        newLogoutBtn.addEventListener('click', async (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            await logout();
-        });
-        
-        newLogoutBtn.onclick = async (e) => {
-            e.preventDefault();
-            await logout();
-        };
+        logoutBtn.addEventListener('click', logout);
     }
 }
 
