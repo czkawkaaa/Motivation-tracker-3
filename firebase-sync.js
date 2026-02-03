@@ -161,6 +161,17 @@ function smartMergeData(local, cloud, cloudLastModified = 0) {
 // ======================
 
 function setupAuthUI() {
+    // Poczekaj na załadowanie DOM jeśli jeszcze nie jest gotowy
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+            setupAuthUIElements();
+        });
+    } else {
+        setupAuthUIElements();
+    }
+}
+
+function setupAuthUIElements() {
     const loginBtn = document.getElementById('loginBtn');
     const logoutBtn = document.getElementById('logoutBtn');
     
@@ -170,30 +181,43 @@ function setupAuthUI() {
     
     if (loginBtn) {
         console.log('✅ Adding click listener to login button');
-        loginBtn.addEventListener('click', loginWithGoogle);
+        loginBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            console.log('🔐 Login button clicked!');
+            await loginWithGoogle();
+        });
     } else {
         console.error('❌ Login button not found!');
     }
     
     if (logoutBtn) {
-        logoutBtn.addEventListener('click', logout);
+        logoutBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            await logout();
+        });
     }
 }
 
 async function loginWithGoogle() {
+    console.log('🔐 loginWithGoogle called!');
     const provider = new GoogleAuthProvider();
     
     try {
         updateSyncStatus('syncing', 'Logowanie...', '⏳');
         if (typeof playClickSound === 'function') playClickSound();
+        
+        console.log('🔄 Attempting signInWithPopup...');
         const result = await signInWithPopup(auth, provider);
         console.log('✅ Logged in as:', result.user.email);
+        
         updateSyncStatus('connected', 'Połączono', '✅');
         if (typeof showNotification === 'function') {
             showNotification('🎉 Zalogowano pomyślnie!', 'success');
         }
     } catch (error) {
         console.error('❌ Login error:', error);
+        console.error('Error code:', error.code);
+        console.error('Error message:', error.message);
         window.firebaseLastError = error.message;
         updateSyncStatus('error', 'Błąd logowania', '❌');
         
