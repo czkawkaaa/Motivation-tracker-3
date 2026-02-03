@@ -33,8 +33,19 @@ const AppData = {
         sunday: []
     },
     completedTasks: {},
+    completedWorkouts: {},
     gallery: [],
     badges: {},
+    weeklyWorkouts: {
+        enabled: false,
+        monday: [],
+        tuesday: [],
+        wednesday: [],
+        thursday: [],
+        friday: [],
+        saturday: [],
+        sunday: []
+    },
     settings: {
         theme: 'pink',
         font: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
@@ -44,7 +55,21 @@ const AppData = {
         restDay: 'none',
         countRestDays: false,
         soundEnabled: true,
-        volume: 70
+        volume: 70,
+        workoutsEnabled: false,
+        workouts: [],
+        customWorkouts: [],
+        workoutsGoal: 150,
+        stepsEnabled: true,
+        studyEnabled: true,
+        rulesAccepted: false,
+        rules: [
+            { id: 'movement', title: 'Ruch', content: 'Codzienny trening, spacer minimum 20 minut i rozciąganie.' },
+            { id: 'diet', title: 'Dieta', content: 'Jeden zdrowy posiłek domowy dziennie, zero słodzonych napojów i ograniczenie niezdrowego jedzenia (jeden cheat meal na tydzień).' },
+            { id: 'water', title: 'Woda', content: 'Picie większej ilości wody niż dotychczas.' },
+            { id: 'sleep', title: 'Sen', content: 'Minimum 7 godzin snu.' },
+            { id: 'development', title: 'Rozwój', content: '10 minut czytania lub słuchania książki.' }
+        ]
     }
 };
 
@@ -136,6 +161,37 @@ const motivationalQuotes = [
     "Jesteś już na dobrej drodze! 🛣️✨"
 ];
 
+// Transformers quotes - Male oriented
+const transformersQuotes = [
+    "Przekształć się w lepszą wersję siebie! 🤖⚡",
+    "Siła pochodzi z determinacji, nie z wymówek! 💪",
+    "Roboty pracują bez słów - działaj! 🔧",
+    "Twoja misja to być najlepszy! 🎯",
+    "Cybertron? Nie - Twoje ciało to pole bitwy! ⚔️",
+    "Energon to konsystencja - palimy go codziennie! 🔥",
+    "Transformacja to proces - cierpliwość! 🔄",
+    "Z każdym dniem mocniejszy! 💪⚡",
+    "Wymówkami są Deceptikony - pokonaj je! 🚫",
+    "Cybertron czeka na Twoją moc! 🌟",
+    "Nie ma drogi łatwo, jest droga mocna! 🛣️",
+    "Potencjał to energia - aktywuj go! ⚡",
+    "Walka to początek, zwyciestwo to koniec! 🏁",
+    "Gniew przerób w moc! 🔥",
+    "Mistrzostwo to powtarzana transformacja! 🔄",
+    "Odpoczywaj by znowu działać! 😴⚡",
+    "Nie szukaj motywacji - bądź nią! 🤖💥",
+    "Każdy upadek to nauka do zwycięstwa! 📚",
+    "Lider nie czeka - działa! 👑",
+    "Twoja dyscyplina to supermoc! 🦸",
+    "Z gruzów buduj bazę mocy! 🏗️",
+    "Przegrałeś? Restart! 🔄",
+    "Słabość to tylko etap przemiany! 💎",
+    "Ostateczne zwycięstwo czeka zmotywowanego! 🏆",
+    "Działaj jak masz do stracenia wszystko! ⚡",
+    "Bądź tym, którego wszyscy będą naśladować! 👑",
+    "Godzina do godziny - będziesz legendą! 📈"
+];
+
 // ======================
 // INITIALIZATION
 // ======================
@@ -151,6 +207,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initGallery();
     initBadges();
     initSettings();
+    initRules();
     // Sync UI
     if (typeof initSyncUI === 'function') initSyncUI();
     
@@ -466,7 +523,8 @@ function setTheme(themeName) {
         'theme-red',
         'theme-blue',
         'theme-purple',
-        'theme-black'
+        'theme-black',
+        'theme-transformers'
     ];
     
     themeClasses.forEach(cls => body.classList.remove(cls));
@@ -1009,10 +1067,13 @@ function checkDayCompletion() {
     if (allCompleted && hasTasks) {
         if (!AppData.challenge.completedDays.includes(dateKey)) {
             AppData.challenge.completedDays.push(dateKey);
-            AppData.challenge.currentDay++;
-
+            
+            // Don't increment currentDay here - let syncChallengeByDates() handle it
+            // This prevents currentDay from getting ahead of calendar days
+            
             // Sprawdź czy wyzwanie zostało ukończone
-            if (AppData.challenge.currentDay >= AppData.challenge.totalDays) {
+            // Count completed days to check completion
+            if (AppData.challenge.completedDays.length >= AppData.challenge.totalDays) {
                 handleChallengeCompletion();
             }
 
@@ -1029,8 +1090,7 @@ function checkDayCompletion() {
         const idx = AppData.challenge.completedDays.indexOf(dateKey);
         if (idx !== -1) {
             AppData.challenge.completedDays.splice(idx, 1);
-            // Adjust currentDay (do not go below 0)
-            AppData.challenge.currentDay = Math.max(0, AppData.challenge.currentDay - 1);
+            // Don't adjust currentDay - it should track calendar, not completed days
             calculateStreak();
             saveData();
             updateAllDisplays();
@@ -1140,22 +1200,31 @@ function isDayInChallengeRange(dayKey) {
 }
 
 function startChallenge() {
+    // Check if rules were accepted
+    if (!AppData.settings.rulesAccepted) {
+        showRulesModal();
+        return;
+    }
+    
     const todayKey = getTodayKey();
     if (!AppData.challenge.startDate) {
         AppData.challenge.startDate = todayKey;
         // Ensure totalDays is synced with settings
         AppData.challenge.totalDays = AppData.settings.challengeLength || AppData.challenge.totalDays || 75;
-        // Reset progress when starting new challenge
-        AppData.challenge.currentDay = 0;
+        // Start at day 1 (today is day 1 of the challenge)
+        AppData.challenge.currentDay = 1;
         AppData.challenge.completedDays = AppData.challenge.completedDays || [];
         saveData();
+        
+        // Hide start button in UI
+        const startBtn = document.getElementById('startChallengeBtn');
+        if (startBtn) startBtn.style.display = 'none';
+        
+        // Update UI immediately
+        updateAllDisplays();
+        
+        showNotification('🚀 Wyzwanie rozpoczęte! Dzień 1 rozpoczyna się dzisiaj. Powodzenia!', 'success');
     }
-    // Hide start button in UI
-    const startBtn = document.getElementById('startChallengeBtn');
-    if (startBtn) startBtn.style.display = 'none';
-    // Immediately sync progression (in case some days passed since start)
-    syncChallengeByDates();
-    showNotification('🚀 Wyzwanie rozpoczęte! Powodzenia!', 'success');
 }
 
 function syncChallengeByDates() {
@@ -1165,20 +1234,19 @@ function syncChallengeByDates() {
     const start = new Date(AppData.challenge.startDate + 'T00:00:00');
     const today = new Date();
 
-    // Calculate days passed since start (start day = day 0)
+    // Calculate days passed since start (start day = day 0, next day = day 1, etc.)
     const msPerDay = 24 * 60 * 60 * 1000;
     const daysPassed = Math.floor((Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()) - Date.UTC(start.getFullYear(), start.getMonth(), start.getDate())) / msPerDay);
 
     // Clamp to totalDays
     const total = AppData.challenge.totalDays || AppData.settings.challengeLength || 75;
     
-    // IMPORTANT: Only update currentDay if more calendar days have passed than user's progress
-    // This prevents overwriting progress made by completing tasks
-    // User completes tasks -> currentDay increases
-    // Days pass without completing tasks -> currentDay should catch up to calendar
-    const minCurrentDay = Math.max(0, Math.min(daysPassed, total));
+    // currentDay represents the current day NUMBER (1-based: day 1, day 2, etc.)
+    // daysPassed is 0-based (0 on start day, 1 next day, etc.)
+    // So currentDay should be daysPassed + 1, clamped to total
+    const minCurrentDay = Math.max(1, Math.min(daysPassed + 1, total));
     
-    // Only increase currentDay, never decrease (preserve user's task completion progress)
+    // Always sync currentDay to match calendar
     if (minCurrentDay > AppData.challenge.currentDay) {
         AppData.challenge.currentDay = minCurrentDay;
         saveData();
@@ -1191,12 +1259,26 @@ function syncChallengeByDates() {
     }
 }
 
-// Periodic sync: run once every hour to catch day changes while the app is open
+// Periodic sync: run once every minute to catch day changes while the app is open
 setInterval(() => {
     if (isChallengeActive()) {
         syncChallengeByDates();
     }
-}, 1000 * 60 * 60);
+}, 1000 * 60); // Check every minute instead of every hour
+
+// Sync when user returns to tab
+document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && isChallengeActive()) {
+        syncChallengeByDates();
+    }
+});
+
+// Sync when window regains focus
+window.addEventListener('focus', () => {
+    if (isChallengeActive()) {
+        syncChallengeByDates();
+    }
+});
 
 // On load, hide start button when challenge active
 document.addEventListener('DOMContentLoaded', () => {
@@ -1204,6 +1286,26 @@ document.addEventListener('DOMContentLoaded', () => {
     if (startBtn) {
         if (AppData.challenge && AppData.challenge.startDate && AppData.challenge.currentDay >= 0) {
             startBtn.style.display = 'none';
+        } else if (!AppData.settings.rulesAccepted) {
+            // Hide button if rules not accepted
+            startBtn.style.display = 'none';
+            // Show message instead
+            const btnContainer = startBtn.parentElement;
+            if (btnContainer && !document.getElementById('rulesWarning')) {
+                const warning = document.createElement('div');
+                warning.id = 'rulesWarning';
+                warning.style.cssText = 'padding: 1rem; background: #fff3cd; border-radius: 8px; text-align: center; margin-top: 1rem;';
+                warning.innerHTML = `
+                    <p style="margin: 0 0 0.5rem 0; color: #856404; font-weight: 600;">⚠️ Musisz najpierw zaakceptować zasady!</p>
+                    <p style="margin: 0; color: #856404; font-size: 0.9em;">Przejdź do zakładki <strong>📜 Zasady</strong> i kliknij "Zgadzam się"</p>
+                `;
+                btnContainer.appendChild(warning);
+            }
+        } else {
+            startBtn.style.display = 'block';
+            // Remove warning if exists
+            const warning = document.getElementById('rulesWarning');
+            if (warning) warning.remove();
         }
     }
     // Sync immediately on app load
@@ -1243,7 +1345,8 @@ function updateTodayMood() {
 
 function startQuoteRotation() {
     setInterval(() => {
-        const randomQuote = motivationalQuotes[Math.floor(Math.random() * motivationalQuotes.length)];
+        const quotes = AppData.settings.theme === 'transformers' ? transformersQuotes : motivationalQuotes;
+        const randomQuote = quotes[Math.floor(Math.random() * quotes.length)];
         document.getElementById('motivationalQuote').textContent = `"${randomQuote}"`;
     }, 15000);
 }
@@ -1467,9 +1570,20 @@ function updateStats() {
     updateStepsChart();
     updateMoodChart();
     updateStudyChart();
+    updateWorkoutsStats();
 }
 
 function updateStepsChart() {
+    const stepsStatsCard = document.getElementById('stepsStatsCard');
+    
+    // Hide if steps are disabled
+    if (!AppData.settings.stepsEnabled) {
+        if (stepsStatsCard) stepsStatsCard.style.display = 'none';
+        return;
+    }
+    
+    if (stepsStatsCard) stepsStatsCard.style.display = 'block';
+    
     // Calculate TOTAL steps from entire challenge
     const totalSteps = Object.values(AppData.steps).reduce((sum, s) => sum + s, 0);
     const goal = AppData.settings.stepsGoal;
@@ -1514,6 +1628,16 @@ function updateMoodChart() {
 }
 
 function updateStudyChart() {
+    const studyStatsCard = document.getElementById('studyStatsCard');
+    
+    // Hide if study is disabled
+    if (!AppData.settings.studyEnabled) {
+        if (studyStatsCard) studyStatsCard.style.display = 'none';
+        return;
+    }
+    
+    if (studyStatsCard) studyStatsCard.style.display = 'block';
+    
     // Calculate total hours and goal
     const totalHours = Object.values(AppData.studyHours).reduce((sum, h) => sum + h, 0);
     const goal = AppData.settings.studyGoal;
@@ -1530,6 +1654,47 @@ function updateStudyChart() {
     // Display one decimal
     document.getElementById('studyPercent').textContent = percent.toFixed(1) + '%';
     document.getElementById('studyLabel').textContent = `${totalHours.toFixed(1)}/${goal}h`;
+}
+
+function updateWorkoutsStats() {
+    const workoutsStatsCard = document.getElementById('workoutsStatsCard');
+    const circle = document.getElementById('workoutsCircle');
+    const percentEl = document.getElementById('workoutsPercent');
+    const labelEl = document.getElementById('workoutsLabel');
+    
+    if (!workoutsStatsCard || !circle || !percentEl || !labelEl) return;
+    
+    // Show/hide card based on whether workouts are enabled
+    if (!AppData.settings.workoutsEnabled) {
+        workoutsStatsCard.style.display = 'none';
+        return;
+    }
+    
+    workoutsStatsCard.style.display = 'block';
+    
+    // Calculate total completed workouts during challenge
+    if (!AppData.completedWorkouts) {
+        AppData.completedWorkouts = {};
+    }
+    
+    // Count total workout completions (not unique)
+    const totalCompletions = Object.values(AppData.completedWorkouts).reduce((sum, dailyWorkouts) => sum + dailyWorkouts.length, 0);
+    
+    // Calculate percentage based on goal
+    const goal = AppData.settings.workoutsGoal || 150;
+    
+    let percent = 0;
+    if (goal > 0) {
+        percent = Math.min((totalCompletions / goal) * 100, 100);
+    }
+    percent = Math.max(0, percent);
+    
+    const circumference = 2 * Math.PI * 80;
+    const offset = circumference - (percent / 100) * circumference;
+    circle.style.strokeDashoffset = offset;
+    
+    percentEl.textContent = percent.toFixed(1) + '%';
+    labelEl.textContent = `${totalCompletions}/${goal}`;
 }
 
 // ======================
@@ -1864,6 +2029,13 @@ function initSettings() {
         setTheme(e.target.value);
         AppData.settings.theme = e.target.value;
         saveData();
+        // Zmień cytaty gdy zmienisz motyw
+        const quoteEl = document.getElementById('motivationalQuote');
+        if (quoteEl) {
+            const quotes = e.target.value === 'transformers' ? transformersQuotes : motivationalQuotes;
+            const randomQuote = quotes[Math.floor(Math.random() * quotes.length)];
+            quoteEl.textContent = `"${randomQuote}"`;
+        }
     });
     
     // Font select
@@ -1873,12 +2045,6 @@ function initSettings() {
         setFont(e.target.value);
         AppData.settings.font = e.target.value;
         saveData();
-    });
-    
-    // Custom color
-    const customColor = document.getElementById('customColor');
-    customColor.addEventListener('change', (e) => {
-        document.documentElement.style.setProperty('--primary-color', e.target.value);
     });
     
     // Challenge length
@@ -1891,11 +2057,47 @@ function initSettings() {
         updateAllDisplays();
     });
     
+    // Steps toggle
+    const stepsToggle = document.getElementById('stepsToggle');
+    const stepsCard = document.getElementById('stepsCard');
+    const stepsGoalSetting = document.getElementById('stepsGoalSetting');
+    if (AppData.settings.stepsEnabled === undefined) {
+        AppData.settings.stepsEnabled = true;
+    }
+    stepsToggle.checked = AppData.settings.stepsEnabled;
+    if (stepsCard) stepsCard.style.display = AppData.settings.stepsEnabled ? 'block' : 'none';
+    if (stepsGoalSetting) stepsGoalSetting.style.display = AppData.settings.stepsEnabled ? 'block' : 'none';
+    stepsToggle.addEventListener('change', (e) => {
+        AppData.settings.stepsEnabled = e.target.checked;
+        if (stepsCard) stepsCard.style.display = e.target.checked ? 'block' : 'none';
+        if (stepsGoalSetting) stepsGoalSetting.style.display = e.target.checked ? 'block' : 'none';
+        saveData();
+        updateStats();
+    });
+    
     // Steps goal
     const stepsGoal = document.getElementById('stepsGoal');
     stepsGoal.value = AppData.settings.stepsGoal;
     stepsGoal.addEventListener('change', (e) => {
         AppData.settings.stepsGoal = parseInt(e.target.value);
+        saveData();
+        updateStats();
+    });
+    
+    // Study toggle
+    const studyToggle = document.getElementById('studyToggle');
+    const studyCard = document.getElementById('studyCard');
+    const studyGoalSetting = document.getElementById('studyGoalSetting');
+    if (AppData.settings.studyEnabled === undefined) {
+        AppData.settings.studyEnabled = true;
+    }
+    studyToggle.checked = AppData.settings.studyEnabled;
+    if (studyCard) studyCard.style.display = AppData.settings.studyEnabled ? 'block' : 'none';
+    if (studyGoalSetting) studyGoalSetting.style.display = AppData.settings.studyEnabled ? 'block' : 'none';
+    studyToggle.addEventListener('change', (e) => {
+        AppData.settings.studyEnabled = e.target.checked;
+        if (studyCard) studyCard.style.display = e.target.checked ? 'block' : 'none';
+        if (studyGoalSetting) studyGoalSetting.style.display = e.target.checked ? 'block' : 'none';
         saveData();
         updateStats();
     });
@@ -1908,6 +2110,41 @@ function initSettings() {
         saveData();
         updateStats();
     });
+    
+    // Workouts toggle
+    const workoutsToggleMain = document.getElementById('workoutsToggleMain');
+    const workoutsSettingsSection = document.getElementById('workoutsSettingsSection');
+    const workoutsGoalSetting = document.getElementById('workoutsGoalSetting');
+    if (AppData.settings.workoutsEnabled === undefined) {
+        AppData.settings.workoutsEnabled = false;
+    }
+    if (workoutsToggleMain) {
+        workoutsToggleMain.checked = AppData.settings.workoutsEnabled;
+        if (workoutsSettingsSection) workoutsSettingsSection.style.display = AppData.settings.workoutsEnabled ? 'block' : 'none';
+        if (workoutsGoalSetting) workoutsGoalSetting.style.display = AppData.settings.workoutsEnabled ? 'block' : 'none';
+        workoutsToggleMain.addEventListener('change', (e) => {
+            AppData.settings.workoutsEnabled = e.target.checked;
+            if (workoutsSettingsSection) workoutsSettingsSection.style.display = e.target.checked ? 'block' : 'none';
+            if (workoutsGoalSetting) workoutsGoalSetting.style.display = e.target.checked ? 'block' : 'none';
+            saveData();
+            updateWorkoutsDisplay();
+            updateStats();
+        });
+    }
+    
+    // Workouts goal
+    const workoutsGoal = document.getElementById('workoutsGoal');
+    if (workoutsGoal) {
+        if (AppData.settings.workoutsGoal === undefined) {
+            AppData.settings.workoutsGoal = 150;
+        }
+        workoutsGoal.value = AppData.settings.workoutsGoal;
+        workoutsGoal.addEventListener('change', (e) => {
+            AppData.settings.workoutsGoal = parseInt(e.target.value);
+            saveData();
+            updateStats();
+        });
+    }
     
     // Rest day
     const restDay = document.getElementById('restDay');
@@ -2042,12 +2279,81 @@ function initSettings() {
         }
     });
     
+    // Delete account button
+    const deleteAccountBtn = document.getElementById('deleteAccountBtn');
+    if (deleteAccountBtn) {
+        deleteAccountBtn.addEventListener('click', async () => {
+            playClickSound();
+            if (confirm('🚨 UWAGA! Czy na pewno chcesz USUNĄĆ KONTO i wszystkie dane?\n\nTa operacja:\n• Usuwa wszystkie dane z urządzenia\n• Usuwa wszystkie dane z chmury\n• Jest NIEODWRACALNA\n\nNie będzie możliwości odzyskania danych!')) {
+                if (confirm('⚠️ OSTATNIE OSTRZEŻENIE!\n\nWpisz "USUŃ" w następnym oknie aby potwierdzić.')) {
+                    const confirmation = prompt('Wpisz "USUŃ" aby potwierdzić usunięcie konta:');
+                    if (confirmation === 'USUŃ') {
+                        // Usuń dane z Firebase/chmury
+                        if (window.deleteDataFromFirestore) {
+                            try {
+                                await window.deleteDataFromFirestore();
+                                console.log('✅ Dane usunięte z chmury');
+                            } catch (error) {
+                                console.error('❌ Błąd usuwania z chmury:', error);
+                            }
+                        }
+                        
+                        // Wyloguj użytkownika jeśli jest zalogowany
+                        if (window.logoutUser) {
+                            try {
+                                await window.logoutUser();
+                                console.log('✅ Użytkownik wylogowany');
+                            } catch (error) {
+                                console.error('❌ Błąd wylogowania:', error);
+                            }
+                        }
+                        
+                        // Usuń wszystkie dane lokalne
+                        localStorage.clear();
+                        sessionStorage.clear();
+                        
+                        // Wyczyść cache aplikacji
+                        if ('caches' in window) {
+                            caches.keys().then(names => {
+                                names.forEach(name => caches.delete(name));
+                            });
+                        }
+                        
+                        // Wymuś przeładowanie
+                        alert('✅ Konto zostało usunięte. Aplikacja zostanie odświeżona.');
+                        location.reload(true);
+                    } else {
+                        showNotification('❌ Anulowano usuwanie konta', 'error');
+                    }
+                }
+            }
+        });
+    }
+    
     // Export data button
     const exportDataBtn = document.getElementById('exportDataBtn');
     exportDataBtn.addEventListener('click', () => {
         playClickSound(); // Dźwięk kliknięcia
         exportDataAsHTML();
     });
+    
+    // Refresh app button
+    const refreshAppBtn = document.getElementById('refreshAppBtn');
+    if (refreshAppBtn) {
+        refreshAppBtn.addEventListener('click', () => {
+            playClickSound();
+            showNotification('🔄 Odświeżanie aplikacji...', 'success');
+            setTimeout(() => {
+                location.reload(true); // Force reload from server
+            }, 500);
+        });
+    }
+    
+    // Render rules in settings
+    renderRulesSettings();
+
+    // Workouts init
+    initWorkouts();
 }
 
 function renderDayTasks(day) {
@@ -2799,5 +3105,718 @@ function exportDataAsHTML() {
     URL.revokeObjectURL(url);
     
     showNotification('📥 Raport został pobrany! Otwórz plik i naciśnij Ctrl+P aby zapisać jako PDF', 'success');
+}
+
+// ========== WORKOUTS ==========
+function extractYouTubeVideoId(url) {
+    const patterns = [
+        /(?:https?:\/\/)?(?:www\.)?youtube\.com\/watch\?v=([a-zA-Z0-9_-]{11})/,
+        /(?:https?:\/\/)?(?:www\.)?youtu\.be\/([a-zA-Z0-9_-]{11})/,
+        /^([a-zA-Z0-9_-]{11})$/
+    ];
+    
+    for (const pattern of patterns) {
+        const match = url.match(pattern);
+        if (match) return match[1];
+    }
+    return null;
+}
+
+function initWorkouts() {
+    const btnAddWorkout = document.getElementById('btnAddWorkout');
+    const workoutURLInput = document.getElementById('workoutURLInput');
+    const weeklyWorkoutsToggle = document.getElementById('weeklyWorkoutsToggle');
+    const normalWorkoutsConfig = document.getElementById('normalWorkoutsConfig');
+    const weeklyWorkoutsConfig = document.getElementById('weeklyWorkoutsConfig');
+    
+    // Initialize weeklyWorkouts if not exists
+    if (!AppData.weeklyWorkouts) {
+        AppData.weeklyWorkouts = {
+            enabled: false,
+            monday: [],
+            tuesday: [],
+            wednesday: [],
+            thursday: [],
+            friday: [],
+            saturday: [],
+            sunday: []
+        };
+    }
+    
+    // Weekly workouts toggle
+    if (weeklyWorkoutsToggle && normalWorkoutsConfig && weeklyWorkoutsConfig) {
+        weeklyWorkoutsToggle.checked = AppData.weeklyWorkouts.enabled;
+        normalWorkoutsConfig.style.display = AppData.weeklyWorkouts.enabled ? 'none' : 'block';
+        weeklyWorkoutsConfig.style.display = AppData.weeklyWorkouts.enabled ? 'block' : 'none';
+        
+        weeklyWorkoutsToggle.addEventListener('change', (e) => {
+            AppData.weeklyWorkouts.enabled = e.target.checked;
+            normalWorkoutsConfig.style.display = e.target.checked ? 'none' : 'block';
+            weeklyWorkoutsConfig.style.display = e.target.checked ? 'block' : 'none';
+            saveData();
+            updateWorkoutsDisplay();
+            if (e.target.checked) {
+                renderAllDayWorkouts();
+            }
+        });
+        
+        if (AppData.weeklyWorkouts.enabled) {
+            renderAllDayWorkouts();
+        }
+    }
+    
+    // Add workout button (normal mode)
+    if (btnAddWorkout && workoutURLInput) {
+        btnAddWorkout.addEventListener('click', addWorkout);
+        workoutURLInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') addWorkout();
+        });
+    }
+    
+    // Add custom workout button
+    const btnAddCustomWorkout = document.getElementById('btnAddCustomWorkout');
+    const customWorkoutInput = document.getElementById('customWorkoutInput');
+    if (btnAddCustomWorkout && customWorkoutInput) {
+        btnAddCustomWorkout.addEventListener('click', addCustomWorkout);
+        customWorkoutInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') addCustomWorkout();
+        });
+    }
+    
+    // Render existing workouts
+    updateWorkoutsDisplay();
+    updateCustomWorkoutsDisplay();
+}
+
+function addWorkout() {
+    const workoutURLInput = document.getElementById('workoutURLInput');
+    if (!workoutURLInput || !workoutURLInput.value.trim()) {
+        showNotification('⚠️ Wklej link YouTube!', 'warning');
+        return;
+    }
+    
+    const url = workoutURLInput.value.trim();
+    const videoId = extractYouTubeVideoId(url);
+    
+    if (!videoId) {
+        showNotification('❌ Nieprawidłowy link YouTube', 'error');
+        return;
+    }
+    
+    // Check for duplicates
+    if (!AppData.settings.workouts) {
+        AppData.settings.workouts = [];
+    }
+    
+    const isDuplicate = AppData.settings.workouts.some(w => w.videoId === videoId);
+    if (isDuplicate) {
+        showNotification('⚠️ Ten workout jest już dodany!', 'warning');
+        return;
+    }
+    
+    // Add workout
+    AppData.settings.workouts.push({
+        videoId: videoId,
+        url: url,
+        addedDate: new Date().toISOString()
+    });
+    
+    saveData();
+    workoutURLInput.value = '';
+    updateWorkoutsDisplay();
+    showNotification('✅ Workout dodany!', 'success');
+}
+
+function removeWorkout(videoId) {
+    AppData.settings.workouts = AppData.settings.workouts.filter(w => w.videoId !== videoId);
+    saveData();
+    updateWorkoutsDisplay();
+    showNotification('🗑️ Workout usunięty', 'success');
+}
+
+function addCustomWorkout() {
+    const customWorkoutInput = document.getElementById('customWorkoutInput');
+    if (!customWorkoutInput || !customWorkoutInput.value.trim()) {
+        showNotification('⚠️ Wpisz nazwę ćwiczenia!', 'warning');
+        return;
+    }
+    
+    const name = customWorkoutInput.value.trim();
+    
+    // Initialize customWorkouts if not exists
+    if (!AppData.settings.customWorkouts) {
+        AppData.settings.customWorkouts = [];
+    }
+    
+    // Generate unique ID
+    const id = 'custom_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    
+    // Add custom workout
+    AppData.settings.customWorkouts.push({
+        id: id,
+        name: name,
+        addedDate: new Date().toISOString()
+    });
+    
+    saveData();
+    customWorkoutInput.value = '';
+    updateCustomWorkoutsDisplay();
+    updateWorkoutsDisplay();
+    showNotification('✅ Własne ćwiczenie dodane!', 'success');
+}
+
+function removeCustomWorkout(id) {
+    AppData.settings.customWorkouts = AppData.settings.customWorkouts.filter(w => w.id !== id);
+    saveData();
+    updateCustomWorkoutsDisplay();
+    updateWorkoutsDisplay();
+    showNotification('🗑️ Ćwiczenie usunięte', 'success');
+}
+
+function updateCustomWorkoutsDisplay() {
+    const customWorkoutsList = document.getElementById('customWorkoutsList');
+    if (!customWorkoutsList) return;
+    
+    if (!AppData.settings.customWorkouts || AppData.settings.customWorkouts.length === 0) {
+        customWorkoutsList.innerHTML = '';
+        return;
+    }
+    
+    customWorkoutsList.innerHTML = AppData.settings.customWorkouts.map(workout => `
+        <div style="display: flex; gap: 1rem; margin-bottom: 1rem; padding: 1rem; background: var(--card-bg); border-radius: 8px; align-items: center;">
+            <div style="width: 50px; height: 50px; background: var(--primary-color); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
+                💪
+            </div>
+            <div style="flex: 1;">
+                <p style="font-size: 0.9em; color: var(--text-color); margin: 0 0 0.5rem 0; font-weight: 600;">${workout.name}</p>
+                <p style="font-size: 0.85em; color: #999; margin: 0;">Dodano: ${new Date(workout.addedDate).toLocaleDateString('pl-PL')}</p>
+            </div>
+            <button onclick="removeCustomWorkout('${workout.id}')" style="padding: 0.5rem 1rem; background: #f44336; color: white; border: none; border-radius: 6px; cursor: pointer; white-space: nowrap;">🗑️ Usuń</button>
+        </div>
+    `).join('');
+}
+
+function updateWorkoutsDisplay() {
+    // Update settings list
+    const workoutsList = document.getElementById('workoutsList');
+    const workoutsViewList = document.getElementById('workoutsViewList');
+    const workoutsContent = document.getElementById('workoutsContent');
+    const workoutStatusMsg = document.getElementById('workoutStatusMsg');
+    
+    if (!AppData.completedWorkouts) {
+        AppData.completedWorkouts = {};
+    }
+    
+    const today = new Date().toISOString().split('T')[0];
+    const completedToday = AppData.completedWorkouts[today] || [];
+    
+    // Determine which workouts to display
+    let workoutsToDisplay = [];
+    
+    if (AppData.weeklyWorkouts && AppData.weeklyWorkouts.enabled) {
+        // Get today's day of week
+        const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+        const dayOfWeek = new Date().getDay();
+        const dayName = dayNames[dayOfWeek];
+        workoutsToDisplay = AppData.weeklyWorkouts[dayName] || [];
+    } else {
+        // Normal mode - same workouts every day
+        workoutsToDisplay = AppData.settings.workouts || [];
+    }
+    
+    const settingsHtml = !AppData.settings.workouts || AppData.settings.workouts.length === 0 
+        ? '<p style="color: #999; font-size: 0.9em;">Brak dodanych workoutów</p>'
+        : AppData.settings.workouts.map(workout => `
+            <div style="display: flex; gap: 1rem; margin-bottom: 1rem; padding: 1rem; background: var(--card-bg); border-radius: 8px; align-items: center;">
+                <div style="position: relative; cursor: pointer;" onclick="playWorkoutVideo('${workout.videoId}')">
+                    <img src="https://img.youtube.com/vi/${workout.videoId}/mqdefault.jpg" alt="Thumbnail" style="width: 120px; height: 90px; border-radius: 8px; object-fit: cover; display: block;">
+                    <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.3); border-radius: 8px; transition: background 0.2s;">
+                        <span style="font-size: 2rem;">▶️</span>
+                    </div>
+                </div>
+                <div style="flex: 1;">
+                    <p style="font-size: 0.9em; color: var(--text-color); margin: 0 0 0.5rem 0; font-weight: 600; cursor: pointer;" onclick="playWorkoutVideo('${workout.videoId}')">Kliknij aby zagrać</p>
+                    <p style="font-size: 0.85em; color: #999; margin: 0;">Dodano: ${new Date(workout.addedDate).toLocaleDateString('pl-PL')}</p>
+                </div>
+                <button onclick="removeWorkout('${workout.videoId}')" style="padding: 0.5rem 1rem; background: #f44336; color: white; border: none; border-radius: 6px; cursor: pointer; white-space: nowrap;">🗑️ Usuń</button>
+            </div>
+        `).join('');
+    
+    // Get custom workouts (always the same every day)
+    const customWorkouts = AppData.settings.customWorkouts || [];
+    
+    // Build view HTML with both YouTube and custom workouts
+    let viewHtmlParts = [];
+    
+    // Add workouts from weekly or normal mode
+    if (workoutsToDisplay.length > 0) {
+        workoutsToDisplay.forEach(workout => {
+            // Check if it's YouTube workout or custom workout
+            if (workout.videoId) {
+                // YouTube workout
+                const isCompleted = completedToday.includes(workout.videoId);
+                viewHtmlParts.push(`
+            <div style="display: flex; gap: 1rem; margin-bottom: 1rem; padding: 1rem; background: var(--card-bg); border-radius: 8px; align-items: center; opacity: ${isCompleted ? '0.6' : '1'};">
+                <label style="display: flex; align-items: center; cursor: pointer;">
+                    <input type="checkbox" ${isCompleted ? 'checked' : ''} onchange="toggleWorkoutComplete('${workout.videoId}')" style="width: 24px; height: 24px; cursor: pointer;">
+                </label>
+                <div style="position: relative; cursor: pointer;" onclick="playWorkoutVideo('${workout.videoId}')">
+                    <img src="https://img.youtube.com/vi/${workout.videoId}/mqdefault.jpg" alt="Thumbnail" style="width: 120px; height: 90px; border-radius: 8px; object-fit: cover; display: block;">
+                    <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.3); border-radius: 8px; transition: background 0.2s;">
+                        <span style="font-size: 2rem;">▶️</span>
+                    </div>
+                </div>
+                <div style="flex: 1;">
+                    <p style="font-size: 0.9em; color: var(--text-color); margin: 0 0 0.5rem 0; font-weight: 600; cursor: pointer; ${isCompleted ? 'text-decoration: line-through;' : ''}" onclick="playWorkoutVideo('${workout.videoId}')">Kliknij aby zagrać</p>
+                    <p style="font-size: 0.85em; color: #999; margin: 0;">Dodano: ${new Date(workout.addedDate).toLocaleDateString('pl-PL')}</p>
+                </div>
+            </div>
+        `);
+            } else if (workout.id && workout.name) {
+                // Custom workout from weekly workouts
+                const isCompleted = completedToday.includes(workout.id);
+                viewHtmlParts.push(`
+            <div style="display: flex; gap: 1rem; margin-bottom: 1rem; padding: 1rem; background: var(--card-bg); border-radius: 8px; align-items: center; opacity: ${isCompleted ? '0.6' : '1'};">
+                <label style="display: flex; align-items: center; cursor: pointer;">
+                    <input type="checkbox" ${isCompleted ? 'checked' : ''} onchange="toggleWorkoutComplete('${workout.id}')" style="width: 24px; height: 24px; cursor: pointer;">
+                </label>
+                <div style="width: 120px; height: 90px; background: var(--primary-color); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 2.5rem;">
+                    💪
+                </div>
+                <div style="flex: 1;">
+                    <p style="font-size: 0.9em; color: var(--text-color); margin: 0 0 0.5rem 0; font-weight: 600; ${isCompleted ? 'text-decoration: line-through;' : ''}">${workout.name}</p>
+                    <p style="font-size: 0.85em; color: #999; margin: 0;">Własne ćwiczenie (tygodniowe)</p>
+                </div>
+            </div>
+        `);
+            }
+        });
+    }
+    
+    // Add custom workouts from global settings (if not in weekly mode)
+    if (!AppData.weeklyWorkouts || !AppData.weeklyWorkouts.enabled) {
+        if (customWorkouts.length > 0) {
+            customWorkouts.forEach(workout => {
+                const isCompleted = completedToday.includes(workout.id);
+                viewHtmlParts.push(`
+            <div style="display: flex; gap: 1rem; margin-bottom: 1rem; padding: 1rem; background: var(--card-bg); border-radius: 8px; align-items: center; opacity: ${isCompleted ? '0.6' : '1'};">
+                <label style="display: flex; align-items: center; cursor: pointer;">
+                    <input type="checkbox" ${isCompleted ? 'checked' : ''} onchange="toggleWorkoutComplete('${workout.id}')" style="width: 24px; height: 24px; cursor: pointer;">
+                </label>
+                <div style="width: 120px; height: 90px; background: var(--primary-color); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 2.5rem;">
+                    💪
+                </div>
+                <div style="flex: 1;">
+                    <p style="font-size: 0.9em; color: var(--text-color); margin: 0 0 0.5rem 0; font-weight: 600; ${isCompleted ? 'text-decoration: line-through;' : ''}">${workout.name}</p>
+                    <p style="font-size: 0.85em; color: #999; margin: 0;">Własne ćwiczenie</p>
+                </div>
+            </div>
+        `);
+            });
+        }
+    }
+    
+    const viewHtml = viewHtmlParts.length === 0
+        ? '<p style="color: #999; font-size: 0.9em;">Brak workoutów na dziś</p>'
+        : viewHtmlParts.join('');
+    
+    // Update settings view (no checkboxes)
+    if (workoutsList) {
+        workoutsList.innerHTML = settingsHtml;
+    }
+    
+    // Update main workouts view (with checkboxes)
+    if (workoutsViewList) {
+        workoutsViewList.innerHTML = viewHtml;
+    }
+    
+    // Show/hide workouts content based on toggle
+    if (workoutsContent && workoutStatusMsg) {
+        const hasWorkouts = viewHtmlParts.length > 0;
+        if (AppData.settings.workoutsEnabled && hasWorkouts) {
+            workoutStatusMsg.style.display = 'none';
+            workoutsContent.style.display = 'block';
+        } else {
+            workoutStatusMsg.style.display = 'block';
+            workoutsContent.style.display = 'none';
+        }
+    }
+}
+
+function toggleWorkoutComplete(videoId) {
+    if (!AppData.completedWorkouts) {
+        AppData.completedWorkouts = {};
+    }
+    
+    const today = new Date().toISOString().split('T')[0];
+    
+    if (!AppData.completedWorkouts[today]) {
+        AppData.completedWorkouts[today] = [];
+    }
+    
+    const index = AppData.completedWorkouts[today].indexOf(videoId);
+    
+    if (index > -1) {
+        // Remove from completed
+        AppData.completedWorkouts[today].splice(index, 1);
+        showNotification('⏱️ Workout oznaczony jako nieukończony', 'info');
+    } else {
+        // Add to completed
+        AppData.completedWorkouts[today].push(videoId);
+        playClickSound();
+        showNotification('✅ Workout ukończony!', 'success');
+    }
+    
+    saveData();
+    updateWorkoutsDisplay();
+    updateWorkoutsStats();
+}
+
+function playWorkoutVideo(videoId) {
+    const modal = document.getElementById('workoutModal');
+    const iframe = document.getElementById('workoutIframe');
+    
+    if (!modal || !iframe) return;
+    
+    iframe.src = `https://www.youtube.com/embed/${videoId}?autoplay=1`;
+    modal.style.display = 'flex';
+}
+
+function closeWorkoutModal() {
+    const modal = document.getElementById('workoutModal');
+    const iframe = document.getElementById('workoutIframe');
+    
+    if (!modal || !iframe) return;
+    
+    modal.style.display = 'none';
+    iframe.src = '';
+}
+
+function addDayWorkout(day) {
+    const input = document.getElementById(`${day}WorkoutInput`);
+    if (!input || !input.value.trim()) {
+        showNotification('⚠️ Wklej link YouTube!', 'warning');
+        return;
+    }
+    
+    const url = input.value.trim();
+    const videoId = extractYouTubeVideoId(url);
+    
+    if (!videoId) {
+        showNotification('❌ Nieprawidłowy link YouTube', 'error');
+        return;
+    }
+    
+    // Check for duplicates
+    if (!AppData.weeklyWorkouts[day]) {
+        AppData.weeklyWorkouts[day] = [];
+    }
+    
+    const isDuplicate = AppData.weeklyWorkouts[day].some(w => w.videoId === videoId);
+    if (isDuplicate) {
+        showNotification('⚠️ Ten workout jest już dodany!', 'warning');
+        return;
+    }
+    
+    // Add workout
+    AppData.weeklyWorkouts[day].push({
+        videoId: videoId,
+        url: url,
+        addedDate: new Date().toISOString()
+    });
+    
+    saveData();
+    input.value = '';
+    renderDayWorkouts(day);
+    updateWorkoutsDisplay();
+    showNotification('✅ Workout dodany!', 'success');
+}
+
+function addDayCustomWorkout(day) {
+    const input = document.getElementById(`${day}CustomWorkoutInput`);
+    if (!input || !input.value.trim()) {
+        showNotification('⚠️ Wpisz nazwę ćwiczenia!', 'warning');
+        return;
+    }
+    
+    const name = input.value.trim();
+    
+    // Check for duplicates
+    if (!AppData.weeklyWorkouts[day]) {
+        AppData.weeklyWorkouts[day] = [];
+    }
+    
+    const isDuplicate = AppData.weeklyWorkouts[day].some(w => w.name === name && !w.videoId);
+    if (isDuplicate) {
+        showNotification('⚠️ To ćwiczenie jest już dodane!', 'warning');
+        return;
+    }
+    
+    // Generate unique ID for custom workout
+    const customId = 'custom_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    
+    // Add custom workout
+    AppData.weeklyWorkouts[day].push({
+        id: customId,
+        name: name,
+        addedDate: new Date().toISOString()
+    });
+    
+    saveData();
+    input.value = '';
+    renderDayWorkouts(day);
+    updateWorkoutsDisplay();
+    showNotification('✅ Ćwiczenie dodane!', 'success');
+}
+
+function removeDayWorkout(day, id) {
+    AppData.weeklyWorkouts[day] = AppData.weeklyWorkouts[day].filter(w => {
+        // Remove by videoId or custom id
+        return (w.videoId !== id) && (w.id !== id);
+    });
+    saveData();
+    renderDayWorkouts(day);
+    updateWorkoutsDisplay();
+    showNotification('🗑️ Workout usunięty', 'success');
+}
+
+function renderDayWorkouts(day) {
+    const list = document.getElementById(`${day}WorkoutsList`);
+    if (!list) return;
+    
+    list.innerHTML = '';
+    
+    const workouts = AppData.weeklyWorkouts[day] || [];
+    workouts.forEach((workout) => {
+        const item = document.createElement('div');
+        item.className = 'day-task-item';
+        
+        // Check if it's YouTube or custom workout
+        if (workout.videoId) {
+            // YouTube workout
+            const workoutId = workout.videoId;
+            item.innerHTML = `
+                <img src="https://img.youtube.com/vi/${workout.videoId}/default.jpg" alt="Thumbnail" style="width: 60px; height: 45px; border-radius: 4px; object-fit: cover;">
+                <span class="day-task-text" style="flex: 1;">▶️ YouTube video</span>
+                <button class="btn-remove-day-task" onclick="removeDayWorkout('${day}', '${workoutId}')">🗑️</button>
+            `;
+        } else if (workout.id && workout.name) {
+            // Custom workout
+            const workoutId = workout.id;
+            item.innerHTML = `
+                <div style="width: 60px; height: 45px; background: var(--primary-color); border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">💪</div>
+                <span class="day-task-text" style="flex: 1;">${workout.name}</span>
+                <button class="btn-remove-day-task" onclick="removeDayWorkout('${day}', '${workoutId}')">🗑️</button>
+            `;
+        }
+        
+        list.appendChild(item);
+    });
+}
+
+function renderAllDayWorkouts() {
+    const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+    days.forEach(day => renderDayWorkouts(day));
+}
+
+// ========== RULES SYSTEM ==========
+
+function initRules() {
+    // Initialize default rules if not present
+    if (!AppData.settings.rules || AppData.settings.rules.length === 0) {
+        AppData.settings.rules = [
+            { id: 'movement', title: 'Ruch', content: 'Codzienny trening, spacer minimum 20 minut i rozciąganie.' },
+            { id: 'diet', title: 'Dieta', content: 'Jeden zdrowy posiłek domowy dziennie, zero słodzonych napojów i ograniczenie niezdrowego jedzenia (jeden cheat meal na tydzień).' },
+            { id: 'water', title: 'Woda', content: 'Picie większej ilości wody niż dotychczas.' },
+            { id: 'sleep', title: 'Sen', content: 'Minimum 7 godzin snu.' },
+            { id: 'development', title: 'Rozwój', content: '10 minut czytania lub słuchania książki.' }
+        ];
+        saveData();
+    }
+    
+    // Initialize rulesAccepted flag if not present
+    if (AppData.settings.rulesAccepted === undefined) {
+        AppData.settings.rulesAccepted = false;
+        saveData();
+    }
+    
+    renderRulesView();
+    
+    // Accept rules button handler in Rules tab
+    const btnAcceptRulesView = document.getElementById('btnAcceptRulesView');
+    if (btnAcceptRulesView) {
+        btnAcceptRulesView.addEventListener('click', () => {
+            AppData.settings.rulesAccepted = true;
+            saveData();
+            renderRulesView();
+            
+            // Show start button and hide warning
+            const startBtn = document.getElementById('startChallengeBtn');
+            const warning = document.getElementById('rulesWarning');
+            if (startBtn) startBtn.style.display = 'block';
+            if (warning) warning.remove();
+            
+            showNotification('✅ Zasady zaakceptowane! Możesz teraz rozpocząć wyzwanie!', 'success');
+        });
+    }
+    
+    // Accept rules button handler in Modal
+    const btnAcceptRules = document.getElementById('btnAcceptRules');
+    if (btnAcceptRules) {
+        btnAcceptRules.addEventListener('click', acceptRules);
+    }
+}
+
+function showRulesModal() {
+    const modal = document.getElementById('rulesModal');
+    const modalList = document.getElementById('rulesModalList');
+    
+    if (!modal || !modalList) return;
+    
+    // Render rules in modal
+    let html = '';
+    AppData.settings.rules.forEach(rule => {
+        html += `
+            <div class="rule-item" style="background: var(--hover-bg); padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+                <h3 style="margin: 0 0 0.5rem 0; color: var(--primary-color);">${rule.title}</h3>
+                <p style="margin: 0; line-height: 1.6;">${rule.content}</p>
+            </div>
+        `;
+    });
+    
+    modalList.innerHTML = html;
+    modal.style.display = 'flex';
+}
+
+function acceptRules() {
+    AppData.settings.rulesAccepted = true;
+    saveData();
+    
+    const modal = document.getElementById('rulesModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+    
+    // Show start button and hide warning after accepting rules
+    const startBtn = document.getElementById('startChallengeBtn');
+    const warning = document.getElementById('rulesWarning');
+    if (startBtn) startBtn.style.display = 'block';
+    if (warning) warning.remove();
+    
+    showNotification('✅ Zasady zaakceptowane! Możesz teraz rozpocząć wyzwanie klikając przycisk na stronie głównej!', 'success');
+}
+
+function renderRulesView() {
+    const rulesList = document.getElementById('rulesList');
+    if (!rulesList) return;
+    
+    let html = '';
+    
+    // Render rules without edit buttons (read-only)
+    AppData.settings.rules.forEach((rule, index) => {
+        html += `
+            <div class="rule-card" style="background: var(--card-bg); padding: 1.5rem; border-radius: 12px; margin-bottom: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                <h3 style="margin: 0 0 0.8rem 0; color: var(--primary-color); font-size: 1.2rem;">${rule.title}</h3>
+                <p style="margin: 0; line-height: 1.8; font-size: 1rem; color: var(--text-primary);">${rule.content}</p>
+            </div>
+        `;
+    });
+    
+    rulesList.innerHTML = html;
+    
+    // Update accept button and status
+    const btnAccept = document.getElementById('btnAcceptRulesView');
+    const statusText = document.getElementById('rulesAcceptStatus');
+    
+    if (btnAccept && statusText) {
+        if (AppData.settings.rulesAccepted) {
+            statusText.innerHTML = '✅ <strong>Zasady zostały zaakceptowane!</strong>';
+            statusText.style.color = 'var(--primary-color)';
+            btnAccept.style.display = 'none';
+        } else {
+            statusText.innerHTML = '⚠️ Musisz zaakceptować zasady aby rozpocząć wyzwanie';
+            statusText.style.color = '#ff9800';
+            btnAccept.style.display = 'inline-block';
+        }
+    }
+}
+
+function renderRulesSettings() {
+    const rulesSettingsList = document.getElementById('rulesSettingsList');
+    if (!rulesSettingsList) return;
+    
+    let html = '';
+    
+    // Render rules with edit buttons (editable)
+    AppData.settings.rules.forEach((rule, index) => {
+        html += `
+            <div class="rule-card" style="background: var(--hover-bg); padding: 1.5rem; border-radius: 12px; margin-bottom: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
+                    <h3 style="margin: 0; color: var(--primary-color); font-size: 1.2rem;">${rule.title}</h3>
+                    <button class="btn-edit-rule" onclick="editRuleSetting(${index})" style="background: transparent; border: none; cursor: pointer; font-size: 1.2rem; padding: 0.25rem 0.5rem;">✏️</button>
+                </div>
+                <p id="ruleSettingContent-${index}" style="margin: 0; line-height: 1.8; font-size: 1rem;">${rule.content}</p>
+                <textarea id="ruleSettingEdit-${index}" style="display: none; width: 100%; min-height: 80px; padding: 0.8rem; border: 2px solid var(--primary-color); border-radius: 8px; font-family: inherit; font-size: 1rem; background: var(--card-bg); color: var(--text-primary); resize: vertical;">${rule.content}</textarea>
+                <div id="ruleSettingButtons-${index}" style="display: none; margin-top: 1rem; gap: 0.5rem; flex-direction: row;">
+                    <button onclick="saveRuleSetting(${index})" style="padding: 0.5rem 1rem; background: var(--primary-color); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 0.9rem;">💾 Zapisz</button>
+                    <button onclick="cancelEditRuleSetting(${index})" style="padding: 0.5rem 1rem; background: #999; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 0.9rem;">❌ Anuluj</button>
+                </div>
+            </div>
+        `;
+    });
+    
+    rulesSettingsList.innerHTML = html;
+}
+
+function editRuleSetting(index) {
+    const content = document.getElementById(`ruleSettingContent-${index}`);
+    const edit = document.getElementById(`ruleSettingEdit-${index}`);
+    const buttons = document.getElementById(`ruleSettingButtons-${index}`);
+    
+    if (content && edit && buttons) {
+        content.style.display = 'none';
+        edit.style.display = 'block';
+        buttons.style.display = 'flex';
+    }
+}
+
+function saveRuleSetting(index) {
+    const edit = document.getElementById(`ruleSettingEdit-${index}`);
+    if (!edit) return;
+    
+    const newContent = edit.value.trim();
+    if (newContent) {
+        AppData.settings.rules[index].content = newContent;
+        saveData();
+        renderRulesSettings();
+        renderRulesView(); // Update view tab too
+        showNotification('✅ Zasada zaktualizowana', 'success');
+    }
+}
+
+function cancelEditRuleSetting(index) {
+    const content = document.getElementById(`ruleSettingContent-${index}`);
+    const edit = document.getElementById(`ruleSettingEdit-${index}`);
+    const buttons = document.getElementById(`ruleSettingButtons-${index}`);
+    
+    if (content && edit && buttons) {
+        edit.value = AppData.settings.rules[index].content; // Reset to original
+        content.style.display = 'block';
+        edit.style.display = 'none';
+        buttons.style.display = 'none';
+    }
+}
+
+// Old functions for backward compatibility - now redirects to settings versions
+function editRule(index) {
+    editRuleSetting(index);
+}
+
+function saveRule(index) {
+    saveRuleSetting(index);
+}
+
+function cancelEditRule(index) {
+    cancelEditRuleSetting(index);
 }
 

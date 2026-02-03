@@ -44,6 +44,8 @@
             <a href="#" class="nav-link active" data-view="dashboard">🏠 Główna</a>
             <a href="#" class="nav-link" data-view="calendar">📅 Kalendarz</a>
             <a href="#" class="nav-link" data-view="stats">📊 Statystyki</a>
+            <a href="#" class="nav-link" data-view="workouts">💪 Workouty</a>
+            <a href="#" class="nav-link" data-view="rules">📜 Zasady</a>
             <a href="#" class="nav-link" data-view="gallery">🖼️ Galeria</a>
             <a href="#" class="nav-link" data-view="badges">🏆 Odznaki</a>
             <a href="#" class="nav-link" data-view="settings">⚙️ Ustawienia</a>
@@ -90,7 +92,7 @@
                 </section>
 
                 <!-- Kroki Card -->
-                <section class="card card-steps">
+                <section class="card card-steps" id="stepsCard">
                     <h2>👣 Dzisiejsze kroki</h2>
                     <div class="steps-input-group">
                         <input type="number" id="stepsInput" placeholder="0" min="0" max="100000">
@@ -114,7 +116,7 @@
                 </section>
 
                 <!-- Nauka Card -->
-                <section class="card card-study">
+                <section class="card card-study" id="studyCard">
                     <h2>📚 Dzisiejsza nauka</h2>
                     <div class="study-input-group">
                         <label for="studyHoursInput">Liczba godzin:</label>
@@ -183,7 +185,7 @@
         <!-- STATS VIEW -->
         <div class="view" id="view-stats">
             <div class="stats-grid">
-                <section class="card">
+                <section class="card" id="stepsStatsCard">
                     <h2>👣 Postęp kroków</h2>
                     <p style="font-size: 0.9em; color: #666; margin-top: -10px; margin-bottom: 10px;">Całkowity cel na cały challenge</p>
                     <div class="chart-container">
@@ -229,7 +231,7 @@
                     </div>
                 </section>
 
-                <section class="card">
+                <section class="card" id="studyStatsCard">
                     <h2>📚 Postęp nauki</h2>
                     <p style="font-size: 0.9em; color: #666; margin-top: -10px; margin-bottom: 10px;">Całkowity cel na cały challenge</p>
                     <div class="chart-container">
@@ -243,6 +245,45 @@
                         </div>
                     </div>
                 </section>
+
+                <section class="card" id="workoutsStatsCard" style="display: none;">
+                    <h2>💪 Postęp workoutów</h2>
+                    <p style="font-size: 0.9em; color: #666; margin-top: -10px; margin-bottom: 10px;">Ukończone podczas challenge'u</p>
+                    <div class="chart-container">
+                        <svg class="circle-chart" viewBox="0 0 200 200">
+                            <circle class="circle-bg" cx="100" cy="100" r="80"></circle>
+                            <circle class="circle-progress" id="workoutsCircle" cx="100" cy="100" r="80"></circle>
+                        </svg>
+                        <div class="chart-center-text">
+                            <span class="chart-percent" id="workoutsPercent">0%</span>
+                            <span class="chart-label" id="workoutsLabel">0 workoutów</span>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+
+        <!-- WORKOUTS VIEW -->
+        <div class="view" id="view-workouts">
+            <div style="padding: 1rem;">
+                <h1>💪 Workouty</h1>
+                <p id="workoutStatusMsg" style="color: #999; font-size: 0.9em;">Workouty wyłączone. Włącz je w ustawieniach!</p>
+                <div id="workoutsContent" style="display: none;">
+                    <div id="workoutsViewList"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- RULES VIEW -->
+        <div class="view" id="view-rules">
+            <div style="padding: 1rem;">
+                <h1>📜 Zasady Wyzwania</h1>
+                <p style="color: #999; font-size: 0.9em; margin-bottom: 1.5rem;">Przestrzegaj tych zasad przez cały czas trwania wyzwania!</p>
+                <div id="rulesList"></div>
+                <div style="text-align: center; margin-top: 2rem; padding: 1.5rem; background: var(--card-bg); border-radius: 12px;">
+                    <p id="rulesAcceptStatus" style="margin-bottom: 1rem; font-size: 1rem;"></p>
+                    <button id="btnAcceptRulesView" class="btn-primary" style="padding: 0.8rem 2rem; font-size: 1rem; display: none;">✅ Zgadzam się i akceptuję zasady</button>
+                </div>
             </div>
         </div>
 
@@ -417,11 +458,8 @@
                             <option value="blue">Sky Blue 💙</option>
                             <option value="purple">Deep Purple 🔮</option>
                             <option value="black">Dark Mode 🌙</option>
+                            <option value="transformers">Transformers 🤖⚡</option>
                         </select>
-                    </div>
-                    <div class="setting-item">
-                        <label>Kolor podstawowy:</label>
-                        <input type="color" id="customColor" value="#ff9ac2">
                     </div>
                     <div class="setting-item">
                         <label>Czcionka:</label>
@@ -456,14 +494,40 @@
                         <input type="number" id="challengeLength" value="75" min="1" max="365">
                     </div>
                     <div class="setting-item">
+                        <label>
+                            <input type="checkbox" id="stepsToggle" checked>
+                            Włącz kroki
+                        </label>
+                        <small style="display: block; margin-top: 0.5rem;">Pokaż sekcję kroków w głównym widoku 👣</small>
+                    </div>
+                    <div class="setting-item" id="stepsGoalSetting">
                         <label>Cel kroków:</label>
                         <input type="number" id="stepsGoal" value="25000" min="1000" step="1000">
                         <small>Całkowity cel kroków do osiągnięcia przez całe wyzwanie</small>
                     </div>
                     <div class="setting-item">
+                        <label>
+                            <input type="checkbox" id="studyToggle" checked>
+                            Włącz naukę
+                        </label>
+                        <small style="display: block; margin-top: 0.5rem;">Pokaż sekcję nauki w głównym widoku 📚</small>
+                    </div>
+                    <div class="setting-item" id="studyGoalSetting">
                         <label>Cel godzin nauki:</label>
                         <input type="number" id="studyGoal" value="100" min="1" step="10">
                         <small>Całkowity cel godzin nauki do osiągnięcia przez całe wyzwanie</small>
+                    </div>
+                    <div class="setting-item">
+                        <label>
+                            <input type="checkbox" id="workoutsToggleMain">
+                            Włącz workouty
+                        </label>
+                        <small style="display: block; margin-top: 0.5rem;">Pokaż sekcję workoutów w głównym widoku 💪</small>
+                    </div>
+                    <div class="setting-item" id="workoutsGoalSetting">
+                        <label>Cel workoutów:</label>
+                        <input type="number" id="workoutsGoal" value="150" min="1" step="10">
+                        <small>Całkowity cel workoutów do zrobienia przez całe wyzwanie</small>
                     </div>
                     <div class="setting-item">
                         <label>Dzień odpoczynku:</label>
@@ -502,7 +566,7 @@
                 </section>
 
                 <section class="settings-section">
-                    <h2>� Zadania tygodniowe</h2>
+                    <h2>📅 Zadania tygodniowe</h2>
                     <div class="setting-item">
                         <label>
                             <input type="checkbox" id="weeklyTasksToggle">
@@ -580,10 +644,150 @@
                 </section>
 
                 <section class="settings-section">
-                    <h2>�📊 Eksport danych</h2>
+                    <h2>📊 Eksport danych</h2>
                     <div class="setting-item">
                         <button class="btn-export" id="exportDataBtn">📥 Pobierz raport postępów (HTML)</button>
                         <small>Pobierz pełny raport z wykresami i statystykami. Możesz go wydrukować do PDF z przeglądarki (Ctrl+P).</small>
+                    </div>
+                </section>
+
+                <section class="settings-section">
+                    <h2>📜 Zasady wyzwania - Edycja</h2>
+                    <div class="setting-item">
+                        <p style="margin-bottom: 1rem; color: var(--text-secondary);">Tutaj możesz edytować zasady wyzwania. Aby zaakceptować zasady, przejdź do zakładki "📜 Zasady".</p>
+                        <div id="rulesSettingsList"></div>
+                    </div>
+                </section>
+
+                <section class="settings-section" id="workoutsSettingsSection">
+                    <h2>💪 Workouty - Zarządzanie</h2>
+                    <div class="setting-item">
+                        <label>
+                            <input type="checkbox" id="weeklyWorkoutsToggle">
+                            Dostosuj workouty do dnia tygodnia
+                        </label>
+                        <small style="display: block; margin-top: 0.5rem;">Zamiast tych samych workoutów każdego dnia, możesz ustawić różne workouty dla każdego dnia tygodnia 🗓️</small>
+                    </div>
+                        
+                        <!-- Normal workouts (same every day) -->
+                        <div id="normalWorkoutsConfig">
+                            <div class="setting-item">
+                                <label>Dodaj link YouTube:</label>
+                                <div style="display: flex; gap: 0.5rem;">
+                                    <input type="text" id="workoutURLInput" placeholder="https://www.youtube.com/watch?v=..." style="flex: 1;">
+                                    <button class="btn-add-workout" id="btnAddWorkout">➕ Dodaj</button>
+                                </div>
+                                <small style="display: block; margin-top: 0.5rem; color: #999;">Wklej link do YouTube z ćwiczeniami</small>
+                            </div>
+                            <div id="workoutsList" style="margin-top: 1rem;"></div>
+                            
+                            <div class="setting-item" style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
+                                <label>Dodaj własne ćwiczenie (bez YouTube):</label>
+                                <div style="display: flex; gap: 0.5rem;">
+                                    <input type="text" id="customWorkoutInput" placeholder="Nazwa ćwiczenia, np. Pompki 50x" style="flex: 1;">
+                                    <button class="btn-add-workout" id="btnAddCustomWorkout">➕ Dodaj</button>
+                                </div>
+                                <small style="display: block; margin-top: 0.5rem; color: #999;">Własne ćwiczenia bez wideo 💪</small>
+                            </div>
+                            <div id="customWorkoutsList" style="margin-top: 1rem;"></div>
+                        </div>
+                        
+                        <!-- Weekly workouts (different each day) -->
+                        <div id="weeklyWorkoutsConfig" style="display: none; margin-top: 1rem;">
+                            <div class="weekly-tasks-editor">
+                                <!-- Poniedziałek -->
+                                <div class="day-tasks-section">
+                                    <h4>🌟 Poniedziałek</h4>
+                                    <div id="mondayWorkoutsList" class="day-tasks-list"></div>
+                                    <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                                        <input type="text" id="mondayWorkoutInput" placeholder="Link YouTube..." style="flex: 1;">
+                                        <button class="btn-add-day-task" data-day="monday" onclick="addDayWorkout('monday')">▶️</button>
+                                    </div>
+                                    <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                                        <input type="text" id="mondayCustomWorkoutInput" placeholder="Własne ćwiczenie..." style="flex: 1;">
+                                        <button class="btn-add-day-task" data-day="monday" onclick="addDayCustomWorkout('monday')">💪</button>
+                                    </div>
+                                </div>
+                                <!-- Wtorek -->
+                                <div class="day-tasks-section">
+                                    <h4>💪 Wtorek</h4>
+                                    <div id="tuesdayWorkoutsList" class="day-tasks-list"></div>
+                                    <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                                        <input type="text" id="tuesdayWorkoutInput" placeholder="Link YouTube..." style="flex: 1;">
+                                        <button class="btn-add-day-task" data-day="tuesday" onclick="addDayWorkout('tuesday')">▶️</button>
+                                    </div>
+                                    <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                                        <input type="text" id="tuesdayCustomWorkoutInput" placeholder="Własne ćwiczenie..." style="flex: 1;">
+                                        <button class="btn-add-day-task" data-day="tuesday" onclick="addDayCustomWorkout('tuesday')">💪</button>
+                                    </div>
+                                </div>
+                                <!-- Środa -->
+                                <div class="day-tasks-section">
+                                    <h4>🌸 Środa</h4>
+                                    <div id="wednesdayWorkoutsList" class="day-tasks-list"></div>
+                                    <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                                        <input type="text" id="wednesdayWorkoutInput" placeholder="Link YouTube..." style="flex: 1;">
+                                        <button class="btn-add-day-task" data-day="wednesday" onclick="addDayWorkout('wednesday')">▶️</button>
+                                    </div>
+                                    <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                                        <input type="text" id="wednesdayCustomWorkoutInput" placeholder="Własne ćwiczenie..." style="flex: 1;">
+                                        <button class="btn-add-day-task" data-day="wednesday" onclick="addDayCustomWorkout('wednesday')">💪</button>
+                                    </div>
+                                </div>
+                                <!-- Czwartek -->
+                                <div class="day-tasks-section">
+                                    <h4>⚡ Czwartek</h4>
+                                    <div id="thursdayWorkoutsList" class="day-tasks-list"></div>
+                                    <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                                        <input type="text" id="thursdayWorkoutInput" placeholder="Link YouTube..." style="flex: 1;">
+                                        <button class="btn-add-day-task" data-day="thursday" onclick="addDayWorkout('thursday')">▶️</button>
+                                    </div>
+                                    <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                                        <input type="text" id="thursdayCustomWorkoutInput" placeholder="Własne ćwiczenie..." style="flex: 1;">
+                                        <button class="btn-add-day-task" data-day="thursday" onclick="addDayCustomWorkout('thursday')">💪</button>
+                                    </div>
+                                </div>
+                                <!-- Piątek -->
+                                <div class="day-tasks-section">
+                                    <h4>🎉 Piątek</h4>
+                                    <div id="fridayWorkoutsList" class="day-tasks-list"></div>
+                                    <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                                        <input type="text" id="fridayWorkoutInput" placeholder="Link YouTube..." style="flex: 1;">
+                                        <button class="btn-add-day-task" data-day="friday" onclick="addDayWorkout('friday')">▶️</button>
+                                    </div>
+                                    <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                                        <input type="text" id="fridayCustomWorkoutInput" placeholder="Własne ćwiczenie..." style="flex: 1;">
+                                        <button class="btn-add-day-task" data-day="friday" onclick="addDayCustomWorkout('friday')">💪</button>
+                                    </div>
+                                </div>
+                                <!-- Sobota -->
+                                <div class="day-tasks-section">
+                                    <h4>🌈 Sobota</h4>
+                                    <div id="saturdayWorkoutsList" class="day-tasks-list"></div>
+                                    <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                                        <input type="text" id="saturdayWorkoutInput" placeholder="Link YouTube..." style="flex: 1;">
+                                        <button class="btn-add-day-task" data-day="saturday" onclick="addDayWorkout('saturday')">▶️</button>
+                                    </div>
+                                    <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                                        <input type="text" id="saturdayCustomWorkoutInput" placeholder="Własne ćwiczenie..." style="flex: 1;">
+                                        <button class="btn-add-day-task" data-day="saturday" onclick="addDayCustomWorkout('saturday')">💪</button>
+                                    </div>
+                                </div>
+                                <!-- Niedziela -->
+                                <div class="day-tasks-section">
+                                    <h4>✨ Niedziela</h4>
+                                    <div id="sundayWorkoutsList" class="day-tasks-list"></div>
+                                    <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                                        <input type="text" id="sundayWorkoutInput" placeholder="Link YouTube..." style="flex: 1;">
+                                        <button class="btn-add-day-task" data-day="sunday" onclick="addDayWorkout('sunday')">▶️</button>
+                                    </div>
+                                    <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                                        <input type="text" id="sundayCustomWorkoutInput" placeholder="Własne ćwiczenie..." style="flex: 1;">
+                                        <button class="btn-add-day-task" data-day="sunday" onclick="addDayCustomWorkout('sunday')">💪</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </section>
 
@@ -607,9 +811,23 @@
                     </div>
                 </section>
 
+                <section class="settings-section">
+                    <h2>🔄 Aplikacja</h2>
+                    <div class="setting-item">
+                        <button class="btn-primary" id="refreshAppBtn">🔄 Odśwież aplikację</button>
+                        <small style="display: block; margin-top: 0.5rem;">Odśwież aplikację aby zobaczyć najnowsze zmiany i aktualizacje</small>
+                    </div>
+                </section>
+
                 <section class="settings-section danger-zone">
                     <h2>⚠️ Strefa niebezpieczna</h2>
-                    <button class="btn-danger" id="resetAllBtn">🗑️ Resetuj cały postęp</button>
+                    <div style="display: flex; flex-direction: column; gap: 1rem;">
+                        <button class="btn-danger" id="resetAllBtn">🗑️ Resetuj cały postęp</button>
+                        <button class="btn-danger" id="deleteAccountBtn" style="background: #b71c1c;">❌ Usuń konto i wszystkie dane</button>
+                    </div>
+                    <small style="display: block; margin-top: 1rem; color: var(--text-secondary);">
+                        <strong>Uwaga:</strong> Usunięcie konta spowoduje trwałe usunięcie wszystkich danych z urządzenia i chmury. Ta operacja jest nieodwracalna!
+                    </small>
                 </section>
             </div>
         </div>
@@ -617,6 +835,28 @@
     
     <!-- Confetti Container -->
     <div id="confettiContainer" class="confetti-container"></div>
+    
+    <!-- Rules Modal -->
+    <div id="rulesModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 10000; justify-content: center; align-items: center; padding: 1rem;">
+        <div class="rules-modal-content" style="background: var(--card-bg); border-radius: 16px; max-width: 600px; width: 100%; padding: 2rem; max-height: 90vh; overflow-y: auto; color: var(--text-primary);">
+            <h2 style="margin-top: 0; margin-bottom: 1.5rem; text-align: center;">📜 Zasady Wyzwania</h2>
+            <p style="color: var(--text-secondary); margin-bottom: 1.5rem; text-align: center;">Przed rozpoczęciem challengu musisz zaakceptować poniższe zasady:</p>
+            <div id="rulesModalList" style="margin-bottom: 2rem;"></div>
+            <div style="display: flex; gap: 1rem; justify-content: center;">
+                <button id="btnAcceptRules" class="btn btn-primary" style="padding: 0.8rem 2rem; font-size: 1rem;">✅ Akceptuję zasady</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Workout Video Modal -->
+    <div id="workoutModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 9999; justify-content: center; align-items: center; padding: 1rem;">
+        <div style="position: relative; width: 100%; max-width: 800px;">
+            <button onclick="closeWorkoutModal()" style="position: absolute; top: -40px; right: 0; background: white; border: none; border-radius: 50%; width: 40px; height: 40px; font-size: 1.5rem; cursor: pointer; padding: 0;">✕</button>
+            <div id="workoutVideoContainer" style="width: 100%; padding-bottom: 56.25%; position: relative;">
+                <iframe id="workoutIframe" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 8px;" allowfullscreen></iframe>
+            </div>
+        </div>
+    </div>
     
     <footer>
         <p>Made with 💖</p>
