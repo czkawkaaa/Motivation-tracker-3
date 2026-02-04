@@ -3,7 +3,8 @@
 
 import { app, auth, db, onAuthStateChanged } from './firebase-config.js';
 import { 
-    signInWithPopup,
+    signInWithRedirect,
+    getRedirectResult,
     GoogleAuthProvider, 
     signOut
 } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
@@ -193,14 +194,9 @@ async function loginWithGoogle() {
         updateSyncStatus('syncing', 'Logowanie...', '⏳');
         if (typeof playClickSound === 'function') playClickSound();
         
-        console.log('🔄 Attempting signInWithPopup...');
-        const result = await signInWithPopup(auth, provider);
-        console.log('✅ Logged in as:', result.user.email);
-        
-        updateSyncStatus('connected', 'Połączono', '✅');
-        if (typeof showNotification === 'function') {
-            showNotification('🎉 Zalogowano pomyślnie!', 'success');
-        }
+        console.log('🔄 Attempting signInWithRedirect...');
+        await signInWithRedirect(auth, provider);
+        // Po przekierowaniu użytkownik wróci tutaj, wynik będzie obsłużony przez getRedirectResult
     } catch (error) {
         console.error('❌ Login error:', error);
         console.error('Error code:', error.code);
@@ -208,16 +204,11 @@ async function loginWithGoogle() {
         window.firebaseLastError = error.message;
         updateSyncStatus('error', 'Błąd logowania', '❌');
         
-        if (error.code === 'auth/popup-blocked') {
-            if (typeof showNotification === 'function') {
-                showNotification('⚠️ Odblokuj wyskakujące okna aby się zalogować', 'warning');
-            }
-        } else if (error.code === 'auth/cancelled-popup-request' || error.code === 'auth/popup-closed-by-user') {
-            updateSyncStatus('disconnected', 'Anulowano', '⚠️');
-            // User anulował - nic nie rób
-        } else {
-            if (typeof showNotification === 'function') {
-                showNotification('❌ Błąd logowania: ' + error.message, 'error');
+        if (typeof showNotification === 'function') {
+            showNotification('❌ Błąd logowania: ' + error.message, 'error');
+        }
+    }
+}
             }
         }
     }
@@ -761,6 +752,24 @@ function initFirebaseSync() {
     console.log('🔍 Firebase app:', app);
     console.log('🔍 Auth instance:', auth);
     console.log('🔍 Firestore instance:', db);
+    
+    // Obsłuż wynik przekierowania po logowaniu Google
+    getRedirectResult(auth).then((result) => {
+        if (result) {
+            console.log('✅ Logged in via redirect as:', result.user.email);
+            updateSyncStatus('connected', 'Połączono', '✅');
+            if (typeof showNotification === 'function') {
+                showNotification('🎉 Zalogowano pomyślnie!', 'success');
+            }
+        }
+    }).catch((error) => {
+        console.error('❌ Redirect result error:', error);
+        window.firebaseLastError = error.message;
+        updateSyncStatus('error', 'Błąd logowania', '❌');
+        if (typeof showNotification === 'function') {
+            showNotification('❌ Błąd logowania: ' + error.message, 'error');
+        }
+    });
     
     // Test connection
     auth.onAuthStateChanged(() => {
