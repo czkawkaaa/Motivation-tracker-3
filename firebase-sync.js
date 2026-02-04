@@ -277,7 +277,9 @@ function onUserLogin(user) {
         try {
             setupRealtimeSync();
             console.log('✅ Realtime sync setup completed');
-            updateSyncStatus('connected', 'Synchronizacja aktywna', '✅');
+            // Ukryj status synchronizacji po pomyślnym połączeniu
+            const syncStatus = document.getElementById('syncStatus');
+            if (syncStatus) syncStatus.style.display = 'none';
         } catch (e) {
             console.error('❌ Failed to setup realtime sync:', e);
             window.firebaseLastError = e.message;
