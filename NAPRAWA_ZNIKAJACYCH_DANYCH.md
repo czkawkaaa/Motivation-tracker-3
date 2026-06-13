@@ -58,7 +58,7 @@ window.saveDataToFirestore(); // ❌ Synchroniczne, mogło błędnie ustawić la
 ```javascript
 // PO
 const firebaseConfig = {
-  apiKey: "AIzaSyBLtdh-FELJEuzYPpKDF6OLuya55xRTjiY", // ✅ Przywrócone
+  apiKey: "<TWÓJ_KLUCZ_FIREBASE>", // ✅ Używaj wartości z Firebase Console, nie wpisuj go do dokumentacji publicznej
   authDomain: "kawaii-quest.firebaseapp.com",
   // ...
 };

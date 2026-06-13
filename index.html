@@ -69,10 +69,33 @@
                 </div>
             </div>
             
+            <div class="hero-banner">
+                <section class="hero-card hero-copy">
+                    <p class="eyebrow" style="text-transform: uppercase; letter-spacing: 0.25em; font-size: 0.78rem; color: var(--text-secondary); font-weight: 700;">Challenge mode</p>
+                    <h2>Twoje codzienne wyzwanie, teraz z premium vibe</h2>
+                    <p>Śledź progres, odznaki i codzienny rytm w jednym miejscu — od pierwszego dnia aż po 75. wyzwanie.</p>
+                    <div class="hero-pills">
+                        <span class="hero-pill">✨ personalizacja motywów</span>
+                        <span class="hero-pill">🏆 odznaki i progres</span>
+                        <span class="hero-pill">📈 dashboard bez chaosu</span>
+                    </div>
+                </section>
+                <section class="hero-card hero-visual">
+                    <img src="assets/challenge-hero.svg" alt="Ilustracja wyzwania i motywacji">
+                </section>
+            </div>
+
             <div class="dashboard-grid">
                 <!-- Wyzwanie Card -->
                 <section class="card card-challenge">
-                    <h2>🎯 Wyzwanie</h2>
+                    <div class="challenge-spotlight">
+                        <div>
+                            <p class="eyebrow">Wyzwanie 75 dni</p>
+                            <h2>🎯 Wyzwanie</h2>
+                            <p class="challenge-note">Twój progres wygląda lepiej, kiedy masz jasny rytm i wizualny feedback.</p>
+                        </div>
+                        <img src="assets/challenge-card.svg" alt="Grafika wyzwania">
+                    </div>
                     <div class="challenge-progress">
                         <div class="progress-bar-large">
                             <div class="progress-fill-large" id="challengeProgressBar" style="width: 0%"></div>
@@ -273,11 +296,61 @@
 
         <!-- WORKOUTS VIEW -->
         <div class="view" id="view-workouts">
-            <div style="padding: 1rem;">
-                <h1>💪 Workouty</h1>
-                <p id="workoutStatusMsg" style="color: #999; font-size: 0.9em;">Workouty wyłączone. Włącz je w ustawieniach!</p>
+            <div class="workouts-shell">
+                <section class="hero-card hero-copy">
+                    <p class="eyebrow">Workout planner</p>
+                    <h2>💪 Workouty – uporządkowane i gotowe do codziennej roboty</h2>
+                    <p>Teraz treningi są podzielone na kategorie, masz szybki zapis biegu, podświetlenie partii ciała i listę filmów z YouTube bez rozjeżdżania całego panelu.</p>
+                </section>
+
+                <div class="workouts-grid">
+                    <section class="card workout-panel-card">
+                        <h3>🏃 Bieg / aktywność</h3>
+                        <p class="panel-copy">Zapisz dzisiejszy bieg, czas i rekord, a aplikacja pokaże Ci, jak wygląda Twój progres.</p>
+                        <div class="workout-inline-fields">
+                            <input type="number" id="runDistanceInput" min="0" step="0.1" placeholder="km">
+                            <input type="number" id="runDurationInput" min="0" step="1" placeholder="min">
+                            <button class="btn-primary" id="saveRunBtn">Zapisz bieg</button>
+                        </div>
+                        <div id="runSummaryBox" class="mini-stat-box">Brak danych jeszcze dziś.</div>
+                    </section>
+
+                    <section class="card workout-panel-card">
+                        <h3>🦾 Siłownia / partie ciała</h3>
+                        <p class="panel-copy">Wybierz partie, które dziś ćwiczyłaś i od razu zobaczysz swój plan w jednym miejscu.</p>
+                        <div id="bodyPartChips" class="chip-grid">
+                            <button class="body-part-chip" data-part="nogi">Nogi</button>
+                            <button class="body-part-chip" data-part="plecy">Plecy</button>
+                            <button class="body-part-chip" data-part="klatka">Klatka</button>
+                            <button class="body-part-chip" data-part="ramiona">Ramiona</button>
+                            <button class="body-part-chip" data-part="core">Core</button>
+                            <button class="body-part-chip" data-part="stretch">Rozciąganie</button>
+                        </div>
+                        <div id="focusSummaryBox" class="mini-stat-box">Brak wybranych partii.</div>
+                    </section>
+
+                    <section class="card workout-panel-card">
+                        <h3>🎥 Filmy / zadania</h3>
+                        <p class="panel-copy">Wszystkie treningi z YouTube i własne zadania są teraz w jednej, czytelnej sekcji z odznaką „wykonane dziś”.</p>
+                        <div id="todayWorkoutSummary" class="mini-stat-box">Ładuję dzisiejsze treningi…</div>
+                    </section>
+                </div>
+
+                <p id="workoutStatusMsg" class="workout-empty-state">Workouty wyłączone. Włącz je w ustawieniach!</p>
                 <div id="workoutsContent" style="display: none;">
-                    <div id="workoutsViewList"></div>
+                    <div class="card workout-panel-card" style="margin-bottom: 1rem;">
+                        <h3>🗂️ Filtry kategorii</h3>
+                        <p class="panel-copy">Szybko przełączaj widok między bieganiem, siłownią, rozciąganiem i filmami z YouTube.</p>
+                        <div id="workoutCategoryFilter" class="chip-grid">
+                            <button class="body-part-chip active" data-filter="all">Wszystkie</button>
+                            <button class="body-part-chip" data-filter="running">🏃 Bieganie</button>
+                            <button class="body-part-chip" data-filter="gym">🦾 Siłownia</button>
+                            <button class="body-part-chip" data-filter="stretch">🧘 Rozciąganie</button>
+                            <button class="body-part-chip" data-filter="video">🎥 Film</button>
+                            <button class="body-part-chip" data-filter="custom">💪 Własne</button>
+                        </div>
+                    </div>
+                    <div id="workoutsViewList" class="workout-list"></div>
                 </div>
             </div>
         </div>
@@ -310,6 +383,16 @@
 
         <!-- BADGES VIEW -->
         <div class="view" id="view-badges">
+            <div class="hero-banner" style="margin-bottom: 1rem;">
+                <section class="hero-card hero-copy">
+                    <p class="eyebrow" style="text-transform: uppercase; letter-spacing: 0.25em; font-size: 0.78rem; color: var(--text-secondary); font-weight: 700;">Odznaki</p>
+                    <h2>Twoja kolekcja postępów i osiągnięć</h2>
+                    <p>Każda odznaka to mały moment „to było warte tego”, a cały panel zyskuje bardziej premium wygląd.</p>
+                </section>
+                <section class="hero-card hero-visual">
+                    <img src="assets/badge-illustration.svg" alt="Ilustracja odznak i sukcesu">
+                </section>
+            </div>
             <div class="badges-grid">
                 <!-- Podstawowe -->
                 <div class="badge-card locked" data-badge="first-steps">
@@ -824,11 +907,17 @@
                         <div id="normalWorkoutsConfig">
                             <div class="setting-item">
                                 <label>Dodaj link YouTube:</label>
-                                <div style="display: flex; gap: 0.5rem;">
-                                    <input type="text" id="workoutURLInput" placeholder="https://www.youtube.com/watch?v=..." style="flex: 1;">
+                                <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                                    <input type="text" id="workoutURLInput" placeholder="https://www.youtube.com/watch?v=..." style="flex: 1; min-width: 260px;">
+                                    <select id="workoutCategorySelect" style="padding: 0.65rem 0.8rem; border-radius: 10px; border: 1px solid var(--border-color); background: var(--card-bg); color: var(--text-primary); font-family: var(--font-family);">
+                                        <option value="running">🏃 Bieganie</option>
+                                        <option value="gym">🦾 Siłownia</option>
+                                        <option value="stretch">🧘 Rozciąganie</option>
+                                        <option value="video">🎥 Film</option>
+                                    </select>
                                     <button class="btn-add-workout" id="btnAddWorkout">➕ Dodaj</button>
                                 </div>
-                                <small style="display: block; margin-top: 0.5rem; color: #999;">Wklej link do YouTube z ćwiczeniami</small>
+                                <small style="display: block; margin-top: 0.5rem; color: #999;">Wklej link do YouTube z ćwiczeniami i przypisz kategorię dla lepszego porządku.</small>
                             </div>
                             <div id="workoutsList" style="margin-top: 1rem;"></div>
                             

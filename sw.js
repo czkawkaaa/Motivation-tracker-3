@@ -1,12 +1,13 @@
 // 🌸 Kawaii Quest - Service Worker
 // Obsługuje PWA, cache, i widgety
 
-const CACHE_NAME = 'kawaii-quest-v2';
+const CACHE_NAME = 'kawaii-quest-v5';
 const urlsToCache = [
   '/Motivation-tracker-3/',
   '/Motivation-tracker-3/index.html',
   '/Motivation-tracker-3/styles.css',
   '/Motivation-tracker-3/app.js',
+  '/Motivation-tracker-3/script.js',
   '/Motivation-tracker-3/firebase-config.js',
   '/Motivation-tracker-3/firebase-sync.js',
   '/Motivation-tracker-3/manifest.json'
@@ -96,6 +97,11 @@ self.addEventListener('periodicsync', (event) => {
 
 // Obsługa wiadomości od aplikacji
 self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+    return;
+  }
+
   if (event.data && event.data.type === 'UPDATE_WIDGET') {
     console.log('📨 Received widget update request');
     updateWidgetContent(event.data.widgetData);

@@ -36,6 +36,8 @@ const AppData = {
     },
     completedTasks: {},
     completedWorkouts: {},
+    runLog: {},
+    workoutFocus: {},
     gallery: [],
     badges: {},
     weeklyWorkouts: {
@@ -61,6 +63,7 @@ const AppData = {
         workoutsEnabled: false,
         workouts: [],
         customWorkouts: [],
+        workoutFilter: 'all',
         workoutsGoal: 150,
         stepsEnabled: true,
         studyEnabled: true,
@@ -223,8 +226,35 @@ document.addEventListener('DOMContentLoaded', function() {
     // Zarejestruj Service Workera dla PWA / widgetów
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('/Motivation-tracker-3/sw.js', { scope: '/Motivation-tracker-3/' })
-            .then((reg) => console.log('✅ Service Worker zarejestrowany', reg))
+            .then((reg) => {
+                console.log('✅ Service Worker zarejestrowany', reg);
+
+                const checkForUpdates = () => reg.update().catch((err) => {
+                    console.warn('⚠️ Nie udało się sprawdzić aktualizacji SW:', err);
+                });
+
+                checkForUpdates();
+                setInterval(checkForUpdates, 60 * 1000);
+
+                reg.addEventListener('updatefound', () => {
+                    const installingWorker = reg.installing;
+                    if (!installingWorker) return;
+
+                    installingWorker.addEventListener('statechange', () => {
+                        if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                            console.log('🔄 Nowa wersja aplikacji została zainstalowana. Odświeżam widok...');
+                            installingWorker.postMessage({ type: 'SKIP_WAITING' });
+                            window.location.reload();
+                        }
+                    });
+                });
+            })
             .catch((err) => console.error('❌ Rejestracja Service Workera nie powiodła się', err));
+
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+            console.log('🔁 Service Worker przejął kontrolę — odświeżam aplikację');
+            window.location.reload();
+        });
 
         // Odbieraj zapytania od SW o dane widgetu (MessageChannel z portem)
         navigator.serviceWorker.addEventListener('message', (event) => {
@@ -245,6 +275,26 @@ document.addEventListener('DOMContentLoaded', function() {
 // ======================
 // DATA MANAGEMENT
 // ======================
+function hasMeaningfulAppData(data) {
+    const source = data || {};
+
+    if (Array.isArray(source.tasks) && source.tasks.length > 0) return true;
+    if (Array.isArray(source.gallery) && source.gallery.length > 0) return true;
+
+    if (source.challenge && (Array.isArray(source.challenge.completedDays) ? source.challenge.completedDays.length > 0 : Boolean(source.challenge.currentDay || source.challenge.totalDays))) {
+        return true;
+    }
+
+    const mapsToCheck = ['steps', 'studyHours', 'mood', 'completedTasks', 'badges'];
+    for (const key of mapsToCheck) {
+        if (source[key] && typeof source[key] === 'object' && Object.keys(source[key]).length > 0) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 function loadData() {
     const saved = localStorage.getItem('kawaiiQuestData');
     // If main data was cleared (e.g., by older sync logic or service worker), try to restore backup
@@ -264,10 +314,7 @@ function loadData() {
             const data = JSON.parse(saved);
             
             // Zabezpieczenie: nie ładuj pustych danych
-            const hasData = data.challenge || 
-                           data.steps || 
-                           data.tasks || 
-                           data.completedTasks;
+            const hasData = hasMeaningfulAppData(data);
             
             if (hasData) {
                 Object.assign(AppData, data);
@@ -367,10 +414,7 @@ function saveData() {
     AppData.lastModified = Date.now();
     
     // Zabezpieczenie: sprawdź czy AppData nie jest pusty
-    const hasData = AppData.challenge || 
-                   AppData.steps || 
-                   AppData.tasks || 
-                   AppData.completedTasks;
+    const hasData = hasMeaningfulAppData(AppData);
     
     if (!hasData) {
         console.warn('⚠️ Próba zapisania pustych danych - pominięto');
@@ -3556,9 +3600,13 @@ function extractYouTubeVideoId(url) {
 function initWorkouts() {
     const btnAddWorkout = document.getElementById('btnAddWorkout');
     const workoutURLInput = document.getElementById('workoutURLInput');
+    const workoutCategorySelect = document.getElementById('workoutCategorySelect');
     const weeklyWorkoutsToggle = document.getElementById('weeklyWorkoutsToggle');
     const normalWorkoutsConfig = document.getElementById('normalWorkoutsConfig');
     const weeklyWorkoutsConfig = document.getElementById('weeklyWorkoutsConfig');
+    const saveRunBtn = document.getElementById('saveRunBtn');
+    const runDistanceInput = document.getElementById('runDistanceInput');
+    const runDurationInput = document.getElementById('runDurationInput');
     
     // Initialize weeklyWorkouts if not exists
     if (!AppData.weeklyWorkouts) {
@@ -3598,12 +3646,54 @@ function initWorkouts() {
     
     // Add workout button (normal mode)
     if (btnAddWorkout && workoutURLInput) {
-        btnAddWorkout.addEventListener('click', addWorkout);
+        btnAddWorkout.addEventListener('click', () => addWorkout(workoutCategorySelect));
         workoutURLInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') addWorkout();
+            if (e.key === 'Enter') addWorkout(workoutCategorySelect);
         });
     }
-    
+
+    if (saveRunBtn) {
+        saveRunBtn.addEventListener('click', saveWorkoutRun);
+    }
+    if (runDistanceInput) {
+        runDistanceInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') saveWorkoutRun();
+        });
+    }
+    if (runDurationInput) {
+        runDurationInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') saveWorkoutRun();
+        });
+    }
+
+    document.querySelectorAll('.body-part-chip').forEach(chip => {
+        chip.addEventListener('click', () => toggleBodyPart(chip.dataset.part));
+    });
+
+    const workoutFilterButtons = document.querySelectorAll('#workoutCategoryFilter .body-part-chip');
+    const applyWorkoutFilterState = () => {
+        const activeFilter = AppData.settings.workoutFilter || 'all';
+        workoutFilterButtons.forEach(button => {
+            button.classList.toggle('active', button.dataset.filter === activeFilter);
+        });
+    };
+
+    if (workoutFilterButtons.length > 0) {
+        if (AppData.settings.workoutFilter === undefined) {
+            AppData.settings.workoutFilter = 'all';
+        }
+        applyWorkoutFilterState();
+
+        workoutFilterButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                AppData.settings.workoutFilter = button.dataset.filter || 'all';
+                saveData();
+                applyWorkoutFilterState();
+                updateWorkoutsDisplay();
+            });
+        });
+    }
+
     // Add custom workout button
     const btnAddCustomWorkout = document.getElementById('btnAddCustomWorkout');
     const customWorkoutInput = document.getElementById('customWorkoutInput');
@@ -3614,13 +3704,112 @@ function initWorkouts() {
         });
     }
     
+    updateWorkoutQuickStats();
+    updateBodyPartChips();
+
     // Render existing workouts
     updateWorkoutsDisplay();
     updateCustomWorkoutsDisplay();
 }
 
-function addWorkout() {
+function getWorkoutCategoryLabel(category) {
+    const map = {
+        running: '🏃 Bieganie',
+        gym: '🦾 Siłownia',
+        stretch: '🧘 Rozciąganie',
+        video: '🎥 Film / YouTube'
+    };
+    return map[category] || '🎥 Film / YouTube';
+}
+
+function updateWorkoutQuickStats() {
+    const runSummaryBox = document.getElementById('runSummaryBox');
+    const focusSummaryBox = document.getElementById('focusSummaryBox');
+    const todayWorkoutSummary = document.getElementById('todayWorkoutSummary');
+
+    const today = getTodayKey();
+    const runData = AppData.runLog && AppData.runLog[today] ? AppData.runLog[today] : null;
+    const focusList = AppData.workoutFocus && AppData.workoutFocus[today] ? AppData.workoutFocus[today] : [];
+    const completedToday = AppData.completedWorkouts && AppData.completedWorkouts[today] ? AppData.completedWorkouts[today] : [];
+
+    if (runSummaryBox) {
+        if (runData && (Number(runData.distance) > 0 || Number(runData.duration) > 0)) {
+            runSummaryBox.textContent = `Dziś: ${Number(runData.distance).toFixed(1)} km • ${Number(runData.duration)} min • rekord: ${Math.max(Number(runData.distance) || 0, 0)} km`;
+        } else {
+            runSummaryBox.textContent = 'Brak danych biegu dziś – wpisz dystans i czas.';
+        }
+    }
+
+    if (focusSummaryBox) {
+        if (focusList.length > 0) {
+            focusSummaryBox.textContent = 'Wybrane partie: ' + focusList.join(', ');
+        } else {
+            focusSummaryBox.textContent = 'Brak wybranych partii – kliknij, aby zaznaczyć dziś trening.';
+        }
+    }
+
+    if (todayWorkoutSummary) {
+        const plannedToday = (AppData.settings.workouts || []).length + (AppData.settings.customWorkouts || []).length;
+        if (plannedToday > 0) {
+            todayWorkoutSummary.textContent = `Ukończono dziś ${completedToday.length} z ${plannedToday} zaplanowanych zadań treningowych. Kliknij „Zrób dziś” albo checkbox, aby śledzić progres.`;
+        } else {
+            todayWorkoutSummary.textContent = 'Dodaj pierwszy film lub własne ćwiczenie, aby rozpocząć plan treningowy na dziś.';
+        }
+    }
+}
+
+function updateBodyPartChips() {
+    const today = getTodayKey();
+    const selected = AppData.workoutFocus && AppData.workoutFocus[today] ? AppData.workoutFocus[today] : [];
+    document.querySelectorAll('.body-part-chip').forEach(chip => {
+        chip.classList.toggle('active', selected.includes(chip.dataset.part));
+    });
+}
+
+function toggleBodyPart(part) {
+    if (!AppData.workoutFocus) AppData.workoutFocus = {};
+    const today = getTodayKey();
+    if (!AppData.workoutFocus[today]) AppData.workoutFocus[today] = [];
+
+    if (AppData.workoutFocus[today].includes(part)) {
+        AppData.workoutFocus[today] = AppData.workoutFocus[today].filter(item => item !== part);
+    } else {
+        AppData.workoutFocus[today].push(part);
+    }
+
+    saveData();
+    updateBodyPartChips();
+    updateWorkoutQuickStats();
+    showNotification('✅ Partie treningowe zaktualizowane', 'success');
+}
+
+function saveWorkoutRun() {
+    const distanceInput = document.getElementById('runDistanceInput');
+    const durationInput = document.getElementById('runDurationInput');
+    const distance = Number(distanceInput?.value || 0);
+    const duration = Number(durationInput?.value || 0);
+
+    if (!distance && !duration) {
+        showNotification('⚠️ Wpisz dystans lub czas biegu', 'warning');
+        return;
+    }
+
+    if (!AppData.runLog) AppData.runLog = {};
+    AppData.runLog[getTodayKey()] = {
+        distance: distance || 0,
+        duration: duration || 0,
+        updatedAt: new Date().toISOString()
+    };
+
+    saveData();
+    updateWorkoutQuickStats();
+    updateStats();
+    showNotification('✅ Bieg zapisany!', 'success');
+}
+
+function addWorkout(selectedCategoryElement) {
     const workoutURLInput = document.getElementById('workoutURLInput');
+    const workoutCategorySelect = selectedCategoryElement || document.getElementById('workoutCategorySelect');
     if (!workoutURLInput || !workoutURLInput.value.trim()) {
         showNotification('⚠️ Wklej link YouTube!', 'warning');
         return;
@@ -3649,12 +3838,14 @@ function addWorkout() {
     AppData.settings.workouts.push({
         videoId: videoId,
         url: url,
+        category: workoutCategorySelect ? workoutCategorySelect.value : 'video',
         addedDate: new Date().toISOString()
     });
     
     saveData();
     workoutURLInput.value = '';
     updateWorkoutsDisplay();
+    updateStats();
     showNotification('✅ Workout dodany!', 'success');
 }
 
@@ -3662,6 +3853,7 @@ function removeWorkout(videoId) {
     AppData.settings.workouts = AppData.settings.workouts.filter(w => w.videoId !== videoId);
     saveData();
     updateWorkoutsDisplay();
+    updateStats();
     showNotification('🗑️ Workout usunięty', 'success');
 }
 
@@ -3693,6 +3885,7 @@ function addCustomWorkout() {
     customWorkoutInput.value = '';
     updateCustomWorkoutsDisplay();
     updateWorkoutsDisplay();
+    updateStats();
     showNotification('✅ Własne ćwiczenie dodane!', 'success');
 }
 
@@ -3701,29 +3894,31 @@ function removeCustomWorkout(id) {
     saveData();
     updateCustomWorkoutsDisplay();
     updateWorkoutsDisplay();
+    updateStats();
     showNotification('🗑️ Ćwiczenie usunięte', 'success');
 }
 
 function updateCustomWorkoutsDisplay() {
     const customWorkoutsList = document.getElementById('customWorkoutsList');
     if (!customWorkoutsList) return;
-    
+
     if (!AppData.settings.customWorkouts || AppData.settings.customWorkouts.length === 0) {
         customWorkoutsList.innerHTML = '';
         return;
     }
-    
+
     customWorkoutsList.innerHTML = AppData.settings.customWorkouts.map(workout => `
-        <div style="display: flex; gap: 1rem; margin-bottom: 1rem; padding: 1rem; background: var(--card-bg); border-radius: 8px; align-items: center;">
-            <div style="width: 50px; height: 50px; background: var(--primary-color); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
+        <article class="workout-card workout-card--custom" style="display: flex; gap: 1rem; margin-bottom: 1rem; padding: 1rem; background: var(--card-bg); border-radius: 14px; align-items: center; box-shadow: 0 14px 26px rgba(15, 23, 42, 0.08);">
+            <div style="width: 56px; height: 56px; background: linear-gradient(145deg, var(--primary-color), #111827); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.35rem; flex-shrink: 0;">
                 💪
             </div>
-            <div style="flex: 1;">
-                <p style="font-size: 0.9em; color: var(--text-color); margin: 0 0 0.5rem 0; font-weight: 600;">${workout.name}</p>
-                <p style="font-size: 0.85em; color: #999; margin: 0;">Dodano: ${new Date(workout.addedDate).toLocaleDateString('pl-PL')}</p>
+            <div style="flex: 1; min-width: 0;">
+                <span class="workout-chip">Własne</span>
+                <p style="font-size: 0.95em; color: var(--text-color); margin: 0.35rem 0 0.35rem 0; font-weight: 700;">${workout.name}</p>
+                <p style="font-size: 0.85em; color: var(--text-secondary); margin: 0;">Dodano: ${new Date(workout.addedDate).toLocaleDateString('pl-PL')}</p>
             </div>
-            <button onclick="removeCustomWorkout('${workout.id}')" style="padding: 0.5rem 1rem; background: #f44336; color: white; border: none; border-radius: 6px; cursor: pointer; white-space: nowrap;">🗑️ Usuń</button>
-        </div>
+            <button onclick="removeCustomWorkout('${workout.id}')" style="padding: 0.55rem 0.9rem; background: #f44336; color: white; border: none; border-radius: 10px; cursor: pointer; white-space: nowrap; font-weight: 600;">🗑️ Usuń</button>
+        </article>
     `).join('');
 }
 
@@ -3743,6 +3938,7 @@ function updateWorkoutsDisplay() {
     
     // Determine which workouts to display
     let workoutsToDisplay = [];
+    const activeFilter = AppData.settings.workoutFilter || 'all';
     
     if (AppData.weeklyWorkouts && AppData.weeklyWorkouts.enabled) {
         // Get today's day of week
@@ -3755,22 +3951,23 @@ function updateWorkoutsDisplay() {
         workoutsToDisplay = AppData.settings.workouts || [];
     }
     
-    const settingsHtml = !AppData.settings.workouts || AppData.settings.workouts.length === 0 
+    const settingsHtml = !AppData.settings.workouts || AppData.settings.workouts.length === 0
         ? '<p style="color: #999; font-size: 0.9em;">Brak dodanych workoutów</p>'
         : AppData.settings.workouts.map(workout => `
-            <div style="display: flex; gap: 1rem; margin-bottom: 1rem; padding: 1rem; background: var(--card-bg); border-radius: 8px; align-items: center;">
-                <div style="position: relative; cursor: pointer;" onclick="playWorkoutVideo('${workout.videoId}')">
-                    <img src="https://img.youtube.com/vi/${workout.videoId}/mqdefault.jpg" alt="Thumbnail" style="width: 120px; height: 90px; border-radius: 8px; object-fit: cover; display: block;">
-                    <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.3); border-radius: 8px; transition: background 0.2s;">
+            <article class="workout-card" style="display: flex; gap: 1rem; margin-bottom: 1rem; padding: 1rem; background: var(--card-bg); border-radius: 14px; align-items: center; box-shadow: 0 14px 26px rgba(15, 23, 42, 0.08);">
+                <div style="position: relative; cursor: pointer; flex-shrink: 0;" onclick="playWorkoutVideo('${workout.videoId}')">
+                    <img src="https://img.youtube.com/vi/${workout.videoId}/mqdefault.jpg" alt="Thumbnail" style="width: 120px; height: 90px; border-radius: 10px; object-fit: cover; display: block;">
+                    <div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.28); border-radius: 10px; transition: background 0.2s;">
                         <span style="font-size: 2rem;">▶️</span>
                     </div>
                 </div>
-                <div style="flex: 1;">
-                    <p style="font-size: 0.9em; color: var(--text-color); margin: 0 0 0.5rem 0; font-weight: 600; cursor: pointer;" onclick="playWorkoutVideo('${workout.videoId}')">Kliknij aby zagrać</p>
-                    <p style="font-size: 0.85em; color: #999; margin: 0;">Dodano: ${new Date(workout.addedDate).toLocaleDateString('pl-PL')}</p>
+                <div style="flex: 1; min-width: 0;">
+                    <span class="workout-chip">${getWorkoutCategoryLabel(workout.category || 'video')}</span>
+                    <p style="font-size: 0.95em; color: var(--text-color); margin: 0.35rem 0 0.35rem 0; font-weight: 700; cursor: pointer;" onclick="playWorkoutVideo('${workout.videoId}')">Kliknij aby zagrać</p>
+                    <p style="font-size: 0.85em; color: var(--text-secondary); margin: 0;">Dodano: ${new Date(workout.addedDate).toLocaleDateString('pl-PL')}</p>
                 </div>
-                <button onclick="removeWorkout('${workout.videoId}')" style="padding: 0.5rem 1rem; background: #f44336; color: white; border: none; border-radius: 6px; cursor: pointer; white-space: nowrap;">🗑️ Usuń</button>
-            </div>
+                <button onclick="removeWorkout('${workout.videoId}')" style="padding: 0.55rem 0.9rem; background: #f44336; color: white; border: none; border-radius: 10px; cursor: pointer; white-space: nowrap; font-weight: 600;">🗑️ Usuń</button>
+            </article>
         `).join('');
     
     // Get custom workouts (always the same every day)
@@ -3779,46 +3976,62 @@ function updateWorkoutsDisplay() {
     // Build view HTML with both YouTube and custom workouts
     let viewHtmlParts = [];
     
+    const filteredWorkouts = workoutsToDisplay.filter(workout => {
+        if (activeFilter === 'all') return true;
+        if (activeFilter === 'custom') return !workout.videoId;
+        return (workout.category || 'video') === activeFilter;
+    });
+
     // Add workouts from weekly or normal mode
-    if (workoutsToDisplay.length > 0) {
-        workoutsToDisplay.forEach(workout => {
+    if (filteredWorkouts.length > 0) {
+        filteredWorkouts.forEach(workout => {
             // Check if it's YouTube workout or custom workout
             if (workout.videoId) {
                 // YouTube workout
                 const isCompleted = completedToday.includes(workout.videoId);
                 viewHtmlParts.push(`
-            <div style="display: flex; gap: 1rem; margin-bottom: 1rem; padding: 1rem; background: var(--card-bg); border-radius: 8px; align-items: center; opacity: ${isCompleted ? '0.6' : '1'};">
-                <label style="display: flex; align-items: center; cursor: pointer;">
-                    <input type="checkbox" ${isCompleted ? 'checked' : ''} onchange="toggleWorkoutComplete('${workout.videoId}')" style="width: 24px; height: 24px; cursor: pointer;">
+            <article class="workout-card ${isCompleted ? 'workout-card--done' : ''}" style="display: grid; grid-template-columns: auto 120px 1fr auto; gap: 0.9rem; align-items: center; margin-bottom: 1rem; padding: 1rem; background: ${isCompleted ? 'linear-gradient(145deg, rgba(243,244,246,0.95), rgba(255,255,255,0.98))' : 'linear-gradient(145deg, rgba(255,255,255,0.96), var(--card-bg))'}; border-radius: 18px; box-shadow: 0 14px 26px rgba(15, 23, 42, 0.08); border: 1px solid rgba(255,255,255,0.9); opacity: ${isCompleted ? '0.82' : '1'};">
+                <label style="display: flex; align-items: center; justify-content: center; cursor: pointer;">
+                    <input type="checkbox" ${isCompleted ? 'checked' : ''} onchange="toggleWorkoutComplete('${workout.videoId}')" style="width: 24px; height: 24px; cursor: pointer; accent-color: var(--primary-color);">
                 </label>
-                <div style="position: relative; cursor: pointer;" onclick="playWorkoutVideo('${workout.videoId}')">
-                    <img src="https://img.youtube.com/vi/${workout.videoId}/mqdefault.jpg" alt="Thumbnail" style="width: 120px; height: 90px; border-radius: 8px; object-fit: cover; display: block;">
-                    <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.3); border-radius: 8px; transition: background 0.2s;">
-                        <span style="font-size: 2rem;">▶️</span>
+                <div style="position: relative; cursor: pointer; flex-shrink: 0;" onclick="playWorkoutVideo('${workout.videoId}')">
+                    <img src="https://img.youtube.com/vi/${workout.videoId}/mqdefault.jpg" alt="Thumbnail" style="width: 120px; height: 90px; border-radius: 12px; object-fit: cover; display: block;">
+                    <div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.28); border-radius: 12px; transition: background 0.2s;">
+                        <span style="font-size: 1.8rem;">▶️</span>
                     </div>
                 </div>
-                <div style="flex: 1;">
-                    <p style="font-size: 0.9em; color: var(--text-color); margin: 0 0 0.5rem 0; font-weight: 600; cursor: pointer; ${isCompleted ? 'text-decoration: line-through;' : ''}" onclick="playWorkoutVideo('${workout.videoId}')">Kliknij aby zagrać</p>
-                    <p style="font-size: 0.85em; color: #999; margin: 0;">Dodano: ${new Date(workout.addedDate).toLocaleDateString('pl-PL')}</p>
+                <div style="min-width: 0;">
+                    <div style="display: flex; flex-wrap: wrap; gap: 0.45rem; align-items: center; margin-bottom: 0.35rem;">
+                        <span class="workout-chip">${getWorkoutCategoryLabel(workout.category || 'video')}</span>
+                        <span class="workout-chip" style="background: ${isCompleted ? 'rgba(34,197,94,0.12)' : 'rgba(59,130,246,0.14)'}; color: ${isCompleted ? '#166534' : 'var(--text-primary)'}; text-transform: none; letter-spacing: normal;">${isCompleted ? '✅ Ukończone dziś' : '⏳ Do zrobienia'}</span>
+                    </div>
+                    <p style="font-size: 0.95em; color: var(--text-color); margin: 0 0 0.25rem 0; font-weight: 700; cursor: pointer; ${isCompleted ? 'text-decoration: line-through;' : ''}" onclick="playWorkoutVideo('${workout.videoId}')">Kliknij, aby odtworzyć film</p>
+                    <p style="font-size: 0.85em; color: var(--text-secondary); margin: 0;">Dodano: ${new Date(workout.addedDate).toLocaleDateString('pl-PL')}</p>
                 </div>
-            </div>
+                <button onclick="playWorkoutVideo('${workout.videoId}')" style="padding: 0.45rem 0.75rem; background: linear-gradient(145deg, var(--primary-color), #2563eb); color: white; border: none; border-radius: 10px; cursor: pointer; white-space: nowrap; font-weight: 700;">▶ Otwórz</button>
+            </article>
         `);
             } else if (workout.id && workout.name) {
                 // Custom workout from weekly workouts
                 const isCompleted = completedToday.includes(workout.id);
                 viewHtmlParts.push(`
-            <div style="display: flex; gap: 1rem; margin-bottom: 1rem; padding: 1rem; background: var(--card-bg); border-radius: 8px; align-items: center; opacity: ${isCompleted ? '0.6' : '1'};">
-                <label style="display: flex; align-items: center; cursor: pointer;">
-                    <input type="checkbox" ${isCompleted ? 'checked' : ''} onchange="toggleWorkoutComplete('${workout.id}')" style="width: 24px; height: 24px; cursor: pointer;">
+            <article class="workout-card ${isCompleted ? 'workout-card--done' : ''}" style="display: grid; grid-template-columns: auto 120px 1fr auto; gap: 0.9rem; align-items: center; margin-bottom: 1rem; padding: 1rem; background: ${isCompleted ? 'linear-gradient(145deg, rgba(243,244,246,0.95), rgba(255,255,255,0.98))' : 'linear-gradient(145deg, rgba(255,255,255,0.96), var(--card-bg))'}; border-radius: 18px; box-shadow: 0 14px 26px rgba(15, 23, 42, 0.08); border: 1px solid rgba(255,255,255,0.9); opacity: ${isCompleted ? '0.82' : '1'};">
+                <label style="display: flex; align-items: center; justify-content: center; cursor: pointer;">
+                    <input type="checkbox" ${isCompleted ? 'checked' : ''} onchange="toggleWorkoutComplete('${workout.id}')" style="width: 24px; height: 24px; cursor: pointer; accent-color: var(--primary-color);">
                 </label>
-                <div style="width: 120px; height: 90px; background: var(--primary-color); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 2.5rem;">
+                <div style="width: 120px; height: 90px; background: linear-gradient(145deg, var(--primary-color), #111827); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 2rem; flex-shrink: 0;">
                     💪
                 </div>
-                <div style="flex: 1;">
-                    <p style="font-size: 0.9em; color: var(--text-color); margin: 0 0 0.5rem 0; font-weight: 600; ${isCompleted ? 'text-decoration: line-through;' : ''}">${workout.name}</p>
-                    <p style="font-size: 0.85em; color: #999; margin: 0;">Własne ćwiczenie (tygodniowe)</p>
+                <div style="min-width: 0;">
+                    <div style="display: flex; flex-wrap: wrap; gap: 0.45rem; align-items: center; margin-bottom: 0.35rem;">
+                        <span class="workout-chip">Własne</span>
+                        <span class="workout-chip" style="background: ${isCompleted ? 'rgba(34,197,94,0.12)' : 'rgba(59,130,246,0.14)'}; color: ${isCompleted ? '#166534' : 'var(--text-primary)'}; text-transform: none; letter-spacing: normal;">${isCompleted ? '✅ Ukończone dziś' : '⏳ Do zrobienia'}</span>
+                    </div>
+                    <p style="font-size: 0.95em; color: var(--text-color); margin: 0 0 0.25rem 0; font-weight: 700; ${isCompleted ? 'text-decoration: line-through;' : ''}">${workout.name}</p>
+                    <p style="font-size: 0.85em; color: var(--text-secondary); margin: 0;">Własne ćwiczenie (tygodniowe)</p>
                 </div>
-            </div>
+                <button onclick="toggleWorkoutComplete('${workout.id}')" style="padding: 0.45rem 0.75rem; background: ${isCompleted ? 'linear-gradient(145deg, #22c55e, #15803d)' : 'linear-gradient(145deg, var(--primary-color), #2563eb)'}; color: white; border: none; border-radius: 10px; cursor: pointer; white-space: nowrap; font-weight: 700;">${isCompleted ? '✔ Gotowe' : 'Zrób dziś'}</button>
+            </article>
         `);
             }
         });
@@ -3827,28 +4040,37 @@ function updateWorkoutsDisplay() {
     // Add custom workouts from global settings (if not in weekly mode)
     if (!AppData.weeklyWorkouts || !AppData.weeklyWorkouts.enabled) {
         if (customWorkouts.length > 0) {
-            customWorkouts.forEach(workout => {
+            const filteredCustomWorkouts = activeFilter === 'all' || activeFilter === 'custom'
+                ? customWorkouts
+                : customWorkouts.filter(() => false);
+
+            filteredCustomWorkouts.forEach(workout => {
                 const isCompleted = completedToday.includes(workout.id);
                 viewHtmlParts.push(`
-            <div style="display: flex; gap: 1rem; margin-bottom: 1rem; padding: 1rem; background: var(--card-bg); border-radius: 8px; align-items: center; opacity: ${isCompleted ? '0.6' : '1'};">
-                <label style="display: flex; align-items: center; cursor: pointer;">
-                    <input type="checkbox" ${isCompleted ? 'checked' : ''} onchange="toggleWorkoutComplete('${workout.id}')" style="width: 24px; height: 24px; cursor: pointer;">
+            <article class="workout-card ${isCompleted ? 'workout-card--done' : ''}" style="display: grid; grid-template-columns: auto 120px 1fr auto; gap: 0.9rem; align-items: center; margin-bottom: 1rem; padding: 1rem; background: ${isCompleted ? 'linear-gradient(145deg, rgba(243,244,246,0.95), rgba(255,255,255,0.98))' : 'linear-gradient(145deg, rgba(255,255,255,0.96), var(--card-bg))'}; border-radius: 18px; box-shadow: 0 14px 26px rgba(15, 23, 42, 0.08); border: 1px solid rgba(255,255,255,0.9); opacity: ${isCompleted ? '0.82' : '1'};">
+                <label style="display: flex; align-items: center; justify-content: center; cursor: pointer;">
+                    <input type="checkbox" ${isCompleted ? 'checked' : ''} onchange="toggleWorkoutComplete('${workout.id}')" style="width: 24px; height: 24px; cursor: pointer; accent-color: var(--primary-color);">
                 </label>
-                <div style="width: 120px; height: 90px; background: var(--primary-color); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 2.5rem;">
+                <div style="width: 120px; height: 90px; background: linear-gradient(145deg, var(--primary-color), #111827); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 2rem; flex-shrink: 0;">
                     💪
                 </div>
-                <div style="flex: 1;">
-                    <p style="font-size: 0.9em; color: var(--text-color); margin: 0 0 0.5rem 0; font-weight: 600; ${isCompleted ? 'text-decoration: line-through;' : ''}">${workout.name}</p>
-                    <p style="font-size: 0.85em; color: #999; margin: 0;">Własne ćwiczenie</p>
+                <div style="min-width: 0;">
+                    <div style="display: flex; flex-wrap: wrap; gap: 0.45rem; align-items: center; margin-bottom: 0.35rem;">
+                        <span class="workout-chip">Własne</span>
+                        <span class="workout-chip" style="background: ${isCompleted ? 'rgba(34,197,94,0.12)' : 'rgba(59,130,246,0.14)'}; color: ${isCompleted ? '#166534' : 'var(--text-primary)'}; text-transform: none; letter-spacing: normal;">${isCompleted ? '✅ Ukończone dziś' : '⏳ Do zrobienia'}</span>
+                    </div>
+                    <p style="font-size: 0.95em; color: var(--text-color); margin: 0 0 0.25rem 0; font-weight: 700; ${isCompleted ? 'text-decoration: line-through;' : ''}">${workout.name}</p>
+                    <p style="font-size: 0.85em; color: var(--text-secondary); margin: 0;">Własne ćwiczenie</p>
                 </div>
-            </div>
+                <button onclick="toggleWorkoutComplete('${workout.id}')" style="padding: 0.45rem 0.75rem; background: ${isCompleted ? 'linear-gradient(145deg, #22c55e, #15803d)' : 'linear-gradient(145deg, var(--primary-color), #2563eb)'}; color: white; border: none; border-radius: 10px; cursor: pointer; white-space: nowrap; font-weight: 700;">${isCompleted ? '✔ Gotowe' : 'Zrób dziś'}</button>
+            </article>
         `);
             });
         }
     }
     
     const viewHtml = viewHtmlParts.length === 0
-        ? '<p style="color: #999; font-size: 0.9em;">Brak workoutów na dziś</p>'
+        ? '<p style="color: #999; font-size: 0.9em;">Brak workoutów w tej kategorii. Zmień filtr, aby zobaczyć inne treningi.</p>'
         : viewHtmlParts.join('');
     
     // Update settings view (no checkboxes)
@@ -3861,6 +4083,9 @@ function updateWorkoutsDisplay() {
         workoutsViewList.innerHTML = viewHtml;
     }
     
+    updateWorkoutQuickStats();
+    updateBodyPartChips();
+
     // Show/hide workouts content based on toggle
     if (workoutsContent && workoutStatusMsg) {
         const hasWorkouts = viewHtmlParts.length > 0;
@@ -3900,7 +4125,8 @@ function toggleWorkoutComplete(videoId) {
     
     saveData();
     updateWorkoutsDisplay();
-    updateWorkoutsStats();
+    updateStats();
+    updateWorkoutQuickStats();
 }
 
 function playWorkoutVideo(videoId) {
@@ -3960,6 +4186,7 @@ function addDayWorkout(day) {
     input.value = '';
     renderDayWorkouts(day);
     updateWorkoutsDisplay();
+    updateStats();
     showNotification('✅ Workout dodany!', 'success');
 }
 
@@ -3997,6 +4224,7 @@ function addDayCustomWorkout(day) {
     input.value = '';
     renderDayWorkouts(day);
     updateWorkoutsDisplay();
+    updateStats();
     showNotification('✅ Ćwiczenie dodane!', 'success');
 }
 
@@ -4008,6 +4236,7 @@ function removeDayWorkout(day, id) {
     saveData();
     renderDayWorkouts(day);
     updateWorkoutsDisplay();
+    updateStats();
     showNotification('🗑️ Workout usunięty', 'success');
 }
 

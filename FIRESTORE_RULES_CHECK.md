@@ -114,7 +114,7 @@ service cloud.firestore {
 
 ### 4. Firebase API Key nieprawidłowy
 - Sprawdź czy apiKey w firebase-config.js jest poprawny
-- Aktualny: `AIzaSyBLtdh-FELJEuzYPpKDF6OLuya55xRTjiY`
+- Aktualny klucz Firebase powinien być pobrany z konsoli Firebase / Google Cloud i nie powinien być publikowany w repozytorium.
 - Projekt: `kawaii-quest`
 
 ## Test końcowy:
