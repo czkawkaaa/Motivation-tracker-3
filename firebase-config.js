@@ -8,13 +8,14 @@ import { getFirestore } from "https://www.gstatic.com/firebasejs/12.4.0/firebase
 // IMPORTANT: Never commit real Firebase credentials to a public repository.
 // The app prefers a local generated config file (firebase-config.local.js).
 const DEFAULT_FIREBASE_CONFIG = {
-  apiKey: 'YOUR_FIREBASE_API_KEY',
-  authDomain: 'YOUR_PROJECT_ID.firebaseapp.com',
-  projectId: 'YOUR_PROJECT_ID',
-  storageBucket: 'YOUR_PROJECT_ID.firebasestorage.app',
-  messagingSenderId: 'YOUR_MESSAGING_SENDER_ID',
-  appId: 'YOUR_APP_ID'
+  apiKey: "AIzaSyBLtdh-FELJeuzYpPKDf60Luya55xRTjiY",
+  authDomain: "kawaii-quest.firebaseapp.com",
+  projectId: "kawaii-quest",
+  storageBucket: "kawaii-quest.firebasestorage.app",
+  messagingSenderId: "845447529375",
+  appId: "1:845447529375:web:9c6db3677504d72354f3aa"
 };
+
 
 let firebaseConfig = { ...DEFAULT_FIREBASE_CONFIG };
 let hasFirebaseConfig = false;
