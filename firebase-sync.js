@@ -372,18 +372,20 @@ async function deleteDataFromFirestore() {
 }
 window.deleteDataFromFirestore = deleteDataFromFirestore;
 
-function initFirebaseSync() {
+async function initFirebaseSync() {
     if (!hasFirebaseConfig || !auth || !db) return;
-    getRedirectResult(auth).then((result) => {
-        if (result) {
+    
+    try {
+        const result = await getRedirectResult(auth);
+        if (result && result.user) {
             updateSyncStatus('connected', 'Połączono', '✅');
             if (typeof showNotification === 'function') showNotification('🎉 Zalogowano pomyślnie!', 'success');
         }
-    }).catch((error) => {
+    } catch (error) {
         window.firebaseLastError = error.message;
         updateSyncStatus('error', 'Błąd logowania', '❌');
-    });
-    auth.onAuthStateChanged(() => {}, (error) => { window.firebaseLastError = error.message; });
+    }
+
     setupAuthUI();
     onAuthStateChanged(auth, (user) => {
         if (user) onUserLogin(user);
