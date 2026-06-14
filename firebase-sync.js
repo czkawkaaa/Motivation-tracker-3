@@ -109,11 +109,7 @@ async function loginWithGoogle() {
     try {
         updateSyncStatus('syncing', 'Logowanie...', '⏳');
         if (typeof playClickSound === 'function') playClickSound();
-        try {
-            await signInWithPopup(auth, provider);
-        } catch (popupError) {
-            await signInWithRedirect(auth, provider);
-        }
+        await signInWithRedirect(auth, provider);
     } catch (error) {
         window.firebaseLastError = error.message;
         updateSyncStatus('error', 'Błąd logowania', '❌');
