@@ -762,7 +762,7 @@ function initDashboard() {
     resetTasksBtn.addEventListener('click', () => {
         playClickSound(); // Dźwięk kliknięcia
     const dateKey = normalizeDateKey(getActiveDate()); // Normalize
-    const wasCompleted = AppData.challenge.completedDays.includes(dateKey);
+    const wasCompleted = Array.isArray(AppData.challenge.completedDays) && AppData.challenge.completedDays.includes(dateKey);
         
         const taskCheckboxes = document.querySelectorAll('.task-checkbox');
         taskCheckboxes.forEach(cb => {
@@ -826,7 +826,7 @@ function renderTasks() {
         // Auto-complete rest day if setting is enabled
         if (AppData.settings.countRestDays) {
             const dateKey = normalizeDateKey(getActiveDate()); // Normalize
-            if (dateKey && !AppData.challenge.completedDays.includes(dateKey)) {
+            if (dateKey && Array.isArray(AppData.challenge.completedDays) && !AppData.challenge.completedDays.includes(dateKey)) {
                 AppData.challenge.completedDays.push(dateKey);
                 AppData.challenge.currentDay++;
                 calculateStreak();
@@ -897,7 +897,7 @@ function renderTasks() {
     const allTasksChecked = Array.from(document.querySelectorAll('.task-checkbox')).every(cb => cb.checked);
     if (allTasksChecked && tasksToShow.length > 0) {
         const markDateKey = normalizeDateKey(getActiveDate());
-        if (markDateKey && !AppData.challenge.completedDays.includes(markDateKey)) {
+        if (markDateKey && Array.isArray(AppData.challenge.completedDays) && !AppData.challenge.completedDays.includes(markDateKey)) {
             AppData.challenge.completedDays.push(markDateKey);
             AppData.challenge.currentDay++;
             calculateStreak();
@@ -1152,7 +1152,7 @@ function checkDayCompletion() {
     const hasTasks = taskCheckboxes.length > 0;
 
     if (allCompleted && hasTasks) {
-        if (!AppData.challenge.completedDays.includes(dateKey)) {
+        if (Array.isArray(AppData.challenge.completedDays) && !AppData.challenge.completedDays.includes(dateKey)) {
             AppData.challenge.completedDays.push(dateKey);
             
             // Don't increment currentDay here - let syncChallengeByDates() handle it
@@ -1407,7 +1407,8 @@ function updateStreakDisplay() {
 
 function updateTodaySteps() {
     const steps = AppData.steps[getTodayKey()] || 0;
-    document.getElementById('stepsInput').value = steps || '';
+    const stepsInputEl = document.getElementById('stepsInput');
+    if (stepsInputEl) stepsInputEl.value = steps || '';
 }
 
 function updateTodayMood() {
@@ -1618,7 +1619,7 @@ function renderCalendar() {
         
         // Check if day is in challenge range
         const isInChallengeRange = isDayInChallengeRange(dayKey);
-        const isCompleted = AppData.challenge.completedDays.includes(dayKey);
+        const isCompleted = Array.isArray(AppData.challenge.completedDays) && AppData.challenge.completedDays.includes(dayKey);
         
         if (isCompleted) {
             dayDiv.classList.add('completed');
@@ -1806,6 +1807,7 @@ function renderGallery() {
     const galleryGrid = document.getElementById('galleryGrid');
     galleryGrid.innerHTML = '';
     
+    if (!Array.isArray(AppData.gallery)) return;
     AppData.gallery.forEach((photo, index) => {
         const item = document.createElement('div');
         item.className = 'gallery-item';
@@ -2113,7 +2115,7 @@ function checkBadges() {
     // Perfekcjonista - 10 dni z wszystkimi zadaniami (min 3)
     const perfectDays = Object.values(AppData.completedTasks).filter(tasks => {
         const count = Array.isArray(tasks) ? tasks.length : tasks;
-        return count >= AppData.tasks.length;
+        return count >= (AppData.tasks ? AppData.tasks.length : 0);
     }).length;
     if (perfectDays >= 10) {
         unlockBadge('perfectionist');
@@ -2749,7 +2751,7 @@ function initSyncUI() {
 
     // Update status on init and periodically
     updateSyncStatus();
-    setInterval(updateSyncStatus, 5000);
+    setInterval(updateSyncStatus, 10000);
 
     if (btnSyncNow) btnSyncNow.addEventListener('click', async () => {
         if (typeof window.syncNow === 'function') {
