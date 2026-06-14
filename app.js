@@ -1,8 +1,3 @@
-// FIX: Wymuszenie aktualizacji dla upartego cache w telefonie
-if (window.location.search.indexOf('v=') === -1) {
-    const newUrl = window.location.href + (window.location.href.indexOf('?') === -1 ? '?' : '&') + 'v=' + Date.now();
-    window.location.replace(newUrl);
-}
 // 🌸 Kawaii Quest - Complete JavaScript Application
 
 // ======================
@@ -105,7 +100,7 @@ const motivationalQuotes = [
     "Jesteś mocniejsza niż Twoje wymówki! 🦁",
     "Sukces wymaga poświęceń! 🏆",
     "Twoja wygoda = Twoja granica! 🔓",
-    "Każdy sekunda się liczy! ⏳",
+    "Każda sekunda się liczy! ⏳",
     "Nie czekaj na idealny moment - stwórz go! 🌟",
     "Zmęczenie jest tymczasowe, duma jest wieczna! 👑",
     "Twoje ciało osiągnie to, w co uwierzy Twój umysł! 🧠",
@@ -1063,9 +1058,7 @@ function scheduleDataReset() {
     }, delay);
 }
 
-
-function performDataReset() 
-{
+function performDataReset() {
     // Resetuj historię kroków, nastroju i nauki
     AppData.steps = {};
     AppData.mood = {};
@@ -1076,16 +1069,6 @@ function performDataReset()
         AppData.badges[badgeId] = { unlocked: false, isNew: false };
     });
     
-    // !!! TO JEST KLUCZOWY DODATEK !!!
-    // Nadpisujemy zasady na Twoje nowe, żeby po resecie zawsze były poprawne
-    AppData.settings.rules = [
-        { id: 'movement', title: 'Ruch', content: 'Codzienny zaplanowany ruch, minumum 7000 kroków dziennie.' },
-        { id: 'diet', title: 'Dieta', content: 'Codziennie zdrowy posiłek, zakaz kupowania słodyczy, jeden cheat meal w tygodniu, deficyt kaloryczny.' },
-        { id: 'water', title: 'Woda', content: 'Picie większej ilości wody niż dotychczas, rozpoczęcie dnia od wody.' },
-        { id: 'sleep', title: 'Sen', content: 'Minimum 7 godzin snu, pobudka około 8:30' },
-        { id: 'development', title: 'Rozwój', content: 'Ograniczenia tik toka i instagrama, regularne słuchanie książek, szydełkowanie, pisanie itp.' }
-    ];
-    
     // Usuń znaczniki czasu
     delete AppData.challenge.completionTime;
     delete AppData.challenge.resetScheduled;
@@ -1093,7 +1076,11 @@ function performDataReset()
     // Zachowaj postęp wyzwania, galerię i ustawienia
     saveData();
     updateAllDisplays();
+    
+    // USUNIĘTE: Powiadomienie - reset jest teraz tylko manualny
+    // showNotification('♻️ Historia danych i odznaki zostały zresetowane. Możesz rozpocząć nowy cykl!', 'success');
 }
+
 function checkScheduledReset() {
     if (AppData.challenge.resetScheduled) {
         const now = Date.now();
@@ -1649,55 +1636,6 @@ function renderCalendar() {
     }
 }
 
-function updateWorkoutsStats() {
-    const workoutsStatsCard = document.getElementById('workoutsStatsCard');
-    const circle = document.getElementById('workoutsCircle');
-    const percentEl = document.getElementById('workoutsPercent');
-    const labelEl = document.getElementById('workoutsLabel');
-    
-    if (!workoutsStatsCard || !circle || !percentEl || !labelEl) return;
-    
-    if (!AppData.settings.workoutsEnabled) {
-        workoutsStatsCard.style.display = 'none';
-        return;
-    }
-    
-    workoutsStatsCard.style.display = 'block';
-    
-    // ZBIERANIE DANYCH Z TRZECH ŹRÓDEŁ
-    // 1. Filmy (completedWorkouts)
-    let totalCompletions = 0;
-    if (AppData.completedWorkouts) {
-        Object.values(AppData.completedWorkouts).forEach(daily => {
-            totalCompletions += (Array.isArray(daily) ? daily.length : 0);
-        });
-    }
-    
-    // 2. Biegi (runLog) - każdy dzień z biegiem to +1 trening
-    if (AppData.runLog) {
-        Object.values(AppData.runLog).forEach(run => {
-            if (Number(run.distance) > 0 || Number(run.duration) > 0) totalCompletions += 1;
-        });
-    }
-    
-    // 3. Siłownia (workoutFocus) - każdy dzień z zaznaczoną partią to +1 trening
-    if (AppData.workoutFocus) {
-        Object.values(AppData.workoutFocus).forEach(focus => {
-            if (Array.isArray(focus) && focus.length > 0) totalCompletions += 1;
-        });
-    }
-    
-    const goal = AppData.settings.workoutsGoal || 150;
-    let percent = Math.min((totalCompletions / goal) * 100, 100);
-    percent = Math.max(0, percent);
-    
-    const circumference = 2 * Math.PI * 80;
-    const offset = circumference - (percent / 100) * circumference;
-    circle.style.strokeDashoffset = offset;
-    
-    percentEl.textContent = percent.toFixed(1) + '%';
-    labelEl.textContent = `${totalCompletions}/${goal}`;
-}
 // ======================
 // STATISTICS
 // ======================
@@ -1795,6 +1733,46 @@ function updateStudyChart() {
     document.getElementById('studyLabel').textContent = `${totalHours.toFixed(1)}/${goal}h`;
 }
 
+function updateWorkoutsStats() {
+    const workoutsStatsCard = document.getElementById('workoutsStatsCard');
+    const circle = document.getElementById('workoutsCircle');
+    const percentEl = document.getElementById('workoutsPercent');
+    const labelEl = document.getElementById('workoutsLabel');
+    
+    if (!workoutsStatsCard || !circle || !percentEl || !labelEl) return;
+    
+    // Show/hide card based on whether workouts are enabled
+    if (!AppData.settings.workoutsEnabled) {
+        workoutsStatsCard.style.display = 'none';
+        return;
+    }
+    
+    workoutsStatsCard.style.display = 'block';
+    
+    // Calculate total completed workouts during challenge
+    if (!AppData.completedWorkouts) {
+        AppData.completedWorkouts = {};
+    }
+    
+    // Count total workout completions (not unique)
+    const totalCompletions = Object.values(AppData.completedWorkouts).reduce((sum, dailyWorkouts) => sum + dailyWorkouts.length, 0);
+    
+    // Calculate percentage based on goal
+    const goal = AppData.settings.workoutsGoal || 150;
+    
+    let percent = 0;
+    if (goal > 0) {
+        percent = Math.min((totalCompletions / goal) * 100, 100);
+    }
+    percent = Math.max(0, percent);
+    
+    const circumference = 2 * Math.PI * 80;
+    const offset = circumference - (percent / 100) * circumference;
+    circle.style.strokeDashoffset = offset;
+    
+    percentEl.textContent = percent.toFixed(1) + '%';
+    labelEl.textContent = `${totalCompletions}/${goal}`;
+}
 
 // ======================
 // GALLERY
@@ -2069,18 +2047,9 @@ function checkBadges() {
     }
     
     // === TRENINGI ===
-    let totalWorkouts = Object.values(AppData.completedWorkouts).reduce((sum, workouts) => {
+    const totalWorkouts = Object.values(AppData.completedWorkouts).reduce((sum, workouts) => {
         return sum + (Array.isArray(workouts) ? workouts.length : (workouts || 0));
     }, 0);
-    
-    // Doliczamy biegi do odznak
-    if (AppData.runLog) {
-        totalWorkouts += Object.values(AppData.runLog).filter(run => Number(run.distance) > 0 || Number(run.duration) > 0).length;
-    }
-    // Doliczamy siłownię do odznak
-    if (AppData.workoutFocus) {
-        totalWorkouts += Object.values(AppData.workoutFocus).filter(parts => parts && parts.length > 0).length;
-    }
     
     if (totalWorkouts >= 1) {
         unlockBadge('workout-beginner');
@@ -2098,24 +2067,15 @@ function checkBadges() {
         unlockBadge('one-punch'); // One Punch Man reference!
     }
     
-    // Sprawdź 7-dniową passę treningową z uwzględnieniem biegu i siłowni
-    const workoutCheckDate = new Date();
+    // Sprawdź 7-dniową passę treningową
+    const today = new Date();
     let consecutiveWorkouts = 0;
     for (let i = 0; i < 7; i++) {
-        const checkDate = new Date(workoutCheckDate);
+        const checkDate = new Date(today);
         checkDate.setDate(checkDate.getDate() - i);
         const dateStr = checkDate.toISOString().split('T')[0];
-        
         const workoutsOnDay = AppData.completedWorkouts[dateStr];
-        const hasVideo = workoutsOnDay && (Array.isArray(workoutsOnDay) ? workoutsOnDay.length > 0 : workoutsOnDay > 0);
-        
-        const runOnDay = AppData.runLog && AppData.runLog[dateStr];
-        const hasRun = runOnDay && (Number(runOnDay.distance) > 0 || Number(runOnDay.duration) > 0);
-        
-        const focusOnDay = AppData.workoutFocus && AppData.workoutFocus[dateStr];
-        const hasGym = focusOnDay && focusOnDay.length > 0;
-        
-        if (hasVideo || hasRun || hasGym) {
+        if (workoutsOnDay && (Array.isArray(workoutsOnDay) ? workoutsOnDay.length > 0 : workoutsOnDay > 0)) {
             consecutiveWorkouts++;
         } else {
             break;
@@ -3080,17 +3040,9 @@ function exportDataAsHTML() {
     
     const totalStudyHours = Object.values(data.studyHours).reduce((sum, val) => sum + val, 0);
     
-    let totalWorkouts = Object.values(data.completedWorkouts || {}).reduce((sum, workouts) => {
+    const totalWorkouts = Object.values(data.completedWorkouts || {}).reduce((sum, workouts) => {
         return sum + (Array.isArray(workouts) ? workouts.length : (workouts || 0));
     }, 0);
-    
-    if (data.runLog) {
-        totalWorkouts += Object.values(data.runLog).filter(run => Number(run.distance) > 0 || Number(run.duration) > 0).length;
-    }
-    
-    if (data.workoutFocus) {
-        totalWorkouts += Object.values(data.workoutFocus).filter(parts => parts && parts.length > 0).length;
-    }
     
     const totalTasks = Object.values(data.completedTasks).reduce((sum, tasks) => {
         return sum + (Array.isArray(tasks) ? tasks.length : (tasks || 0));
@@ -4330,8 +4282,9 @@ function renderAllDayWorkouts() {
 // ========== RULES SYSTEM ==========
 
 function initRules() {
-    // Initialize default rules if not present
-    if (!AppData.settings.rules || AppData.settings.rules.length === 0) {
+    // Zawsze upewnij się że struktura rules istnieje - ale NIE nadpisuj istniejących zasad
+    // (użytkownik mógł je edytować w ustawieniach)
+    if (!AppData.settings.rules || !Array.isArray(AppData.settings.rules) || AppData.settings.rules.length === 0) {
         AppData.settings.rules = [
             { id: 'movement', title: 'Ruch', content: 'Codzienny zaplanowany ruch, minumum 7000 kroków dziennie.' },
             { id: 'diet', title: 'Dieta', content: 'Codziennie zdrowy posiłek, zakaz kupowania słodyczy, jeden cheat meal w tygodniu, deficyt kaloryczny.' },
@@ -4526,39 +4479,4 @@ function saveRule(index) {
 
 function cancelEditRule(index) {
     cancelEditRuleSetting(index);
-    // --- TWOJE NAPRAWIONE FUNKCJE ---
-
-function updateWorkoutsStats() {
-    const workoutsStatsCard = document.getElementById('workoutsStatsCard');
-    const circle = document.getElementById('workoutsCircle');
-    const percentEl = document.getElementById('workoutsPercent');
-    const labelEl = document.getElementById('workoutsLabel');
-    if (!workoutsStatsCard || !circle || !percentEl || !labelEl) return;
-    if (!AppData.settings.workoutsEnabled) { workoutsStatsCard.style.display = 'none'; return; }
-    workoutsStatsCard.style.display = 'block';
-    let totalCompletions = 0;
-    if (AppData.completedWorkouts) Object.values(AppData.completedWorkouts).forEach(d => totalCompletions += (Array.isArray(d) ? d.length : 0));
-    if (AppData.runLog) Object.values(AppData.runLog).forEach(r => { if (Number(r.distance) > 0 || Number(r.duration) > 0) totalCompletions += 1; });
-    if (AppData.workoutFocus) Object.values(AppData.workoutFocus).forEach(f => { if (Array.isArray(f) && f.length > 0) totalCompletions += 1; });
-    const goal = AppData.settings.workoutsGoal || 150;
-    let percent = Math.min((totalCompletions / goal) * 100, 100);
-    percent = Math.max(0, percent);
-    const circumference = 2 * Math.PI * 80;
-    circle.style.strokeDashoffset = circumference - (percent / 100) * circumference;
-    percentEl.textContent = percent.toFixed(1) + '%';
-    labelEl.textContent = `${totalCompletions}/${goal}`;
-}
-
-function initRules() {
-    AppData.settings.rules = [
-        { id: 'movement', title: 'Ruch', content: 'Codzienny zaplanowany ruch, minumum 7000 kroków dziennie.' },
-        { id: 'diet', title: 'Dieta', content: 'Codziennie zdrowy posiłek, zakaz kupowania słodyczy, jeden cheat meal w tygodniu, deficyt kaloryczny.' },
-        { id: 'water', title: 'Woda', content: 'Picie większej ilości wody niż dotychczas, rozpoczęcie dnia od wody.' },
-        { id: 'sleep', title: 'Sen', content: 'Minimum 7 godzin snu, pobudka około 8:30' },
-        { id: 'development', title: 'Rozwój', content: 'Ograniczenia tik toka i instagrama, regularne słuchanie książek, szydełkowanie, pisanie itp.' }
-    ];
-    if (AppData.settings.rulesAccepted === undefined) AppData.settings.rulesAccepted = false;
-    saveData();
-    renderRulesView();
-}
 }
