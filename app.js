@@ -1063,7 +1063,9 @@ function scheduleDataReset() {
     }, delay);
 }
 
-function performDataReset() {
+
+function performDataReset() 
+{
     // Resetuj historię kroków, nastroju i nauki
     AppData.steps = {};
     AppData.mood = {};
@@ -1074,6 +1076,16 @@ function performDataReset() {
         AppData.badges[badgeId] = { unlocked: false, isNew: false };
     });
     
+    // !!! TO JEST KLUCZOWY DODATEK !!!
+    // Nadpisujemy zasady na Twoje nowe, żeby po resecie zawsze były poprawne
+    AppData.settings.rules = [
+        { id: 'movement', title: 'Ruch', content: 'Codzienny zaplanowany ruch, minumum 7000 kroków dziennie.' },
+        { id: 'diet', title: 'Dieta', content: 'Codziennie zdrowy posiłek, zakaz kupowania słodyczy, jeden cheat meal w tygodniu, deficyt kaloryczny.' },
+        { id: 'water', title: 'Woda', content: 'Picie większej ilości wody niż dotychczas, rozpoczęcie dnia od wody.' },
+        { id: 'sleep', title: 'Sen', content: 'Minimum 7 godzin snu, pobudka około 8:30' },
+        { id: 'development', title: 'Rozwój', content: 'Ograniczenia tik toka i instagrama, regularne słuchanie książek, szydełkowanie, pisanie itp.' }
+    ];
+    
     // Usuń znaczniki czasu
     delete AppData.challenge.completionTime;
     delete AppData.challenge.resetScheduled;
@@ -1081,11 +1093,7 @@ function performDataReset() {
     // Zachowaj postęp wyzwania, galerię i ustawienia
     saveData();
     updateAllDisplays();
-    
-    // USUNIĘTE: Powiadomienie - reset jest teraz tylko manualny
-    // showNotification('♻️ Historia danych i odznaki zostały zresetowane. Możesz rozpocząć nowy cykl!', 'success');
 }
-
 function checkScheduledReset() {
     if (AppData.challenge.resetScheduled) {
         const now = Date.now();
@@ -4518,4 +4526,39 @@ function saveRule(index) {
 
 function cancelEditRule(index) {
     cancelEditRuleSetting(index);
+    // --- TWOJE NAPRAWIONE FUNKCJE ---
+
+function updateWorkoutsStats() {
+    const workoutsStatsCard = document.getElementById('workoutsStatsCard');
+    const circle = document.getElementById('workoutsCircle');
+    const percentEl = document.getElementById('workoutsPercent');
+    const labelEl = document.getElementById('workoutsLabel');
+    if (!workoutsStatsCard || !circle || !percentEl || !labelEl) return;
+    if (!AppData.settings.workoutsEnabled) { workoutsStatsCard.style.display = 'none'; return; }
+    workoutsStatsCard.style.display = 'block';
+    let totalCompletions = 0;
+    if (AppData.completedWorkouts) Object.values(AppData.completedWorkouts).forEach(d => totalCompletions += (Array.isArray(d) ? d.length : 0));
+    if (AppData.runLog) Object.values(AppData.runLog).forEach(r => { if (Number(r.distance) > 0 || Number(r.duration) > 0) totalCompletions += 1; });
+    if (AppData.workoutFocus) Object.values(AppData.workoutFocus).forEach(f => { if (Array.isArray(f) && f.length > 0) totalCompletions += 1; });
+    const goal = AppData.settings.workoutsGoal || 150;
+    let percent = Math.min((totalCompletions / goal) * 100, 100);
+    percent = Math.max(0, percent);
+    const circumference = 2 * Math.PI * 80;
+    circle.style.strokeDashoffset = circumference - (percent / 100) * circumference;
+    percentEl.textContent = percent.toFixed(1) + '%';
+    labelEl.textContent = `${totalCompletions}/${goal}`;
+}
+
+function initRules() {
+    AppData.settings.rules = [
+        { id: 'movement', title: 'Ruch', content: 'Codzienny zaplanowany ruch, minumum 7000 kroków dziennie.' },
+        { id: 'diet', title: 'Dieta', content: 'Codziennie zdrowy posiłek, zakaz kupowania słodyczy, jeden cheat meal w tygodniu, deficyt kaloryczny.' },
+        { id: 'water', title: 'Woda', content: 'Picie większej ilości wody niż dotychczas, rozpoczęcie dnia od wody.' },
+        { id: 'sleep', title: 'Sen', content: 'Minimum 7 godzin snu, pobudka około 8:30' },
+        { id: 'development', title: 'Rozwój', content: 'Ograniczenia tik toka i instagrama, regularne słuchanie książek, szydełkowanie, pisanie itp.' }
+    ];
+    if (AppData.settings.rulesAccepted === undefined) AppData.settings.rulesAccepted = false;
+    saveData();
+    renderRulesView();
+}
 }
