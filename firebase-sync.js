@@ -109,7 +109,8 @@ async function loginWithGoogle() {
     try {
         updateSyncStatus('syncing', 'Logowanie...', '⏳');
         if (typeof playClickSound === 'function') playClickSound();
-        await signInWithRedirect(auth, provider);
+        const result = await signInWithPopup(auth, provider);
+        // onAuthStateChanged zadba o resztę automatycznie
     } catch (error) {
         window.firebaseLastError = error.message;
         updateSyncStatus('error', 'Błąd logowania', '❌');
@@ -375,17 +376,6 @@ window.deleteDataFromFirestore = deleteDataFromFirestore;
 async function initFirebaseSync() {
     if (!hasFirebaseConfig || !auth || !db) return;
     
-    try {
-        const result = await getRedirectResult(auth);
-        if (result && result.user) {
-            updateSyncStatus('connected', 'Połączono', '✅');
-            if (typeof showNotification === 'function') showNotification('🎉 Zalogowano pomyślnie!', 'success');
-        }
-    } catch (error) {
-        window.firebaseLastError = error.message;
-        updateSyncStatus('error', 'Błąd logowania', '❌');
-    }
-
     setupAuthUI();
     onAuthStateChanged(auth, (user) => {
         if (user) onUserLogin(user);
