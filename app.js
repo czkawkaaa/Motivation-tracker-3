@@ -1650,26 +1650,32 @@ function updateWorkoutsStats() {
     }
     
     workoutsStatsCard.style.display = 'block';
-    if (!AppData.completedWorkouts) AppData.completedWorkouts = {};
     
-    // 1. Zlicz wideo i ćwiczenia z checkboxami
-    let totalCompletions = Object.values(AppData.completedWorkouts).reduce((sum, dailyWorkouts) => sum + dailyWorkouts.length, 0);
-    
-    // 2. Dodaj dni, w których zapisano bieg
-    if (AppData.runLog) {
-        totalCompletions += Object.values(AppData.runLog).filter(run => Number(run.distance) > 0 || Number(run.duration) > 0).length;
+    // ZBIERANIE DANYCH Z TRZECH ŹRÓDEŁ
+    // 1. Filmy (completedWorkouts)
+    let totalCompletions = 0;
+    if (AppData.completedWorkouts) {
+        Object.values(AppData.completedWorkouts).forEach(daily => {
+            totalCompletions += (Array.isArray(daily) ? daily.length : 0);
+        });
     }
     
-    // 3. Dodaj dni, w których kliknięto partie na siłowni
+    // 2. Biegi (runLog) - każdy dzień z biegiem to +1 trening
+    if (AppData.runLog) {
+        Object.values(AppData.runLog).forEach(run => {
+            if (Number(run.distance) > 0 || Number(run.duration) > 0) totalCompletions += 1;
+        });
+    }
+    
+    // 3. Siłownia (workoutFocus) - każdy dzień z zaznaczoną partią to +1 trening
     if (AppData.workoutFocus) {
-        totalCompletions += Object.values(AppData.workoutFocus).filter(parts => parts && parts.length > 0).length;
+        Object.values(AppData.workoutFocus).forEach(focus => {
+            if (Array.isArray(focus) && focus.length > 0) totalCompletions += 1;
+        });
     }
     
     const goal = AppData.settings.workoutsGoal || 150;
-    let percent = 0;
-    if (goal > 0) {
-        percent = Math.min((totalCompletions / goal) * 100, 100);
-    }
+    let percent = Math.min((totalCompletions / goal) * 100, 100);
     percent = Math.max(0, percent);
     
     const circumference = 2 * Math.PI * 80;
@@ -1679,7 +1685,6 @@ function updateWorkoutsStats() {
     percentEl.textContent = percent.toFixed(1) + '%';
     labelEl.textContent = `${totalCompletions}/${goal}`;
 }
-
 // ======================
 // STATISTICS
 // ======================
