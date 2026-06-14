@@ -4320,11 +4320,11 @@ function initRules() {
     // Initialize default rules if not present
     if (!AppData.settings.rules || AppData.settings.rules.length === 0) {
         AppData.settings.rules = [
-            { id: 'movement', title: 'Ruch', content: 'Codzienny trening, spacer minimum 20 minut i rozciąganie.' },
-            { id: 'diet', title: 'Dieta', content: 'Jeden zdrowy posiłek domowy dziennie, zero słodzonych napojów i ograniczenie niezdrowego jedzenia (jeden cheat meal na tydzień).' },
-            { id: 'water', title: 'Woda', content: 'Picie większej ilości wody niż dotychczas.' },
-            { id: 'sleep', title: 'Sen', content: 'Minimum 7 godzin snu.' },
-            { id: 'development', title: 'Rozwój', content: '10 minut czytania lub słuchania książki.' }
+            { id: 'movement', title: 'Ruch', content: 'Codzienny zaplanowany ruch, minumum 7000 kroków dziennie.' },
+            { id: 'diet', title: 'Dieta', content: 'Codziennie zdrowy posiłek, zakaz kupowania słodyczy, jeden cheat meal w tygodniu, deficyt kaloryczny.' },
+            { id: 'water', title: 'Woda', content: 'Picie większej ilości wody niż dotychczas, rozpoczęcie dnia od wody.' },
+            { id: 'sleep', title: 'Sen', content: 'Minimum 7 godzin snu, pobudka około 8:30' },
+            { id: 'development', title: 'Rozwój', content: 'Ograniczenia tik toka i instagrama, regularne słuchanie książek, szydełkowanie, pisanie itp.' }
         ];
         saveData();
     }
