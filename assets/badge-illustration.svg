@@ -1,12 +1,51 @@
-<svg width="160" height="160" viewBox="0 0 160 160" fill="none" xmlns="http://www.w3.org/2000/svg">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="100%" height="100%">
   <defs>
-    <linearGradient id="g" x1="30" y1="18" x2="130" y2="145" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#FF9AC2"/>
-      <stop offset="1" stop-color="#7CC7FF"/>
-    </linearGradient>
+    <!-- Estetyczny, miękki cień, żeby odznaka wyglądała jak naklejka/przypinka -->
+    <filter id="soft-glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="15" stdDeviation="20" flood-color="#FFB6C1" flood-opacity="0.3" />
+    </filter>
+    
+    <!-- Ulubiony efekt ziarna (vintage/pinterest grain) nakładany na całość -->
+    <filter id="grain">
+      <feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" result="noise" />
+      <feColorMatrix type="matrix" values="0 0 0 0 0   0 0 0 0 0   0 0 0 0 0  0 0 0 0.06 0" in="noise" result="coloredNoise" />
+      <feBlend in="SourceGraphic" in2="coloredNoise" mode="multiply" />
+    </filter>
   </defs>
-  <circle cx="80" cy="80" r="70" fill="url(#g)" fill-opacity="0.14"/>
-  <path d="M80 10L98 35L126 40L107 58L111 87L80 75L49 87L53 58L34 40L62 35L80 10Z" fill="url(#g)"/>
-  <circle cx="80" cy="48" r="12" fill="white" fill-opacity="0.95"/>
-  <path d="M56 88C62 71 73 62 80 62C87 62 98 71 104 88" stroke="white" stroke-width="6" stroke-linecap="round"/>
+
+  <!-- Jasne, kremowe tło z teksturą papieru -->
+  <rect width="100%" height="100%" fill="#FCFAFA" rx="20" filter="url(#grain)"/>
+
+  <!-- Warstwa z miękkim cieniem dla głównej grafiki -->
+  <g filter="url(#soft-glow)">
+    
+    <!-- Pastelowe wstążki odznaki -->
+    <path d="M 180 250 L 130 410 L 210 370 L 250 250 Z" fill="#FFE4E8" />
+    <path d="M 320 250 L 370 410 L 290 370 L 250 250 Z" fill="#FFD6E0" />
+    <path d="M 160 410 L 130 410 L 210 370 Z" fill="#FFC0CB" opacity="0.6" />
+    <path d="M 340 410 L 370 410 L 290 370 Z" fill="#FFB6C1" opacity="0.6" />
+    
+    <!-- Tarcza odznaki -->
+    <circle cx="250" cy="220" r="100" fill="#FFFFFF" />
+    <circle cx="250" cy="220" r="85" fill="#FFB6C1" />
+    <circle cx="250" cy="220" r="75" fill="#FF9AC2" />
+
+    <!-- Duża, urocza gwiazdka osiągnięć w środku -->
+    <path d="M 250 160 L 265 195 L 305 200 L 275 225 L 285 260 L 250 240 L 215 260 L 225 225 L 195 200 L 235 195 Z" fill="#FFFFFF" />
+  </g>
+
+  <!-- Pływające bańki (soft girl aesthetic) -->
+  <circle cx="90" cy="230" r="20" fill="#FFE4E8" opacity="0.7" />
+  <circle cx="410" cy="280" r="30" fill="#FFD6E0" opacity="0.5" />
+  <circle cx="360" cy="80" r="12" fill="#FFB6C1" opacity="0.5" />
+
+  <!-- Estetyczne gwiazdki iskierki (Sparkles ✨) -->
+  <path d="M 130 110 Q 145 110 145 95 Q 145 110 160 110 Q 145 110 145 125 Q 145 110 130 110 Z" fill="#FFB6C1" />
+  <path d="M 380 150 Q 395 150 395 135 Q 395 150 410 150 Q 395 150 395 165 Q 395 150 380 150 Z" fill="#FF9AC2" />
+  <path d="M 160 320 Q 168 320 168 312 Q 168 320 176 320 Q 168 320 168 328 Q 168 320 160 320 Z" fill="#FFC0CB" />
+  
+  <!-- Delikatne krzyżyki/gwiazdki jako wypełnienie pustości -->
+  <path d="M 390 350 L 395 365 L 410 370 L 395 375 L 390 390 L 385 375 L 370 370 L 385 365 Z" fill="none" stroke="#FF9AC2" stroke-width="2" />
+  <path d="M 80 340 L 83 350 L 93 353 L 83 356 L 80 366 L 77 356 L 67 353 L 77 350 Z" fill="none" stroke="#FFB6C1" stroke-width="2" />
+
 </svg>
