@@ -1,3 +1,8 @@
+// FIX: Wymuszenie aktualizacji dla upartego cache w telefonie
+if (window.location.search.indexOf('v=') === -1) {
+    const newUrl = window.location.href + (window.location.href.indexOf('?') === -1 ? '?' : '&') + 'v=' + Date.now();
+    window.location.replace(newUrl);
+}
 // 🌸 Kawaii Quest - Complete JavaScript Application
 
 // ======================
