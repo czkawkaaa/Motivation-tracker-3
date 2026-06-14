@@ -81,7 +81,51 @@
                     </div>
                 </section>
                 <section class="hero-card hero-visual">
-                    <img src="assets/challenge-hero.svg" alt="Ilustracja wyzwania i motywacji">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="100%" height="100%" style="display: block; max-height: 400px; margin: 0 auto;">
+                      <defs>
+                        <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+                          <feDropShadow dx="0" dy="15" stdDeviation="15" flood-color="var(--primary-color)" flood-opacity="0.3" />
+                        </filter>
+                        <filter id="noise">
+                          <feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="3" stitchTiles="stitch"/>
+                          <feColorMatrix type="matrix" values="0 0 0 0 0, 0 0 0 0 0, 0 0 0 0 0, 0 0 0 0.12 0" />
+                        </filter>
+                      </defs>
+
+                      <g filter="url(#shadow)">
+                        <path d="M 160 380 L 130 460" stroke="#B0BEC5" stroke-width="24" stroke-linecap="round" />
+                        <path d="M 340 380 L 370 460" stroke="#B0BEC5" stroke-width="24" stroke-linecap="round" />
+                        <circle cx="130" cy="460" r="12" fill="#90A4AE" />
+                        <circle cx="370" cy="460" r="12" fill="#90A4AE" />
+                        <path d="M 160 140 L 140 80" stroke="#B0BEC5" stroke-width="14" stroke-linecap="round" />
+                        <path d="M 340 140 L 360 80" stroke="#B0BEC5" stroke-width="14" stroke-linecap="round" />
+                        <path d="M 40 110 C 40 20 180 20 200 90 Z" fill="var(--primary-color)" transform="rotate(-20 120 80)" />
+                        <path d="M 300 90 C 320 20 460 20 460 110 Z" fill="var(--primary-color)" transform="rotate(20 380 80)" />
+
+                        <g stroke="var(--text-primary)" stroke-width="4" stroke-linecap="round" fill="none" opacity="0.4">
+                          <path d="M 50 40 C 30 60 20 80 20 110" />
+                          <path d="M 25 25 C 0 50 -10 80 -10 120" />
+                          <path d="M 450 40 C 470 60 480 80 480 110" />
+                          <path d="M 475 25 C 500 50 510 80 510 120" />
+                        </g>
+
+                        <path d="M 250 110 L 250 50" stroke="#B0BEC5" stroke-width="8" />
+                        <rect x="230" y="40" width="40" height="18" rx="6" fill="var(--primary-color)" />
+                        <path d="M 250 140 C 250 140 20 20 20 220 C 20 360 250 470 250 470 C 250 470 480 360 480 220 C 480 20 250 140 250 140 Z" fill="var(--primary-color)" />
+                        <path d="M 250 150 C 250 150 40 40 40 220 C 40 345 250 455 250 455 C 250 455 460 345 460 220 C 460 40 250 150 250 150 Z" fill="var(--card-bg)" opacity="0.4" />
+                        <path d="M 250 170 C 250 170 70 80 70 220 C 70 325 250 425 250 425 C 250 425 430 325 430 220 C 430 80 250 170 250 170 Z" fill="var(--card-bg)" />
+                              
+                        <g font-family="'Courier New', Courier, 'Arial Black', sans-serif" font-weight="900" font-size="34" fill="var(--text-primary)" text-anchor="middle">
+                          <text x="250" y="240" letter-spacing="1">TIME TO</text>
+                          <text x="250" y="295" letter-spacing="1">PUT YOURSELF</text>
+                          <text x="250" y="350" letter-spacing="3">FIRST</text>
+                        </g>
+                      </g>
+
+                      <path d="M 80 280 Q 95 280 95 265 Q 95 280 110 280 Q 95 280 95 295 Q 95 280 80 280 Z" fill="var(--primary-color)" opacity="0.8" />
+                      <path d="M 420 160 Q 430 160 430 150 Q 430 160 440 160 Q 430 160 430 170 Q 430 160 420 160 Z" fill="var(--primary-color)" opacity="0.8" />
+                      <rect x="0" y="0" width="100%" height="100%" filter="url(#noise)" style="pointer-events: none;" />
+                    </svg>
                 </section>
             </div>
 
@@ -94,22 +138,30 @@
                             <h2>🎯 Wyzwanie</h2>
                             <p class="challenge-note">Twój progres wygląda lepiej, kiedy masz jasny rytm i wizualny feedback.</p>
                         </div>
-                       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="120" height="120" style="display: block; margin: 0 auto;">
-  <rect x="15" y="25" width="70" height="60" rx="14" fill="var(--card-bg, #ffffff)" stroke="currentColor" stroke-width="3" opacity="0.9" />
-  
-  <path d="M15 39 C15 31.268 21.268 25 29 25 L71 25 C78.732 25 85 31.268 85 39 L85 45 L15 45 Z" fill="currentColor" opacity="0.15" />
-  
-  <rect x="30" y="15" width="6" height="16" rx="3" fill="currentColor" opacity="0.4" />
-  <rect x="64" y="15" width="6" height="16" rx="3" fill="currentColor" opacity="0.4" />
-  
-  <rect x="25" y="52" width="12" height="10" rx="4" fill="currentColor" opacity="0.1" />
-  <rect x="44" y="52" width="12" height="10" rx="4" fill="currentColor" opacity="0.5" /> <rect x="63" y="52" width="12" height="10" rx="4" fill="currentColor" opacity="0.1" />
-  <rect x="25" y="66" width="12" height="10" rx="4" fill="currentColor" opacity="0.1" />
-  <rect x="44" y="66" width="12" height="10" rx="4" fill="currentColor" opacity="0.1" />
-  <rect x="63" y="66" width="12" height="10" rx="4" fill="currentColor" opacity="0.1" />
-  
-  <path d="M47 56 Q50 59 53 56" fill="none" stroke="var(--card-bg, #ffffff)" stroke-width="1.5" stroke-linecap="round"/>
-</svg>
+                       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="120" height="120" style="display: block; margin: 0 auto; filter: drop-shadow(0px 8px 16px var(--primary-color));">
+                          <rect x="5" y="5" width="90" height="90" rx="22" fill="var(--card-bg)" opacity="0.8" />
+                          <rect x="5" y="5" width="90" height="90" rx="22" fill="var(--primary-color)" opacity="0.2" />
+                          
+                          <rect x="20" y="25" width="60" height="55" rx="8" fill="var(--card-bg)" />
+                          <rect x="26" y="42" width="48" height="32" rx="4" fill="var(--primary-color)" opacity="0.5" />
+                          
+                          <g fill="var(--card-bg)">
+                            <rect x="30" y="46" width="6" height="6" rx="2" />
+                            <rect x="42" y="46" width="6" height="6" rx="2" />
+                            <rect x="54" y="46" width="6" height="6" rx="2" />
+                            <rect x="66" y="46" width="6" height="6" rx="2" />
+                            <rect x="30" y="56" width="6" height="6" rx="2" />
+                            <rect x="42" y="56" width="6" height="6" rx="2" />
+                            <rect x="54" y="56" width="6" height="6" rx="2" />
+                            <rect x="66" y="56" width="6" height="6" rx="2" />
+                            <rect x="30" y="66" width="6" height="6" rx="2" />
+                            <rect x="42" y="66" width="6" height="6" rx="2" />
+                            <rect x="54" y="66" width="6" height="6" rx="2" />
+                          </g>
+                          
+                          <rect x="32" y="16" width="6" height="16" rx="3" fill="var(--text-primary)" opacity="0.3" />
+                          <rect x="62" y="16" width="6" height="16" rx="3" fill="var(--text-primary)" opacity="0.3" />
+                        </svg>
                     </div>
                     <div class="challenge-progress">
                         <div class="progress-bar-large">
@@ -405,7 +457,37 @@
                     <p>Każda odznaka to mały moment „to było warte tego”, a cały panel zyskuje bardziej premium wygląd.</p>
                 </section>
                 <section class="hero-card hero-visual">
-                    <img src="assets/badge-illustration.svg" alt="Ilustracja odznak i sukcesu">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="100%" height="100%" style="display: block; max-height: 250px; margin: 0 auto;">
+                      <defs>
+                        <filter id="soft-glow-badge" x="-20%" y="-20%" width="140%" height="140%">
+                          <feDropShadow dx="0" dy="15" stdDeviation="20" flood-color="var(--primary-color)" flood-opacity="0.3" />
+                        </filter>
+                        <filter id="grain-badge">
+                          <feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" result="noise" />
+                          <feColorMatrix type="matrix" values="0 0 0 0 0   0 0 0 0 0   0 0 0 0 0  0 0 0 0.06 0" in="noise" result="coloredNoise" />
+                          <feBlend in="SourceGraphic" in2="coloredNoise" mode="multiply" />
+                        </filter>
+                      </defs>
+
+                      <rect width="100%" height="100%" fill="var(--card-bg)" rx="20" filter="url(#grain-badge)"/>
+
+                      <g filter="url(#soft-glow-badge)">
+                        <path d="M 180 250 L 130 410 L 210 370 L 250 250 Z" fill="var(--primary-color)" opacity="0.2" />
+                        <path d="M 320 250 L 370 410 L 290 370 L 250 250 Z" fill="var(--primary-color)" opacity="0.4" />
+                        <path d="M 160 410 L 130 410 L 210 370 Z" fill="var(--primary-color)" opacity="0.6" />
+                        <path d="M 340 410 L 370 410 L 290 370 Z" fill="var(--primary-color)" opacity="0.6" />
+                        
+                        <circle cx="250" cy="220" r="100" fill="var(--card-bg)" />
+                        <circle cx="250" cy="220" r="85" fill="var(--primary-color)" opacity="0.6" />
+                        <circle cx="250" cy="220" r="75" fill="var(--primary-color)" />
+
+                        <path d="M 250 160 L 265 195 L 305 200 L 275 225 L 285 260 L 250 240 L 215 260 L 225 225 L 195 200 L 235 195 Z" fill="var(--card-bg)" />
+                      </g>
+
+                      <path d="M 130 110 Q 145 110 145 95 Q 145 110 160 110 Q 145 110 145 125 Q 145 110 130 110 Z" fill="var(--primary-color)" opacity="0.8"/>
+                      <path d="M 380 150 Q 395 150 395 135 Q 395 150 410 150 Q 395 150 380 150 Z" fill="var(--primary-color)" opacity="0.9"/>
+                      <path d="M 160 320 Q 168 320 168 312 Q 168 320 176 320 Q 168 320 168 328 Q 168 320 160 320 Z" fill="var(--primary-color)" />
+                    </svg>
                 </section>
             </div>
             <div class="badges-grid">
