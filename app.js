@@ -100,7 +100,7 @@ const motivationalQuotes = [
     "Jesteś mocniejsza niż Twoje wymówki! 🦁",
     "Sukces wymaga poświęceń! 🏆",
     "Twoja wygoda = Twoja granica! 🔓",
-    "Każda sekunda się liczy! ⏳",
+    "Każdy sekunda się liczy! ⏳",
     "Nie czekaj na idealny moment - stwórz go! 🌟",
     "Zmęczenie jest tymczasowe, duma jest wieczna! 👑",
     "Twoje ciało osiągnie to, w co uwierzy Twój umysł! 🧠",
@@ -1636,6 +1636,50 @@ function renderCalendar() {
     }
 }
 
+function updateWorkoutsStats() {
+    const workoutsStatsCard = document.getElementById('workoutsStatsCard');
+    const circle = document.getElementById('workoutsCircle');
+    const percentEl = document.getElementById('workoutsPercent');
+    const labelEl = document.getElementById('workoutsLabel');
+    
+    if (!workoutsStatsCard || !circle || !percentEl || !labelEl) return;
+    
+    if (!AppData.settings.workoutsEnabled) {
+        workoutsStatsCard.style.display = 'none';
+        return;
+    }
+    
+    workoutsStatsCard.style.display = 'block';
+    if (!AppData.completedWorkouts) AppData.completedWorkouts = {};
+    
+    // 1. Zlicz wideo i ćwiczenia z checkboxami
+    let totalCompletions = Object.values(AppData.completedWorkouts).reduce((sum, dailyWorkouts) => sum + dailyWorkouts.length, 0);
+    
+    // 2. Dodaj dni, w których zapisano bieg
+    if (AppData.runLog) {
+        totalCompletions += Object.values(AppData.runLog).filter(run => Number(run.distance) > 0 || Number(run.duration) > 0).length;
+    }
+    
+    // 3. Dodaj dni, w których kliknięto partie na siłowni
+    if (AppData.workoutFocus) {
+        totalCompletions += Object.values(AppData.workoutFocus).filter(parts => parts && parts.length > 0).length;
+    }
+    
+    const goal = AppData.settings.workoutsGoal || 150;
+    let percent = 0;
+    if (goal > 0) {
+        percent = Math.min((totalCompletions / goal) * 100, 100);
+    }
+    percent = Math.max(0, percent);
+    
+    const circumference = 2 * Math.PI * 80;
+    const offset = circumference - (percent / 100) * circumference;
+    circle.style.strokeDashoffset = offset;
+    
+    percentEl.textContent = percent.toFixed(1) + '%';
+    labelEl.textContent = `${totalCompletions}/${goal}`;
+}
+
 // ======================
 // STATISTICS
 // ======================
@@ -1733,46 +1777,6 @@ function updateStudyChart() {
     document.getElementById('studyLabel').textContent = `${totalHours.toFixed(1)}/${goal}h`;
 }
 
-function updateWorkoutsStats() {
-    const workoutsStatsCard = document.getElementById('workoutsStatsCard');
-    const circle = document.getElementById('workoutsCircle');
-    const percentEl = document.getElementById('workoutsPercent');
-    const labelEl = document.getElementById('workoutsLabel');
-    
-    if (!workoutsStatsCard || !circle || !percentEl || !labelEl) return;
-    
-    // Show/hide card based on whether workouts are enabled
-    if (!AppData.settings.workoutsEnabled) {
-        workoutsStatsCard.style.display = 'none';
-        return;
-    }
-    
-    workoutsStatsCard.style.display = 'block';
-    
-    // Calculate total completed workouts during challenge
-    if (!AppData.completedWorkouts) {
-        AppData.completedWorkouts = {};
-    }
-    
-    // Count total workout completions (not unique)
-    const totalCompletions = Object.values(AppData.completedWorkouts).reduce((sum, dailyWorkouts) => sum + dailyWorkouts.length, 0);
-    
-    // Calculate percentage based on goal
-    const goal = AppData.settings.workoutsGoal || 150;
-    
-    let percent = 0;
-    if (goal > 0) {
-        percent = Math.min((totalCompletions / goal) * 100, 100);
-    }
-    percent = Math.max(0, percent);
-    
-    const circumference = 2 * Math.PI * 80;
-    const offset = circumference - (percent / 100) * circumference;
-    circle.style.strokeDashoffset = offset;
-    
-    percentEl.textContent = percent.toFixed(1) + '%';
-    labelEl.textContent = `${totalCompletions}/${goal}`;
-}
 
 // ======================
 // GALLERY
@@ -2047,9 +2051,18 @@ function checkBadges() {
     }
     
     // === TRENINGI ===
-    const totalWorkouts = Object.values(AppData.completedWorkouts).reduce((sum, workouts) => {
+    let totalWorkouts = Object.values(AppData.completedWorkouts).reduce((sum, workouts) => {
         return sum + (Array.isArray(workouts) ? workouts.length : (workouts || 0));
     }, 0);
+    
+    // Doliczamy biegi do odznak
+    if (AppData.runLog) {
+        totalWorkouts += Object.values(AppData.runLog).filter(run => Number(run.distance) > 0 || Number(run.duration) > 0).length;
+    }
+    // Doliczamy siłownię do odznak
+    if (AppData.workoutFocus) {
+        totalWorkouts += Object.values(AppData.workoutFocus).filter(parts => parts && parts.length > 0).length;
+    }
     
     if (totalWorkouts >= 1) {
         unlockBadge('workout-beginner');
@@ -2067,15 +2080,24 @@ function checkBadges() {
         unlockBadge('one-punch'); // One Punch Man reference!
     }
     
-    // Sprawdź 7-dniową passę treningową
-    const today = new Date();
+    // Sprawdź 7-dniową passę treningową z uwzględnieniem biegu i siłowni
+    const workoutCheckDate = new Date();
     let consecutiveWorkouts = 0;
     for (let i = 0; i < 7; i++) {
-        const checkDate = new Date(today);
+        const checkDate = new Date(workoutCheckDate);
         checkDate.setDate(checkDate.getDate() - i);
         const dateStr = checkDate.toISOString().split('T')[0];
+        
         const workoutsOnDay = AppData.completedWorkouts[dateStr];
-        if (workoutsOnDay && (Array.isArray(workoutsOnDay) ? workoutsOnDay.length > 0 : workoutsOnDay > 0)) {
+        const hasVideo = workoutsOnDay && (Array.isArray(workoutsOnDay) ? workoutsOnDay.length > 0 : workoutsOnDay > 0);
+        
+        const runOnDay = AppData.runLog && AppData.runLog[dateStr];
+        const hasRun = runOnDay && (Number(runOnDay.distance) > 0 || Number(runOnDay.duration) > 0);
+        
+        const focusOnDay = AppData.workoutFocus && AppData.workoutFocus[dateStr];
+        const hasGym = focusOnDay && focusOnDay.length > 0;
+        
+        if (hasVideo || hasRun || hasGym) {
             consecutiveWorkouts++;
         } else {
             break;
@@ -3040,9 +3062,17 @@ function exportDataAsHTML() {
     
     const totalStudyHours = Object.values(data.studyHours).reduce((sum, val) => sum + val, 0);
     
-    const totalWorkouts = Object.values(data.completedWorkouts || {}).reduce((sum, workouts) => {
+    let totalWorkouts = Object.values(data.completedWorkouts || {}).reduce((sum, workouts) => {
         return sum + (Array.isArray(workouts) ? workouts.length : (workouts || 0));
     }, 0);
+    
+    if (data.runLog) {
+        totalWorkouts += Object.values(data.runLog).filter(run => Number(run.distance) > 0 || Number(run.duration) > 0).length;
+    }
+    
+    if (data.workoutFocus) {
+        totalWorkouts += Object.values(data.workoutFocus).filter(parts => parts && parts.length > 0).length;
+    }
     
     const totalTasks = Object.values(data.completedTasks).reduce((sum, tasks) => {
         return sum + (Array.isArray(tasks) ? tasks.length : (tasks || 0));
@@ -4479,4 +4509,3 @@ function saveRule(index) {
 function cancelEditRule(index) {
     cancelEditRuleSetting(index);
 }
-
