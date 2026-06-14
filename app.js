@@ -4284,7 +4284,13 @@ function renderAllDayWorkouts() {
 function initRules() {
     // Zawsze upewnij się że struktura rules istnieje - ale NIE nadpisuj istniejących zasad
     // (użytkownik mógł je edytować w ustawieniach)
-    if (!AppData.settings.rules || !Array.isArray(AppData.settings.rules) || AppData.settings.rules.length === 0) {
+    // Wersja zasad - zwiększ tę liczbę kiedy chcesz wymusić aktualizację zasad na wszystkich urządzeniach
+    const RULES_VERSION = 2;
+
+    const currentRulesVersion = AppData.settings.rulesVersion || 1;
+    const rulesOutdated = !AppData.settings.rules || !Array.isArray(AppData.settings.rules) || AppData.settings.rules.length === 0 || currentRulesVersion < RULES_VERSION;
+
+    if (rulesOutdated) {
         AppData.settings.rules = [
             { id: 'movement', title: 'Ruch', content: 'Codzienny zaplanowany ruch, minumum 7000 kroków dziennie.' },
             { id: 'diet', title: 'Dieta', content: 'Codziennie zdrowy posiłek, zakaz kupowania słodyczy, jeden cheat meal w tygodniu, deficyt kaloryczny.' },
@@ -4292,6 +4298,7 @@ function initRules() {
             { id: 'sleep', title: 'Sen', content: 'Minimum 7 godzin snu, pobudka około 8:30' },
             { id: 'development', title: 'Rozwój', content: 'Ograniczenia tik toka i instagrama, regularne słuchanie książek, szydełkowanie, pisanie itp.' }
         ];
+        AppData.settings.rulesVersion = RULES_VERSION;
         saveData();
     }
     
