@@ -76,7 +76,19 @@ function smartMergeData(local, cloud, cloudLastModified = 0) {
         };
     }
     merged.badges = { ...(local.badges || {}), ...(cloud.badges || {}) };
-    merged.gallery = Array.isArray(local.gallery) || Array.isArray(cloud.gallery) ? Array.from(new Set([...(local.gallery || []), ...(cloud.gallery || [])])) : (cloud.gallery || local.gallery);
+    // Deduplikacja zdjęć - Set nie działa dla długich stringów base64, używamy odcisku palca
+    if (Array.isArray(local.gallery) || Array.isArray(cloud.gallery)) {
+        const allPhotos = [...(local.gallery || []), ...(cloud.gallery || [])];
+        const seen = new Set();
+        merged.gallery = allPhotos.filter(photo => {
+            const key = typeof photo === 'string' ? photo.substring(0, 50) : JSON.stringify(photo).substring(0, 50);
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+        });
+    } else {
+        merged.gallery = cloud.gallery || local.gallery;
+    }
     if (cloudLastModified > (local.lastModified || 0)) merged.settings = { ...(local.settings || {}), ...(cloud.settings || {}) };
     else merged.settings = { ...(cloud.settings || {}), ...(local.settings || {}) };
     merged.streak = Math.max(cloud.streak || 0, local.streak || 0);
@@ -231,29 +243,73 @@ async function loadDataFromFirestore() {
 }
 
 async function syncNow() {
-    if (!currentUser) return await saveDataToFirestore();
-    await loadDataFromFirestore();
-    await saveDataToFirestore();
+    if (!currentUser) {
+        // Brak zalogowania - zapisz tylko lokalnie, cicho
+        if (typeof AppData !== 'undefined') {
+            AppData.lastModified = Date.now();
+            localStorage.setItem('kawaiiQuestData', JSON.stringify(AppData));
+        }
+        return;
+    }
+    updateSyncStatus('syncing', 'Synchronizacja...', '🔄');
+    try {
+        await loadDataFromFirestore();
+        await saveDataToFirestore();
+        updateSyncStatus('connected', 'Zsynchronizowano', '✅');
+    } catch (error) {
+        window.firebaseLastError = error.message;
+        updateSyncStatus('error', 'Błąd synchronizacji', '❌');
+    }
 }
 
 async function forcePull() {
-    if (!currentUser) return;
-    const docRef = doc(db, 'users', currentUser.uid);
-    const docSnap = await getDoc(docRef);
-    if (docSnap.exists()) {
-        const cloud = docSnap.data();
-        if (cloud.data) {
-            const merged = smartMergeData(AppData, cloud.data, cloud.lastModified || 0);
-            Object.assign(AppData, merged);
-            localStorage.setItem('kawaiiQuestData', JSON.stringify(AppData));
-            if (typeof updateAllDisplays === 'function') updateAllDisplays();
+    if (!currentUser) {
+        if (typeof showNotification === 'function') showNotification('⚠️ Musisz być zalogowany aby pobrać dane z chmury', 'warning');
+        return;
+    }
+    updateSyncStatus('syncing', 'Pobieranie z chmury...', '⬇️');
+    try {
+        const docRef = doc(db, 'users', currentUser.uid);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+            const cloud = docSnap.data();
+            if (cloud.data) {
+                const merged = smartMergeData(AppData, cloud.data, cloud.lastModified || 0);
+                Object.assign(AppData, merged);
+                localStorage.setItem('kawaiiQuestData', JSON.stringify(AppData));
+                if (typeof updateAllDisplays === 'function') updateAllDisplays();
+                updateSyncStatus('connected', 'Dane pobrane!', '✅');
+                if (typeof showNotification === 'function') showNotification('✅ Dane pobrane z chmury!', 'success');
+            } else {
+                updateSyncStatus('error', 'Brak danych w chmurze', '❌');
+                if (typeof showNotification === 'function') showNotification('⚠️ Brak danych w chmurze do pobrania', 'warning');
+            }
+        } else {
+            updateSyncStatus('error', 'Brak danych w chmurze', '❌');
+            if (typeof showNotification === 'function') showNotification('⚠️ Nie znaleziono danych w chmurze', 'warning');
         }
+    } catch (error) {
+        window.firebaseLastError = error.message;
+        updateSyncStatus('error', 'Błąd pobierania', '❌');
+        if (typeof showNotification === 'function') showNotification('❌ Błąd pobierania: ' + error.message, 'error');
     }
 }
 
 async function forcePush() {
-    if (!currentUser) return;
-    await saveDataToFirestore();
+    if (!currentUser) {
+        if (typeof showNotification === 'function') showNotification('⚠️ Musisz być zalogowany aby wysłać dane do chmury', 'warning');
+        return;
+    }
+    updateSyncStatus('syncing', 'Wysyłanie do chmury...', '⬆️');
+    try {
+        await saveDataToFirestore();
+        updateSyncStatus('connected', 'Dane wysłane!', '✅');
+        if (typeof showNotification === 'function') showNotification('✅ Dane wysłane do chmury!', 'success');
+    } catch (error) {
+        window.firebaseLastError = error.message;
+        updateSyncStatus('error', 'Błąd wysyłania', '❌');
+        if (typeof showNotification === 'function') showNotification('❌ Błąd wysyłania: ' + error.message, 'error');
+    }
 }
 
 window.syncNow = syncNow;
