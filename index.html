@@ -96,6 +96,32 @@
             font-size: 0.7rem !important;
             padding: 0.3rem 0.7rem !important;
         }
+        /* --- STYLE DLA PRZECIĄGANIA ZADAŃ --- */
+        .drag-handle-injected {
+            display: flex;
+            align-items: center;
+            transition: transform 0.1s ease;
+            margin-bottom: 0.5rem;
+        }
+        .drag-handle-injected.dragging {
+            opacity: 0.4;
+            background: var(--hover-bg);
+            border: 2px dashed var(--primary-color);
+            transform: scale(0.98);
+            border-radius: 8px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+        }
+        .task-drag-handle {
+            cursor: grab;
+            padding: 0 10px 0 0;
+            color: var(--text-secondary);
+            font-size: 1.2rem;
+            user-select: none;
+            touch-action: none;
+        }
+        .task-drag-handle:active {
+            cursor: grabbing;
+        }
     </style>
 </head>
 <body class="theme-pink">
@@ -1269,5 +1295,87 @@
     <script type="module" src="firebase-config.js"></script>
     <script type="module" src="firebase-sync.js"></script>
     <script src="app.js"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const list = document.getElementById('editTasksList');
+        if (!list) return;
+
+        let draggedItem = null;
+
+        // 1. Zdarzenia przeciągania na liście
+        list.addEventListener('dragstart', (e) => {
+            draggedItem = e.target.closest('.drag-handle-injected');
+            if (!draggedItem) return;
+            
+            setTimeout(() => {
+                draggedItem.classList.add('dragging');
+            }, 0);
+        });
+
+        list.addEventListener('dragend', () => {
+            if (!draggedItem) return;
+            draggedItem.classList.remove('dragging');
+            // Wyłączamy przeciąganie, żeby móc znów pisać w inputach
+            draggedItem.setAttribute('draggable', 'false');
+            draggedItem = null;
+        });
+
+        list.addEventListener('dragover', (e) => {
+            e.preventDefault(); // Konieczne do upuszczania!
+            if (!draggedItem) return;
+
+            const afterElement = getDragAfterElement(list, e.clientY);
+            if (afterElement == null) {
+                list.appendChild(draggedItem);
+            } else {
+                list.insertBefore(draggedItem, afterElement);
+            }
+        });
+
+        function getDragAfterElement(container, y) {
+            const draggableElements = [...container.querySelectorAll('.drag-handle-injected:not(.dragging)')];
+
+            return draggableElements.reduce((closest, child) => {
+                const box = child.getBoundingClientRect();
+                const offset = y - box.top - box.height / 2;
+                if (offset < 0 && offset > closest.offset) {
+                    return { offset: offset, element: child };
+                } else {
+                    return closest;
+                }
+            }, { offset: Number.NEGATIVE_INFINITY }).element;
+        }
+
+        // 2. Obserwator (Automatycznie łapie nowe zadania pojawiające się na ekranie)
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                mutation.addedNodes.forEach((node) => {
+                    // Sprawdzamy, czy to zadanie i czy nie ma jeszcze uchwytu
+                    if (node.nodeType === 1 && !node.classList.contains('drag-handle-injected')) {
+                        node.classList.add('drag-handle-injected');
+                        
+                        // Tworzymy ikonkę "Hamburgera" do ciągnięcia
+                        const handle = document.createElement('div');
+                        handle.className = 'task-drag-handle';
+                        handle.innerHTML = '☰';
+                        handle.title = "Przeciągnij, aby zmienić kolejność";
+                        
+                        // BARDZO WAŻNE: Włączamy tryb ciągnięcia TYLKO gdy trzymamy za ikonkę.
+                        // Dzięki temu można normalnie klikać i edytować tekst zadań!
+                        handle.addEventListener('mousedown', () => node.setAttribute('draggable', 'true'));
+                        handle.addEventListener('mouseup', () => node.setAttribute('draggable', 'false'));
+                        handle.addEventListener('mouseleave', () => node.setAttribute('draggable', 'false'));
+
+                        // Wklej ikonkę na początek tego konkretnego zadania
+                        node.insertBefore(handle, node.firstChild);
+                    }
+                });
+            });
+        });
+
+        // Start obserwacji (odpali się, gdy klikniesz "Edytuj zadania")
+        observer.observe(list, { childList: true });
+    });
+    </script>
 </body>
 </html>
