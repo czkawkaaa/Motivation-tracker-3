@@ -5,7 +5,7 @@ import { getFirestore } from "https://www.gstatic.com/firebasejs/12.4.0/firebase
 
 const firebaseConfig = {
   apiKey: "AIzaSyBLtdh-FELJEuzYPpKDF6OLuya55xRTjiY",
-  authDomain: "kawaii-quest.firebaseapp.com",
+  authDomain: "czkawkaaa.github.io",
   projectId: "kawaii-quest",
   storageBucket: "kawaii-quest.firebasestorage.app",
   messagingSenderId: "845447529375",
