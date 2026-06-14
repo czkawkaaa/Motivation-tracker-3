@@ -1,7 +1,7 @@
 // 🔥 Firebase Synchronization Module - Modular SDK
 import { app, auth, db, onAuthStateChanged, hasFirebaseConfig } from './firebase-config.js';
 import { isMeaningfulData } from './scripts/data-safety.js';
-import { signInWithRedirect, signInWithPopup, getRedirectResult, GoogleAuthProvider, signOut } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
+import { signInWithPopup, GoogleAuthProvider, signOut } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
 import { doc, getDoc, setDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
 
 let currentUser = null;
