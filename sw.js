@@ -1,7 +1,7 @@
 // 🌸 Kawaii Quest - Service Worker
 // Obsługuje PWA, cache, i widgety
 
-const CACHE_NAME = 'kawaii-quest-v6';
+const CACHE_NAME = 'kawaii-quest-v7'; // Zmieniono na v7 dla globalnej aktualizacji
 const urlsToCache = [
   '/Motivation-tracker-3/',
   '/Motivation-tracker-3/index.html',
@@ -62,8 +62,11 @@ self.addEventListener('fetch', (event) => {
       fetch(event.request)
         .then((response) => {
           if (response && response.status === 200 && response.type === 'basic') {
+            // FIX: Klonujemy odpowiedź synchronicznie, zanim przeglądarka ją "zje"
+            const responseToCache = response.clone();
+            
             caches.open(CACHE_NAME).then((cache) => {
-              cache.put(event.request, response.clone()).catch((error) => {
+              cache.put(event.request, responseToCache).catch((error) => {
                 console.warn('⚠️ Cache.put failed (non-critical):', error);
               });
             });
