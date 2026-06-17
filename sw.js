@@ -1,12 +1,13 @@
 // 🌸 Kawaii Quest - Service Worker
 // Obsługuje PWA, cache, i widgety
 
-const CACHE_NAME = 'kawaii-quest-v5';
+const CACHE_NAME = 'kawaii-quest-v6';
 const urlsToCache = [
   '/Motivation-tracker-3/',
   '/Motivation-tracker-3/index.html',
   '/Motivation-tracker-3/styles.css',
   '/Motivation-tracker-3/app.js',
+  '/Motivation-tracker-3/i18n.js',
   '/Motivation-tracker-3/script.js',
   '/Motivation-tracker-3/firebase-config.js',
   '/Motivation-tracker-3/firebase-sync.js',

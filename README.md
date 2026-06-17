@@ -85,14 +85,17 @@
 ### 📥 Eksport do PDF
 - Kompletny raport ze statystykami:
   - Wszystkie odznaki (zdobyte i niezdobyte)
-  - Statystyki kroków (łącznie, średnio, rekord)
-  - Treningi ukończone
-  - Zadania i perfekcyjne dni
-  - Nastroje i średni nastrój
-  - Galeria zdjęć
-  - Zasady wyzwania
-- Automatyczne otwieranie w nowej karcie
-- Gotowy do druku (Ctrl+P → Zapisz jako PDF)
+  - Statystyki kroków, treningów, biegów i partii ciała
+  - Zadania, perfekcyjne dni i historia aktywności
+  - Nastroje, galeria zdjęć i zasady wyzwania
+  - Ustawienia aplikacji oraz podsumowanie danych
+- Raport generuje się w wybranym języku: polski, angielski lub włoski
+- Otwiera się automatycznie w nowej karcie i jest przygotowany do druku
+- Wystarczy użyć Ctrl+P / Cmd+P i wybrać Zapisz jako PDF
+
+### 🌍 Wielojęzyczność
+- Interfejs działa w 3 językach: polski, angielski i włoski
+- Ustawienie języka wpływa też na raporty PDF i drobne komunikaty aplikacji
 
 ### 🔄 Synchronizacja z Firebase
 - Logowanie przez Google

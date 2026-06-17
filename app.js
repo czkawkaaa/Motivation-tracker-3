@@ -51,6 +51,7 @@ const AppData = {
         sunday: []
     },
     settings: {
+        language: 'pl',
         theme: 'pink',
         font: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
         challengeLength: 75,
@@ -215,6 +216,9 @@ document.addEventListener('DOMContentLoaded', function() {
     initRules();
     // Sync UI
     if (typeof initSyncUI === 'function') initSyncUI();
+    if (window.AppI18N && typeof window.AppI18N.startObserver === 'function') {
+        window.AppI18N.startObserver();
+    }
     
     updateAllDisplays();
     startQuoteRotation();
@@ -2252,12 +2256,24 @@ function checkBadges() {
 
 function showBadgeNotification(badgeIds) {
     // Prosta notyfikacja
+    const language = window.AppI18N && typeof window.AppI18N.getCurrentLanguage === 'function'
+        ? window.AppI18N.getCurrentLanguage()
+        : (AppData.settings.language || 'pl');
+
     const badgeNames = badgeIds.map(id => {
+        if (window.AppI18N && typeof window.AppI18N.badgeTitle === 'function') {
+            return window.AppI18N.badgeTitle(id, language);
+        }
+
         const card = document.querySelector(`[data-badge="${id}"]`);
         return card ? card.querySelector('h3').textContent : id;
     });
     
-    alert(`🎉 Nowa odznaka!\n\n${badgeNames.join('\n')}`);
+    const headline = window.AppI18N && typeof window.AppI18N.translateExact === 'function'
+        ? window.AppI18N.translateExact('🎉 Nowa odznaka!', language)
+        : '🎉 Nowa odznaka!';
+
+    alert(`${headline}\n\n${badgeNames.join('\n')}`);
 }
 
 function updateBadgesDisplay() {
@@ -2296,6 +2312,23 @@ function markBadgesAsViewed() {
 // SETTINGS
 // ======================
 function initSettings() {
+    const languageSelect = document.getElementById('languageSelect');
+
+    if (languageSelect) {
+        if (AppData.settings.language === undefined) {
+            AppData.settings.language = 'pl';
+        }
+        languageSelect.value = AppData.settings.language;
+        languageSelect.addEventListener('change', (e) => {
+            AppData.settings.language = e.target.value;
+            if (window.AppI18N && typeof window.AppI18N.setLanguage === 'function') {
+                window.AppI18N.setLanguage(e.target.value, false);
+            }
+            saveData();
+            updateAllDisplays();
+        });
+    }
+
     // Theme select
     const themeSelect = document.getElementById('themeSelect');
     themeSelect.value = AppData.settings.theme;
@@ -2787,6 +2820,10 @@ function applySettings() {
     setTheme(AppData.settings.theme);
     setFont(AppData.settings.font);
     AppData.challenge.totalDays = AppData.settings.challengeLength;
+
+    if (window.AppI18N && typeof window.AppI18N.apply === 'function') {
+        window.AppI18N.apply(AppData.settings.language || 'pl');
+    }
 }
 
 function setFont(fontFamily) {
@@ -3033,7 +3070,117 @@ function createConfetti() {
 // ======================
 function exportDataAsHTML() {
     const data = AppData;
-    const now = new Date().toLocaleDateString('pl-PL');
+    const language = window.AppI18N && typeof window.AppI18N.getCurrentLanguage === 'function'
+        ? window.AppI18N.getCurrentLanguage()
+        : (data.settings.language || 'pl');
+    const tr = (text) => (window.AppI18N && typeof window.AppI18N.translateExact === 'function')
+        ? window.AppI18N.translateExact(text, language)
+        : text;
+    const locale = language === 'en' ? 'en-GB' : language === 'it' ? 'it-IT' : 'pl-PL';
+    const now = new Date().toLocaleDateString(locale);
+    const formatNumber = (value) => Number(value || 0).toLocaleString(locale);
+    const formatDate = (value) => value ? new Date(value).toLocaleDateString(locale) : '—';
+    const formatDateTime = (value) => value ? new Date(value).toLocaleString(locale) : '—';
+    const moodLabels = {
+        1: { pl: '1 - bardzo słabo', en: '1 - very low', it: '1 - molto basso' },
+        2: { pl: '2 - słabo', en: '2 - low', it: '2 - basso' },
+        3: { pl: '3 - neutralnie', en: '3 - neutral', it: '3 - neutro' },
+        4: { pl: '4 - dobrze', en: '4 - good', it: '4 - bene' },
+        5: { pl: '5 - świetnie', en: '5 - great', it: '5 - ottimo' }
+    };
+    const moodEmojis = { 1: '😔', 2: '🙁', 3: '😐', 4: '🙂', 5: '😊' };
+    const localizedMoodLabel = (value) => (moodLabels[value] && moodLabels[value][language]) || String(value);
+
+    const runEntries = Object.entries(data.runLog || {}).sort((a, b) => a[0].localeCompare(b[0]));
+    const totalRunDistance = runEntries.reduce((sum, [, entry]) => sum + Number(entry?.distance || 0), 0);
+    const totalRunMinutes = runEntries.reduce((sum, [, entry]) => sum + Number(entry?.duration || 0), 0);
+    const bestRun = runEntries.reduce((best, [, entry]) => {
+        const distance = Number(entry?.distance || 0);
+        if (distance > (best.distance || 0)) {
+            return { distance, duration: Number(entry?.duration || 0), updatedAt: entry?.updatedAt || null };
+        }
+        return best;
+    }, { distance: 0, duration: 0, updatedAt: null });
+
+    const focusEntries = Object.entries(data.workoutFocus || {}).sort((a, b) => a[0].localeCompare(b[0]));
+    const focusCounts = focusEntries.reduce((acc, [, parts]) => {
+        (Array.isArray(parts) ? parts : []).forEach(part => {
+            acc[part] = (acc[part] || 0) + 1;
+        });
+        return acc;
+    }, {});
+
+    const workoutCategoryCounts = {
+        running: 0,
+        gym: 0,
+        stretch: 0,
+        video: 0,
+        custom: 0,
+        weekly: 0
+    };
+    (data.settings.workouts || []).forEach(workout => {
+        const category = workout.category || 'video';
+        workoutCategoryCounts[category] = (workoutCategoryCounts[category] || 0) + 1;
+    });
+    (data.settings.customWorkouts || []).forEach(() => {
+        workoutCategoryCounts.custom += 1;
+    });
+    if (data.weeklyWorkouts && data.weeklyWorkouts.enabled) {
+        Object.keys(data.weeklyWorkouts).forEach(day => {
+            if (day === 'enabled') return;
+            workoutCategoryCounts.weekly += Array.isArray(data.weeklyWorkouts[day]) ? data.weeklyWorkouts[day].length : 0;
+        });
+    }
+
+    const historyDates = new Set([
+        ...Object.keys(data.steps || {}),
+        ...Object.keys(data.studyHours || {}),
+        ...Object.keys(data.mood || {}),
+        ...Object.keys(data.completedTasks || {}),
+        ...Object.keys(data.completedWorkouts || {}),
+        ...Object.keys(data.runLog || {}),
+        ...Object.keys(data.workoutFocus || {}),
+        ...(Array.isArray(data.challenge?.completedDays) ? data.challenge.completedDays : [])
+    ]);
+    const historyRows = Array.from(historyDates).sort().reverse().map(dateKey => {
+        const steps = Number(data.steps?.[dateKey] || 0);
+        const mood = data.mood?.[dateKey];
+        const tasks = Array.isArray(data.completedTasks?.[dateKey]) ? data.completedTasks[dateKey].length : Number(data.completedTasks?.[dateKey] || 0);
+        const workouts = Array.isArray(data.completedWorkouts?.[dateKey]) ? data.completedWorkouts[dateKey].length : Number(data.completedWorkouts?.[dateKey] || 0);
+        const run = data.runLog?.[dateKey];
+        const focusParts = Array.isArray(data.workoutFocus?.[dateKey]) ? data.workoutFocus[dateKey] : [];
+        return `
+            <tr>
+                <td>${formatDate(dateKey)}</td>
+                <td>${steps.toLocaleString(locale)}</td>
+                <td>${mood ? `${moodEmojis[mood] || ''} ${localizedMoodLabel(mood)}` : '—'}</td>
+                <td>${tasks}</td>
+                <td>${workouts}</td>
+                <td>${run ? `${Number(run.distance || 0).toFixed(1)} km / ${Number(run.duration || 0)} min` : '—'}</td>
+                <td>${focusParts.length > 0 ? focusParts.join(', ') : '—'}</td>
+            </tr>
+        `;
+    }).join('');
+
+    const progressHistorySummary = historyDates.size > 0
+        ? `${tr('Historia aktywności')}: ${historyDates.size}`
+        : tr('Brak historii aktywności');
+
+    const settingsSummaryCards = `
+        <section>
+            <h2>${tr('Ustawienia aplikacji')}</h2>
+            <div class="stats-grid">
+                <div class="stat-card"><div class="stat-value">${tr(data.settings.language || 'pl').toUpperCase()}</div><div class="stat-label">${tr('Język')}</div></div>
+                <div class="stat-card"><div class="stat-value">${tr(data.settings.theme || 'pink')}</div><div class="stat-label">${tr('Motyw')}</div></div>
+                <div class="stat-card"><div class="stat-value">${tr(data.settings.font || 'default')}</div><div class="stat-label">${tr('Czcionka')}</div></div>
+                <div class="stat-card"><div class="stat-value">${data.settings.challengeLength || 75}</div><div class="stat-label">${tr('Długość wyzwania')}</div></div>
+                <div class="stat-card"><div class="stat-value">${data.settings.stepsGoal?.toLocaleString(locale) || '—'}</div><div class="stat-label">${tr('Cel kroków')}</div></div>
+                <div class="stat-card"><div class="stat-value">${data.settings.studyGoal || 0}h</div><div class="stat-label">${tr('Cel nauki')}</div></div>
+                <div class="stat-card"><div class="stat-value">${data.settings.workoutsGoal || 0}</div><div class="stat-label">${tr('Cel workoutów')}</div></div>
+                <div class="stat-card"><div class="stat-value">${data.settings.restDay === 'none' ? tr('Brak') : tr(data.settings.restDay || 'none')}</div><div class="stat-label">${tr('Dzień odpoczynku')}</div></div>
+            </div>
+        </section>
+    `;
     
     // Calculate statistics
     const totalSteps = Object.values(data.steps).reduce((sum, val) => sum + val, 0);
@@ -3073,15 +3220,24 @@ function exportDataAsHTML() {
     const avgMood = moodEntries.length > 0 
         ? (Object.keys(moodCounts).reduce((sum, mood) => sum + parseInt(mood) * moodCounts[mood], 0) / moodEntries.length).toFixed(1)
         : 0;
+    const latestHistoryDate = Array.from(historyDates).sort().reverse()[0] || null;
+    const heroCards = [
+        { value: completedDays, label: tr('Dni ukończone') },
+        { value: `${completionRate}%`, label: tr('Postęp wyzwania') },
+        { value: `${totalSteps.toLocaleString(locale)}`, label: tr('Łącznie kroków') },
+        { value: `${totalWorkouts}`, label: tr('Treningi ukończone') },
+        { value: `${totalRunDistance.toFixed(1)} km`, label: tr('Biegi łącznie') },
+        { value: `${unlockedBadges}/${totalBadges}`, label: tr('Odznaki zdobyte') }
+    ];
     
     // Generate HTML
-    const html = `
+    let html = `
 <!DOCTYPE html>
-<html lang="pl">
+<html lang="${(window.AppI18N && typeof window.AppI18N.getCurrentLanguage === 'function') ? window.AppI18N.getCurrentLanguage() : 'pl'}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kawaii Quest - Raport Postępów</title>
+    <title>${tr('Kawaii Quest - Raport Postępów')}</title>
     <style>
         * {
             margin: 0;
@@ -3101,7 +3257,7 @@ function exportDataAsHTML() {
             margin: 0 auto;
             background: white;
             border-radius: 20px;
-            padding: 3rem;
+            padding: 2.5rem;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
         }
         
@@ -3121,6 +3277,66 @@ function exportDataAsHTML() {
         .date {
             color: #666;
             font-size: 1rem;
+        }
+
+        .report-hero {
+            background: linear-gradient(135deg, #ff9ac2, #ffc1e0);
+            color: white;
+            border-radius: 18px;
+            padding: 1.5rem;
+            margin: 1.5rem 0 2rem 0;
+            box-shadow: 0 12px 24px rgba(255, 154, 194, 0.22);
+        }
+
+        .report-hero-top {
+            display: flex;
+            justify-content: space-between;
+            gap: 1rem;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            margin-bottom: 1rem;
+        }
+
+        .report-hero-title {
+            font-size: 1.15rem;
+            font-weight: 700;
+            letter-spacing: 0.03em;
+            text-transform: uppercase;
+            opacity: 0.95;
+        }
+
+        .report-hero-subtitle {
+            font-size: 0.95rem;
+            opacity: 0.9;
+            margin-top: 0.35rem;
+            max-width: 60ch;
+            line-height: 1.45;
+        }
+
+        .report-hero-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 0.75rem;
+        }
+
+        .report-hero-card {
+            background: rgba(255, 255, 255, 0.16);
+            border: 1px solid rgba(255, 255, 255, 0.26);
+            border-radius: 14px;
+            padding: 0.9rem;
+            backdrop-filter: blur(6px);
+        }
+
+        .report-hero-value {
+            font-size: 1.5rem;
+            font-weight: 800;
+            line-height: 1.1;
+        }
+
+        .report-hero-label {
+            font-size: 0.8rem;
+            opacity: 0.9;
+            margin-top: 0.35rem;
         }
         
         .stats-grid {
@@ -3242,6 +3458,37 @@ function exportDataAsHTML() {
             height: 100%;
             object-fit: cover;
         }
+
+        .report-table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 900px;
+            background: white;
+            border-radius: 14px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+        }
+
+        .report-table th,
+        .report-table td {
+            padding: 0.8rem;
+            border-bottom: 1px solid #f1d8e3;
+            vertical-align: top;
+        }
+
+        .report-table th {
+            background: #fff5f8;
+            font-weight: 700;
+        }
+
+        .report-note {
+            background: #fff8fb;
+            border-left: 4px solid #ff9ac2;
+            color: #6a4c59;
+            padding: 1rem 1.2rem;
+            border-radius: 12px;
+            line-height: 1.5;
+        }
         
         footer {
             text-align: center;
@@ -3252,28 +3499,46 @@ function exportDataAsHTML() {
         }
         
         @media print {
+            @page {
+                size: A4;
+                margin: 12mm;
+            }
+
             body {
                 background: white;
                 padding: 0;
+                color-adjust: exact;
+                -webkit-print-color-adjust: exact;
             }
             
             .container {
                 box-shadow: none;
-                padding: 1rem;
+                padding: 0;
                 max-width: 100%;
+            }
+
+            .report-hero {
+                box-shadow: none;
+                break-inside: avoid;
+                margin-top: 0.75rem;
             }
             
             .stats-grid {
                 grid-template-columns: repeat(3, 1fr);
+                gap: 0.75rem;
+                margin-bottom: 2rem;
             }
             
             .stat-card {
                 page-break-inside: avoid;
+                break-inside: avoid;
+                padding: 1rem;
             }
             
             section {
                 page-break-inside: avoid;
-                margin-bottom: 2rem;
+                break-inside: avoid;
+                margin-bottom: 1.6rem;
             }
             
             h2 {
@@ -3283,6 +3548,17 @@ function exportDataAsHTML() {
             .badge-grid, .gallery-grid {
                 grid-template-columns: repeat(6, 1fr);
                 gap: 0.5rem;
+            }
+
+            .report-table {
+                min-width: 0;
+                width: 100%;
+                box-shadow: none;
+            }
+
+            .report-table th,
+            .report-table td {
+                padding: 0.55rem;
             }
             
             .badge-item {
@@ -3304,85 +3580,114 @@ function exportDataAsHTML() {
     <div class="container">
         <header>
             <h1>🌸 Kawaii Quest 🌸</h1>
-            <p class="date">Raport wygenerowany: ${now}</p>
+            <p class="date">${tr('Raport wygenerowany:')} ${now}</p>
         </header>
+
+        <section class="report-hero">
+            <div class="report-hero-top">
+                <div>
+                    <div class="report-hero-title">${tr('Wszystkie informacje ze strony')}</div>
+                    <div class="report-hero-subtitle">${tr('Raport zawiera teraz wszystkie dane z aplikacji')}</div>
+                </div>
+                <div class="report-note" style="background: rgba(255,255,255,0.16); border-left-color: rgba(255,255,255,0.65); color: white; max-width: 320px;">
+                    ${latestHistoryDate ? `${tr('Ostatni zapis')}: ${formatDate(latestHistoryDate)}` : tr('Brak historii aktywności')}
+                    ${bestRun.distance > 0 ? `<br>${tr('Najdłuższy bieg')}: ${bestRun.distance.toFixed(1)} km / ${bestRun.duration} min` : ''}
+                </div>
+            </div>
+            <div class="report-hero-grid">
+                ${heroCards.map(card => `
+                    <div class="report-hero-card">
+                        <div class="report-hero-value">${card.value}</div>
+                        <div class="report-hero-label">${card.label}</div>
+                    </div>
+                `).join('')}
+            </div>
+        </section>
         
         <section>
-            <h2>📊 Podsumowanie</h2>
+            <h2>${tr('📊 Podsumowanie')}</h2>
             <div class="stats-grid">
                 <div class="stat-card">
                     <div class="stat-value">${completedDays}</div>
-                    <div class="stat-label">Dni ukończone</div>
+                    <div class="stat-label">${tr('Dni ukończone')}</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-value">${completionRate}%</div>
-                    <div class="stat-label">Postęp wyzwania</div>
+                    <div class="stat-label">${tr('Postęp wyzwania')}</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-value">${currentStreak} 🔥</div>
-                    <div class="stat-label">Aktualna passa</div>
+                    <div class="stat-label">${tr('Aktualna passa')}</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-value">${longestStreak} ⚡</div>
-                    <div class="stat-label">Najdłuższa passa</div>
+                    <div class="stat-label">${tr('Najdłuższa passa')}</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-value">${totalSteps.toLocaleString('pl-PL')}</div>
-                    <div class="stat-label">Łącznie kroków</div>
+                    <div class="stat-value">${formatNumber(totalSteps)}</div>
+                    <div class="stat-label">${tr('Łącznie kroków')}</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-value">${Math.round(avgSteps).toLocaleString('pl-PL')}</div>
-                    <div class="stat-label">Średnio kroków/dzień</div>
+                    <div class="stat-value">${formatNumber(Math.round(avgSteps))}</div>
+                    <div class="stat-label">${tr('Średnio kroków/dzień')}</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-value">${maxSteps.toLocaleString('pl-PL')}</div>
-                    <div class="stat-label">Rekord kroków</div>
+                    <div class="stat-value">${formatNumber(maxSteps)}</div>
+                    <div class="stat-label">${tr('Rekord kroków')}</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-value">${totalWorkouts}</div>
-                    <div class="stat-label">Treningi ukończone 💪</div>
+                    <div class="stat-label">${tr('Treningi ukończone')} 💪</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-value">${totalTasks}</div>
-                    <div class="stat-label">Zadania ukończone</div>
+                    <div class="stat-label">${tr('Zadania ukończone')}</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-value">${perfectDays}</div>
-                    <div class="stat-label">Perfekcyjne dni 💯</div>
+                    <div class="stat-label">${tr('Perfekcyjne dni')} 💯</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-value">${totalStudyHours.toFixed(1)}h</div>
-                    <div class="stat-label">Godzin nauki 📚</div>
+                    <div class="stat-label">${tr('Godzin nauki')} 📚</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-value">${avgMood} / 5</div>
-                    <div class="stat-label">Średni nastrój 😊</div>
+                    <div class="stat-label">${tr('Średni nastrój')} 😊</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-value">${data.gallery.length}</div>
-                    <div class="stat-label">Zdjęcia w galerii 📸</div>
+                    <div class="stat-label">${tr('Zdjęcia w galerii')} 📸</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-value">${unlockedBadges}</div>
-                    <div class="stat-label">Odznaki zdobyte 🏆</div>
+                    <div class="stat-label">${tr('Odznaki zdobyte')} 🏆</div>
                 </div>
             </div>
         </section>
         
         <section>
-            <h2>🏆 Odznaki (${unlockedBadges}/${totalBadges})</h2>
+            <h2>${tr('🏆 Odznaki')} (${unlockedBadges}/${totalBadges})</h2>
             <div class="badge-grid">
                 ${generateBadgesHTML(data.badges)}
             </div>
         </section>
         
         <section>
-            <h2>📝 Zadania</h2>
+            <h2>${tr('📝 Zadania')}</h2>
             ${data.weeklyTasks && data.weeklyTasks.enabled ? `
-                <p style="margin-bottom: 1rem; color: #666;">Zadania są dostosowane do dnia tygodnia:</p>
+                <p style="margin-bottom: 1rem; color: #666;">${tr('Zadania są dostosowane do dnia tygodnia:')}</p>
                 <div style="display: grid; gap: 1rem;">
                     ${['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map((day, index) => {
-                        const dayNames = ['Poniedziałek 🌟', 'Wtorek 💪', 'Środa 🌸', 'Czwartek ⚡', 'Piątek 🎉', 'Sobota 🌈', 'Niedziela ✨'];
+                        const dayNames = [
+                            tr('Poniedziałek') + ' 🌟',
+                            tr('Wtorek') + ' 💪',
+                            tr('Środa') + ' 🌸',
+                            tr('Czwartek') + ' ⚡',
+                            tr('Piątek') + ' 🎉',
+                            tr('Sobota') + ' 🌈',
+                            tr('Niedziela') + ' ✨'
+                        ];
                         const tasks = data.weeklyTasks[day] || [];
                         if (tasks.length === 0) return '';
                         return `
@@ -3397,38 +3702,112 @@ function exportDataAsHTML() {
                 </div>
             ` : `
                 <ul class="task-list">
-                    ${data.tasks.map(task => `<li class="task-item">${task}</li>`).join('')}
+                    ${data.tasks.map(task => `<li class="task-item">${window.AppI18N && typeof window.AppI18N.translateTaskText === 'function' ? window.AppI18N.translateTaskText(task, language) : task}</li>`).join('')}
                 </ul>
             `}
         </section>
         
-        ${data.settings && data.settings.workoutsEnabled && totalWorkouts > 0 ? `
+        ${data.settings && data.settings.workoutsEnabled ? `
         <section>
-            <h2>💪 Treningi</h2>
-            <div style="background: linear-gradient(135deg, #ff9ac2, #ffc1e0); color: white; padding: 2rem; border-radius: 15px; text-align: center; margin-bottom: 1rem;">
-                <div style="font-size: 3rem; font-weight: bold;">${totalWorkouts}</div>
-                <div style="font-size: 1.2rem;">Treningów ukończonych</div>
+            <h2>${tr('💪 Treningi')}</h2>
+            <div class="stats-grid">
+                <div class="stat-card"><div class="stat-value">${totalWorkouts}</div><div class="stat-label">${tr('Treningów ukończonych')}</div></div>
+                <div class="stat-card"><div class="stat-value">${totalRunDistance.toFixed(1)} km</div><div class="stat-label">${tr('Biegi łącznie')}</div></div>
+                <div class="stat-card"><div class="stat-value">${totalRunMinutes} min</div><div class="stat-label">${tr('Czas biegania')}</div></div>
+                <div class="stat-card"><div class="stat-value">${runEntries.length}</div><div class="stat-label">${tr('Zapisane biegi')}</div></div>
             </div>
-            ${data.settings.workouts && data.settings.workouts.length > 0 ? `
-                <h3 style="margin: 1.5rem 0 1rem 0; color: #ff9ac2;">Twoje treningi:</h3>
-                <div style="display: grid; gap: 0.5rem;">
-                    ${data.settings.workouts.map(w => `
-                        <div style="background: #f8f9fa; padding: 0.8rem; border-radius: 8px; border-left: 4px solid #ff9ac2;">
-                            ${w.name || w.title || 'Trening'}
-                        </div>
-                    `).join('')}
+
+            <div style="display: grid; gap: 1rem;">
+                <div style="background: #fff5f8; padding: 1rem; border-radius: 12px; border-left: 4px solid #ff9ac2;">
+                    <h3 style="margin: 0 0 0.75rem 0; color: #ff9ac2;">${tr('Kategorie workoutów')}</h3>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 0.75rem;">
+                        <div><strong>${tr('Bieganie')}:</strong> ${workoutCategoryCounts.running}</div>
+                        <div><strong>${tr('Siłownia')}:</strong> ${workoutCategoryCounts.gym}</div>
+                        <div><strong>${tr('Rozciąganie')}:</strong> ${workoutCategoryCounts.stretch}</div>
+                        <div><strong>${tr('Film')}:</strong> ${workoutCategoryCounts.video}</div>
+                        <div><strong>${tr('Własne')}:</strong> ${workoutCategoryCounts.custom}</div>
+                        <div><strong>${tr('Tygodniowe')}:</strong> ${workoutCategoryCounts.weekly}</div>
+                    </div>
                 </div>
-            ` : ''}
+
+                <div style="background: #f8f9fa; padding: 1rem; border-radius: 12px; border-left: 4px solid #ff9ac2;">
+                    <h3 style="margin: 0 0 0.75rem 0; color: #ff9ac2;">${tr('Biegi')}</h3>
+                    ${runEntries.length > 0 ? `
+                        <div style="display: grid; gap: 0.5rem;">
+                            ${runEntries.map(([dateKey, run]) => `
+                                <div style="background: white; padding: 0.75rem; border-radius: 8px; border: 1px solid #eee; display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap;">
+                                    <span>${formatDate(dateKey)}</span>
+                                    <span>${Number(run?.distance || 0).toFixed(1)} km</span>
+                                    <span>${Number(run?.duration || 0)} min</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    ` : `<p style="margin: 0; color: #666;">${tr('Brak zapisanych biegów')}</p>`}
+                </div>
+
+                <div style="background: #f8f9fa; padding: 1rem; border-radius: 12px; border-left: 4px solid #ff9ac2;">
+                    <h3 style="margin: 0 0 0.75rem 0; color: #ff9ac2;">${tr('Partie ciała')}</h3>
+                    ${Object.keys(focusCounts).length > 0 ? `
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 0.5rem;">
+                            ${Object.entries(focusCounts).map(([part, count]) => `<div><strong>${part}:</strong> ${count}</div>`).join('')}
+                        </div>
+                    ` : `<p style="margin: 0; color: #666;">${tr('Brak zapisanych partii ciała')}</p>`}
+                </div>
+
+                <div style="background: #f8f9fa; padding: 1rem; border-radius: 12px; border-left: 4px solid #ff9ac2;">
+                    <h3 style="margin: 0 0 0.75rem 0; color: #ff9ac2;">${tr('Twoje treningi')}</h3>
+                    ${(data.settings.workouts && data.settings.workouts.length > 0) || (data.settings.customWorkouts && data.settings.customWorkouts.length > 0) ? `
+                        <div style="display: grid; gap: 0.5rem;">
+                            ${(data.settings.workouts || []).map(w => `
+                                <div style="background: white; padding: 0.75rem; border-radius: 8px; border: 1px solid #eee;">
+                                    ${tr(getWorkoutCategoryLabel(w.category || 'video'))}
+                                </div>
+                            `).join('')}
+                            ${(data.settings.customWorkouts || []).map(w => `
+                                <div style="background: white; padding: 0.75rem; border-radius: 8px; border: 1px solid #eee;">
+                                    ${w.name || tr('Własne ćwiczenie')}
+                                </div>
+                            `).join('')}
+                        </div>
+                    ` : `<p style="margin: 0; color: #666;">${tr('Brak workoutów do pokazania')}</p>`}
+                </div>
+            </div>
         </section>
         ` : ''}
+
+        <section>
+            <h2>${tr('🗂️ Historia aktywności')}</h2>
+            ${historyRows ? `
+                <div style="overflow-x: auto;">
+                    <table class="report-table">
+                        <thead>
+                            <tr>
+                                <th style="text-align: left;">${tr('Data')}</th>
+                                <th style="text-align: left;">${tr('Kroki')}</th>
+                                <th style="text-align: left;">${tr('Samopoczucie')}</th>
+                                <th style="text-align: left;">${tr('Zadania')}</th>
+                                <th style="text-align: left;">${tr('Workouty')}</th>
+                                <th style="text-align: left;">${tr('Bieg')}</th>
+                                <th style="text-align: left;">${tr('Partie ciała')}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${historyRows}
+                        </tbody>
+                    </table>
+                </div>
+            ` : `<p style="color: #666;">${tr('Brak historii aktywności')}</p>`}
+        </section>
+
+        ${settingsSummaryCards}
         
         <section>
-            <h2>😊 Statystyki nastroju</h2>
+            <h2>${tr('😊 Statystyki nastroju')}</h2>
             <div class="mood-stats">
                 ${Object.entries(moodCounts).map(([mood, count]) => `
                     <div class="mood-item">
                         <div class="mood-emoji">${mood}</div>
-                        <div>${count} dni</div>
+                        <div>${count} ${tr('dni')}</div>
                     </div>
                 `).join('')}
             </div>
@@ -3436,21 +3815,21 @@ function exportDataAsHTML() {
         
         ${data.gallery.length > 0 ? `
         <section>
-            <h2>📸 Galeria (${data.gallery.length} zdjęć)</h2>
+            <h2>${tr('📸 Galeria')} (${data.gallery.length} ${tr('zdjęć')})</h2>
             <div class="gallery-grid">
                 ${data.gallery.slice(0, 20).map(photo => `
                     <div class="gallery-item">
-                        <img src="${typeof photo === 'string' ? photo : photo.url || photo}" alt="Zdjęcie z galerii">
+                        <img src="${typeof photo === 'string' ? photo : photo.url || photo}" alt="${tr('Zdjęcie z galerii')}">
                     </div>
                 `).join('')}
             </div>
-            ${data.gallery.length > 20 ? `<p style="margin-top: 1rem; color: #666;">... i ${data.gallery.length - 20} więcej zdjęć</p>` : ''}
+            ${data.gallery.length > 20 ? `<p style="margin-top: 1rem; color: #666;">${tr('... i')} ${data.gallery.length - 20} ${tr('więcej zdjęć')}</p>` : ''}
         </section>
         ` : ''}
         
         ${data.settings && data.settings.rules && data.settings.rules.length > 0 ? `
         <section>
-            <h2>📜 Zasady wyzwania</h2>
+            <h2>${tr('📜 Zasady wyzwania')}</h2>
             <div style="display: grid; gap: 1rem;">
                 ${data.settings.rules.map(rule => `
                     <div style="background: #f8f9fa; padding: 1.5rem; border-radius: 12px; border-left: 4px solid #ff9ac2;">
@@ -3461,11 +3840,21 @@ function exportDataAsHTML() {
             </div>
         </section>
         ` : ''}
+
+        <section>
+            <h2>${tr('📦 Informacje o danych')}</h2>
+            <div class="stats-grid">
+                <div class="stat-card"><div class="stat-value">${historyDates.size}</div><div class="stat-label">${tr('Dni z danymi')}</div></div>
+                <div class="stat-card"><div class="stat-value">${runEntries.length}</div><div class="stat-label">${tr('Zapisane biegi')}</div></div>
+                <div class="stat-card"><div class="stat-value">${Object.keys(focusCounts).length}</div><div class="stat-label">${tr('Wybrane partie')}</div></div>
+                <div class="stat-card"><div class="stat-value">${historyDates.size}</div><div class="stat-label">${progressHistorySummary}</div></div>
+            </div>
+        </section>
         
         <footer>
-            <p>Made with 💖</p>
+            <p>${tr('Made with 💖')}</p>
             <p style="margin-top: 0.5rem; font-size: 0.9rem;">
-                Aby zapisać jako PDF: Naciśnij Ctrl+P (lub Cmd+P na Mac) i wybierz "Zapisz jako PDF"
+                ${tr('Aby zapisać jako PDF: Naciśnij Ctrl+P (lub Cmd+P na Mac) i wybierz "Zapisz jako PDF"')}
             </p>
         </footer>
     </div>
@@ -3473,6 +3862,29 @@ function exportDataAsHTML() {
 </html>
     `;
     
+    function translateReportHtmlString(sourceHtml) {
+        if (!window.AppI18N || typeof window.AppI18N.translateExact !== 'function') {
+            return sourceHtml;
+        }
+
+        const language = window.AppI18N.getCurrentLanguage ? window.AppI18N.getCurrentLanguage() : 'pl';
+        const parser = new DOMParser();
+        const documentFragment = parser.parseFromString(sourceHtml, 'text/html');
+        const walker = document.createTreeWalker(documentFragment.documentElement, NodeFilter.SHOW_TEXT, null);
+        let node;
+
+        while ((node = walker.nextNode())) {
+            const parent = node.parentElement;
+            if (!parent || ['SCRIPT', 'STYLE', 'TEXTAREA'].includes(parent.tagName)) continue;
+            const translated = window.AppI18N.translateExact(node.nodeValue, language);
+            if (translated && translated !== node.nodeValue) {
+                node.nodeValue = translated;
+            }
+        }
+
+        return '<!DOCTYPE html>\n' + documentFragment.documentElement.outerHTML;
+    }
+
     // Helper function to generate badges HTML
     function generateBadgesHTML(badges) {
         const badgeInfo = {
@@ -3559,6 +3971,10 @@ function exportDataAsHTML() {
         }).join('');
     }
     
+    if (window.AppI18N) {
+        html = translateReportHtmlString(html);
+    }
+
     // Create and download the HTML file
     const blob = new Blob([html], { type: 'text/html' });
     const url = URL.createObjectURL(blob);

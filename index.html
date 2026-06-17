@@ -869,6 +869,14 @@
                 <section class="settings-section">
                     <h2>🎨 Personalizacja</h2>
                     <div class="setting-item">
+                        <label>Język / Language:</label>
+                        <select id="languageSelect">
+                            <option value="pl">Polski</option>
+                            <option value="en">English</option>
+                            <option value="it">Italiano</option>
+                        </select>
+                    </div>
+                    <div class="setting-item">
                         <label>Motyw:</label>
                         <select id="themeSelect">
                             <option value="pink">Kawaii Pink 🎀</option>
@@ -1294,6 +1302,7 @@
     
     <script type="module" src="firebase-config.js"></script>
     <script type="module" src="firebase-sync.js"></script>
+    <script src="i18n.js"></script>
     <script src="app.js"></script>
     <script>
     document.addEventListener('DOMContentLoaded', () => {
