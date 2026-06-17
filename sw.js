@@ -49,8 +49,32 @@ self.addEventListener('activate', (event) => {
   return self.clients.claim();
 });
 
-// Fetch - strategia cache-first
+// Fetch - dla strony i plików aplikacji preferuj sieć, cache tylko jako fallback
 self.addEventListener('fetch', (event) => {
+  const requestUrl = new URL(event.request.url);
+  const isSameOrigin = requestUrl.origin === self.location.origin;
+  const isAppAsset = isSameOrigin && requestUrl.pathname.startsWith('/Motivation-tracker-3/');
+  const isDocument = event.request.mode === 'navigate' || event.request.destination === 'document';
+  const isCriticalAsset = isAppAsset && /\.(html|js|css|json)$/i.test(requestUrl.pathname);
+
+  if (isDocument || isCriticalAsset) {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          if (response && response.status === 200 && response.type === 'basic') {
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(event.request, response.clone()).catch((error) => {
+                console.warn('⚠️ Cache.put failed (non-critical):', error);
+              });
+            });
+          }
+          return response;
+        })
+        .catch(() => caches.match(event.request))
+    );
+    return;
+  }
+
   event.respondWith(
     caches.match(event.request)
       .then((response) => {
@@ -64,8 +88,7 @@ self.addEventListener('fetch', (event) => {
           }
           
           // Sprawdź czy URL używa supportowanego schematu
-          const url = new URL(event.request.url);
-          if (!url.protocol.startsWith('http')) {
+          if (!requestUrl.protocol.startsWith('http')) {
             // Ignoruj chrome-extension, moz-extension, itp.
             return response;
           }
