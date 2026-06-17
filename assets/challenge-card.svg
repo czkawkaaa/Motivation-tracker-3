@@ -50,6 +50,14 @@
     <!-- Tarcza zegara (dopasowuje się do tła kart w aplikacji) -->
     <path d="M 250 170 C 250 170 70 80 70 220 C 70 325 250 425 250 425 C 250 425 430 325 430 220 C 430 80 250 170 250 170 Z" 
           fill="var(--card-bg, #FFE4E8)" />
+
+        <!-- Delikatny pierścień tarczy, żeby zegarek wyglądał bardziej dopracowanie -->
+        <path d="M 250 186 C 250 186 90 100 90 220 C 90 310 250 402 250 402 C 250 402 410 310 410 220 C 410 100 250 186 250 186 Z"
+          fill="none" stroke="var(--primary-color, #FF6B81)" stroke-width="5" opacity="0.22" />
+
+        <!-- Subtelny blask w prawym górnym rogu tarczy -->
+        <circle cx="322" cy="180" r="18" fill="var(--primary-color, #FF6B81)" opacity="0.08" />
+        <circle cx="316" cy="174" r="6" fill="#FFFFFF" opacity="0.35" />
           
     <!-- Mocna, motywacyjna typografia z dynamicznym kolorem tekstu -->
     <g font-family="'Courier New', Courier, 'Arial Black', sans-serif" font-weight="900" font-size="34" fill="var(--text-primary, #1A1A1A)" text-anchor="middle">
@@ -59,13 +67,17 @@
     </g>
   </g>
 
-  <!-- Magiczne, estetyczne gwiazdki iskierki ustawione symetrycznie przy tarczy -->
-  <g fill="var(--primary-color, #FF6B81)" opacity="0.82">
-    <path d="M 112 262 Q 124 262 124 250 Q 124 262 136 262 Q 124 262 124 274 Q 124 262 112 262 Z" />
-    <path d="M 388 180 Q 398 180 398 170 Q 398 180 408 180 Q 398 180 398 190 Q 398 180 388 180 Z" />
-    <path d="M 360 345 Q 372 345 372 333 Q 372 345 384 345 Q 372 345 372 357 Q 372 345 360 345 Z" opacity="0.65" />
-    <circle cx="145" cy="312" r="4.5" opacity="0.7" />
-    <circle cx="358" cy="128" r="3.8" opacity="0.6" />
+  <!-- Magiczne iskierki ustawione w bardziej uporządkowany sposób wokół zegarka -->
+  <g fill="none" stroke="var(--primary-color, #FF6B81)" stroke-linecap="round" opacity="0.88">
+    <path d="M 110 255 L 120 245 L 130 255 L 120 265 Z" stroke-width="2.5" />
+    <path d="M 394 178 L 402 170 L 410 178 L 402 186 Z" stroke-width="2.5" />
+    <path d="M 146 316 L 152 310 L 158 316 L 152 322 Z" stroke-width="2" opacity="0.75" />
+    <path d="M 356 126 L 361 121 L 366 126 L 361 131 Z" stroke-width="2" opacity="0.7" />
+  </g>
+
+  <g fill="var(--primary-color, #FF6B81)" opacity="0.65">
+    <circle cx="118" cy="238" r="3.5" />
+    <circle cx="402" cy="200" r="3.5" />
   </g>
 
   <!-- Warstwa tekstury pokrywająca całą grafikę -->
