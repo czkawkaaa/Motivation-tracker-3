@@ -2672,10 +2672,58 @@ function initSettings() {
     if (refreshAppBtn) {
         refreshAppBtn.addEventListener('click', () => {
             playClickSound();
-            showNotification('🔄 Odświeżanie aplikacji...', 'success');
-            setTimeout(() => {
-                location.reload(true); // Force reload from server
-            }, 500);
+            refreshAppBtn.disabled = true;
+            refreshAppBtn.textContent = '⏳ Sprawdzam aktualizacje...';
+            let finished = false;
+
+            const finishRefresh = () => {
+                if (finished) return;
+                finished = true;
+                showNotification('✅ Najnowsza wersja została pobrana. Odświeżam stronę...', 'success');
+                setTimeout(() => {
+                    window.location.reload();
+                }, 350);
+            };
+
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.getRegistration('/Motivation-tracker-3/')
+                    .then((registration) => {
+                        if (!registration) {
+                            finishRefresh();
+                            return;
+                        }
+
+                        const onControllerChange = () => {
+                            navigator.serviceWorker.removeEventListener('controllerchange', onControllerChange);
+                            finishRefresh();
+                        };
+
+                        navigator.serviceWorker.addEventListener('controllerchange', onControllerChange);
+
+                        registration.update()
+                            .then(() => {
+                                if (registration.waiting) {
+                                    registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+                                } else if (!registration.installing) {
+                                    setTimeout(() => {
+                                        navigator.serviceWorker.removeEventListener('controllerchange', onControllerChange);
+                                        finishRefresh();
+                                    }, 500);
+                                }
+                            })
+                            .catch((error) => {
+                                console.warn('Błąd podczas aktualizacji Service Workera:', error);
+                                navigator.serviceWorker.removeEventListener('controllerchange', onControllerChange);
+                                finishRefresh();
+                            });
+                    })
+                    .catch((error) => {
+                        console.warn('Nie udało się pobrać rejestracji Service Workera:', error);
+                        finishRefresh();
+                    });
+            } else {
+                finishRefresh();
+            }
         });
     }
     
