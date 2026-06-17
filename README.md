@@ -3,8 +3,8 @@
 **Motywacyjna aplikacja stworzona przez Wiktorię Radomską**
 
 ## 🚀 Demo Online
-**Link do działającej strony:** https://czkawkaaa.github.io/Motivation-tracker-3/
-
+**Link do działającej strony:** 
+https://czkawkaaa.github.io/Motivation-tracker-3/
 ---
 
 ## ✨ Funkcje

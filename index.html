@@ -1,13 +1,193 @@
-<section class="hero-card hero-visual" style="overflow: visible;">
-                    <svg class="floating-element" xmlns="http://www.w3.org/2000/svg" viewBox="-150 -150 800 800" style="display: block; width: 100%; max-width: 400px; height: auto; margin: 0 auto; overflow: visible;">
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🌸 Kawaii Quest - Motivation Tracker</title>
+    
+    <meta name="description" content="75-dniowe wyzwanie motywacyjne z synchronizacją w chmurze">
+    <meta name="theme-color" content="#ff9ac2">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Kawaii Quest">
+    
+    <link rel="icon" type="image/svg+xml" href="icon.svg">
+    <link rel="apple-touch-icon" href="icon.svg">
+    <link rel="manifest" href="manifest.json">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Quicksand:wght@400;500;600;700&family=Fredoka+One&family=Baloo+2:wght@400;500;600;700&family=Bubblegum+Sans&family=Roboto:wght@300;400;500;700&family=Open+Sans:wght@300;400;600;700&family=Lato:wght@300;400;700&family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+
+    <style>
+        /* Animacje wejścia dla kart */
+        @keyframes fadeSlideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* Magiczna animacja lewitacji dla budzika i ikon */
+        @keyframes floatMagic {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-12px); }
+        }
+
+        /* Upiększenia kart i ich płynne ładowanie */
+        .view.active .card, .view.active .hero-banner {
+            animation: fadeSlideUp 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+            opacity: 0;
+        }
+        .view.active .hero-banner { animation-delay: 0.05s; }
+        .view.active .card:nth-child(1) { animation-delay: 0.1s; }
+        .view.active .card:nth-child(2) { animation-delay: 0.2s; }
+        .view.active .card:nth-child(3) { animation-delay: 0.3s; }
+        .view.active .card:nth-child(4) { animation-delay: 0.4s; }
+        .view.active .card:nth-child(5) { animation-delay: 0.5s; }
+        
+        /* Gładkie efekty najechania myszką (Hover) */
+        .card {
+            transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 16px 32px rgba(0,0,0,0.06);
+        }
+        
+        .btn-primary, .btn-secondary, .hero-pill {
+            transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) !important;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px) scale(1.02);
+            box-shadow: 0 8px 20px var(--primary-color);
+            opacity: 0.9;
+        }
+        .hero-pill:hover {
+            transform: translateY(-2px);
+            background: var(--primary-color);
+            color: white;
+        }
+
+        /* Klasa dodająca lewitację */
+        .floating-element {
+            animation: floatMagic 6s ease-in-out infinite;
+        }
+
+        /* BEZPIECZNE POMNIEJSZENIE SEKCJI HERO */
+        .hero-copy h2 {
+            font-size: 1.4rem !important;
+            line-height: 1.25 !important;
+            margin-bottom: 0.5rem !important;
+        }
+        .hero-copy p {
+            font-size: 0.85rem !important;
+            margin-bottom: 0.8rem !important;
+            color: var(--text-secondary) !important;
+        }
+        .hero-copy .eyebrow {
+            font-size: 0.7rem !important;
+            margin-bottom: 0.4rem !important;
+        }
+        .hero-pill {
+            font-size: 0.7rem !important;
+            padding: 0.3rem 0.7rem !important;
+        }
+
+        /* --- STYLE DLA PRZECIĄGANIA ZADAŃ --- */
+        .drag-handle-injected {
+            display: flex;
+            align-items: center;
+            transition: transform 0.1s ease;
+            margin-bottom: 0.5rem;
+        }
+        .drag-handle-injected.dragging {
+            opacity: 0.4;
+            background: var(--hover-bg);
+            border: 2px dashed var(--primary-color);
+            transform: scale(0.98);
+            border-radius: 8px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+        }
+        .task-drag-handle {
+            cursor: grab;
+            padding: 0 10px 0 0;
+            color: var(--text-secondary);
+            font-size: 1.2rem;
+            user-select: none;
+            touch-action: none;
+        }
+        .task-drag-handle:active {
+            cursor: grabbing;
+        }
+    </style>
+</head>
+<body class="theme-pink">
+    <header class="app-header">
+        <div class="header-content">
+            <h1 class="app-title">🌸 Kawaii Quest</h1>
+            <div class="user-section">
+                <div id="syncStatus" class="sync-status" style="display: none; margin-right: 1rem; padding: 0.5rem 1rem; border-radius: 8px; font-size: 0.9rem; background: var(--hover-bg);">
+                    <span id="syncStatusIcon">⏳</span>
+                    <span id="syncStatusText">Łączenie...</span>
+                </div>
+                <div id="userInfo" class="user-info" style="display: none;">
+                    <img id="userPhoto" class="user-photo" alt="User photo">
+                    <span id="userName" class="user-name"></span>
+                    <button id="logoutBtn" class="btn-logout">Wyloguj</button>
+                </div>
+                <button id="loginBtn" class="btn-login" type="button" onclick="if(window.loginWithGoogle) { window.loginWithGoogle(); } else { console.error('loginWithGoogle not available!'); alert('Funkcja logowania nie jest jeszcze załadowana. Odśwież stronę.'); }">🔐 Zaloguj przez Google</button>
+            </div>
+            <button class="hamburger-btn" aria-label="Menu">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+        <nav class="main-nav">
+            <a href="#" class="nav-link active" data-view="dashboard">🏠 Główna</a>
+            <a href="#" class="nav-link" data-view="calendar">📅 Kalendarz</a>
+            <a href="#" class="nav-link" data-view="stats">📊 Statystyki</a>
+            <a href="#" class="nav-link" data-view="workouts">💪 Workouty</a>
+            <a href="#" class="nav-link" data-view="rules">📜 Zasady</a>
+            <a href="#" class="nav-link" data-view="gallery">🖼️ Galeria</a>
+            <a href="#" class="nav-link" data-view="badges">🏆 Odznaki</a>
+            <a href="#" class="nav-link" data-view="settings">⚙️ Ustawienia</a>
+        </nav>
+    </header>
+    
+    <main>
+        <div class="view active" id="view-dashboard">
+            <div id="dateIndicator" class="date-indicator" style="display: none;">
+                <div class="date-indicator-content">
+                    <span class="date-indicator-icon">📅</span>
+                    <span class="selected-date-text">Wyświetlane dane dla: [Data]</span>
+                    <button class="btn-return-today" onclick="returnToToday()">✕ Wróć do dzisiaj</button>
+                </div>
+            </div>
+            
+            <div class="hero-banner">
+                <section class="hero-card hero-copy">
+                    <p class="eyebrow" style="text-transform: uppercase; letter-spacing: 0.25em; font-size: 0.78rem; color: var(--text-secondary); font-weight: 700;">Challenge mode</p>
+                    <h2>Twoje codzienne wyzwanie, uśmiech i do dzieła</h2>
+                    <p>Śledź progres, odznaki i codzienny rytm w jednym miejscu — od pierwszego dnia aż po ostatnie poty.</p>
+                    <div class="hero-pills">
+                        <span class="hero-pill">✨ personalizacja motywów</span>
+                        <span class="hero-pill">🏆 odznaki i progres</span>
+                        <span class="hero-pill">📈 dashboard bez chaosu</span>
+                    </div>
+                </section>
+                
+                <section class="hero-card hero-visual">
+                    <svg class="floating-element" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" style="display: block; width: 100%; max-width: 260px; height: auto; margin: 0 auto; overflow: visible;">
                       <defs>
-                        <filter id="super-glow" x="-100%" y="-100%" width="300%" height="300%">
-                          <feDropShadow dx="0" dy="0" stdDeviation="35" flood-color="var(--primary-color, #FF6B81)" flood-opacity="0.35" />
+                        <filter id="super-glow" x="-50%" y="-50%" width="200%" height="200%">
+                          <feDropShadow dx="0" dy="0" stdDeviation="30" flood-color="var(--primary-color, #FF6B81)" flood-opacity="0.4" />
                           <feDropShadow dx="0" dy="0" stdDeviation="15" flood-color="var(--primary-color, #FF6B81)" flood-opacity="0.7" />
                           <feDropShadow dx="0" dy="0" stdDeviation="5" flood-color="var(--primary-color, #FF6B81)" flood-opacity="1" />
                         </filter>
                         
-                        <filter id="text-glow" x="-100%" y="-100%" width="300%" height="300%">
+                        <filter id="text-glow" x="-50%" y="-50%" width="200%" height="200%">
                           <feDropShadow dx="0" dy="0" stdDeviation="8" flood-color="var(--primary-color, #FF6B81)" flood-opacity="0.8" />
                           <feDropShadow dx="0" dy="0" stdDeviation="2" flood-color="var(--primary-color, #FF6B81)" flood-opacity="1" />
                         </filter>
@@ -62,3 +242,1139 @@
                       </g>
                     </svg>
                 </section>
+            </div>
+
+            <div class="dashboard-grid">
+                <section class="card card-challenge">
+                    <div class="challenge-spotlight">
+                        <div>
+                            <p class="eyebrow">Wyzwanie 75 dni</p>
+                            <h2>🎯 Wyzwanie</h2>
+                            <p class="challenge-note">Twój progres wygląda lepiej, kiedy masz jasny rytm i wizualny feedback.</p>
+                        </div>
+                        <svg class="floating-element" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="120" height="120" style="display: block; margin: 0 auto; filter: drop-shadow(0px 6px 12px var(--primary-color)); animation-delay: 1s;">
+                          <rect x="5" y="5" width="90" height="90" rx="22" fill="var(--card-bg)" opacity="0.8" />
+                          <rect x="5" y="5" width="90" height="90" rx="22" fill="var(--primary-color)" opacity="0.15" />
+                          
+                          <rect x="20" y="25" width="60" height="55" rx="8" fill="var(--card-bg)" />
+                          <rect x="26" y="42" width="48" height="32" rx="4" fill="var(--primary-color)" opacity="0.5" />
+                          
+                          <g fill="var(--card-bg)">
+                            <rect x="30" y="46" width="6" height="6" rx="2" />
+                            <rect x="42" y="46" width="6" height="6" rx="2" />
+                            <rect x="54" y="46" width="6" height="6" rx="2" />
+                            <rect x="66" y="46" width="6" height="6" rx="2" />
+                            <rect x="30" y="56" width="6" height="6" rx="2" />
+                            <rect x="42" y="56" width="6" height="6" rx="2" />
+                            <rect x="54" y="56" width="6" height="6" rx="2" />
+                            <rect x="66" y="56" width="6" height="6" rx="2" />
+                            <rect x="30" y="66" width="6" height="6" rx="2" />
+                            <rect x="42" y="66" width="6" height="6" rx="2" />
+                            <rect x="54" y="66" width="6" height="6" rx="2" />
+                          </g>
+                          
+                          <rect x="32" y="16" width="6" height="16" rx="3" fill="var(--text-primary)" opacity="0.3" />
+                          <rect x="62" y="16" width="6" height="16" rx="3" fill="var(--text-primary)" opacity="0.3" />
+                        </svg>
+                    </div>
+                    <div class="challenge-progress">
+                        <div class="progress-bar-large">
+                            <div class="progress-fill-large" id="challengeProgressBar" style="width: 0%"></div>
+                        </div>
+                        <div class="progress-info">
+                            <span class="progress-percent" id="challengePercent">0%</span>
+                            <span class="progress-days" id="challengeDays">0/75 dni</span>
+                        </div>
+                    </div>
+                    <div class="challenge-actions">
+                        <div id="rulesWarning" class="info-message" style="display: none; margin-bottom: 1rem; padding: 1rem; background: var(--hover-bg); border-radius: 12px; text-align: center;">
+                            📜 Przed rozpoczęciem wyzwania musisz zaakceptować zasady w zakładce <strong>Zasady</strong>
+                        </div>
+                        <button class="btn-primary" id="startChallengeBtn">Rozpocznij wyzwanie</button>
+                    </div>
+                </section>
+
+                <section class="card card-streak">
+                    <h2>🔥 Streak</h2>
+                    <div class="streak-display">
+                        <div class="streak-number" id="streakNumber">0</div>
+                        <p class="motivational-quote" id="motivationalQuote">"Jesteś silniejsza niż myślisz! 💖"</p>
+                    </div>
+                </section>
+
+                <section class="card card-steps" id="stepsCard">
+                    <h2>👣 Dzisiejsze kroki</h2>
+                    <div class="steps-input-group">
+                        <input type="number" id="stepsInput" placeholder="0" min="0" max="100000">
+                        <button class="btn-primary" id="saveStepsBtn">Zapisz</button>
+                    </div>
+                    <div class="success-message" id="stepsSuccess">✅ Kroki zapisane!</div>
+                </section>
+
+                <section class="card card-mood">
+                    <h2>😊 Dziennik samopoczucia</h2>
+                    <div class="mood-selector">
+                        <button class="mood-btn" data-mood="1">😔</button>
+                        <button class="mood-btn" data-mood="2">🙁</button>
+                        <button class="mood-btn" data-mood="3">😐</button>
+                        <button class="mood-btn" data-mood="4">🙂</button>
+                        <button class="mood-btn" data-mood="5">😊</button>
+                    </div>
+                    <button class="btn-primary" id="saveMoodBtn">Zapisz nastrój</button>
+                    <div class="success-message" id="moodSuccess">✅ Nastrój zapisany!</div>
+                </section>
+
+                <section class="card card-study" id="studyCard">
+                    <h2>📚 Dzisiejsza nauka</h2>
+                    <div class="study-input-group">
+                        <label for="studyHoursInput">Liczba godzin:</label>
+                        <input type="number" id="studyHoursInput" min="0" step="0.5" value="0" placeholder="np. 1.5">
+                    </div>
+                    <button class="btn-primary" id="saveStudyBtn">Zapisz</button>
+                    <div class="success-message" id="studySuccess">Godziny nauki zapisane! 📖</div>
+                </section>
+
+                <section class="card card-tasks">
+                    <div class="section-header">
+                        <h2>📝 Zadania na dziś</h2>
+                        <button class="icon-btn" id="editTasksBtn">✏️</button>
+                    </div>
+                    <div class="rest-day-message" id="restDayMessage" style="display: none;">
+                        <div class="rest-icon">😴</div>
+                        <h3>Dobra robota, odpocznij! 💖</h3>
+                        <p>Dziś jest Twój dzień odpoczynku</p>
+                    </div>
+                    <div class="tasks-list" id="tasksList">
+                        <label class="task-item">
+                            <input type="checkbox" class="task-checkbox">
+                            <span class="task-text">Rano: 5 minut stretchingu</span>
+                        </label>
+                        <label class="task-item">
+                            <input type="checkbox" class="task-checkbox">
+                            <span class="task-text">15 minut aktywności</span>
+                        </label>
+                        <label class="task-item">
+                            <input type="checkbox" class="task-checkbox">
+                            <span class="task-text">Wieczorny dziennik</span>
+                        </label>
+                    </div>
+                    <div class="task-actions">
+                        <button class="btn-secondary" id="resetTasksBtn">🔄 Resetuj</button>
+                        <button class="btn-primary" id="completeAllTasksBtn">✅ Ukończ wszystko</button>
+                    </div>
+                    <div class="task-edit-section" id="taskEditSection" style="display: none;">
+                        <h3>✏️ Edytuj zadania</h3>
+                        <div class="edit-tasks-list" id="editTasksList"></div>
+                        <div class="add-task-form">
+                            <input type="text" id="newTaskInput" placeholder="Nowe zadanie...">
+                            <button class="btn-primary" id="addTaskBtn">➕ Dodaj</button>
+                        </div>
+                        <button class="btn-secondary" id="saveTasksBtn">💾 Zapisz zmiany</button>
+                    </div>
+                </section>
+            </div>
+        </div>
+
+        <div class="view" id="view-calendar">
+            <div class="calendar-container">
+                <div class="calendar-header">
+                    <button class="calendar-nav-btn" id="prevMonth">◀</button>
+                    <h2 class="calendar-title" id="calendarTitle">Styczeń 2025</h2>
+                    <button class="calendar-nav-btn" id="nextMonth">▶</button>
+                </div>
+                <div class="calendar-grid" id="calendarGrid">
+                    </div>
+            </div>
+        </div>
+
+        <div class="view" id="view-stats">
+            <div class="stats-grid">
+                <section class="card" id="stepsStatsCard">
+                    <h2>👣 Postęp kroków</h2>
+                    <p style="font-size: 0.9em; color: #666; margin-top: -10px; margin-bottom: 10px;">Całkowity cel na cały challenge</p>
+                    <div class="chart-container">
+                        <svg class="circle-chart" viewBox="0 0 200 200">
+                            <circle class="circle-bg" cx="100" cy="100" r="80"></circle>
+                            <circle class="circle-progress" id="stepsCircle" cx="100" cy="100" r="80"></circle>
+                        </svg>
+                        <div class="chart-center-text">
+                            <span class="chart-percent" id="stepsPercent">0%</span>
+                            <span class="chart-label" id="stepsLabel">0/25,000</span>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="card">
+                    <h2>😊 Historia nastroju</h2>
+                    <div class="bar-chart" id="moodChart">
+                        <div class="bar-item">
+                            <div class="bar-value">0</div>
+                            <div class="bar-fill" style="height: 0%"></div>
+                            <div class="bar-label">😔</div>
+                        </div>
+                        <div class="bar-item">
+                            <div class="bar-value">0</div>
+                            <div class="bar-fill" style="height: 0%"></div>
+                            <div class="bar-label">🙁</div>
+                        </div>
+                        <div class="bar-item">
+                            <div class="bar-value">0</div>
+                            <div class="bar-fill" style="height: 0%"></div>
+                            <div class="bar-label">😐</div>
+                        </div>
+                        <div class="bar-item">
+                            <div class="bar-value">0</div>
+                            <div class="bar-fill" style="height: 0%"></div>
+                            <div class="bar-label">🙂</div>
+                        </div>
+                        <div class="bar-item">
+                            <div class="bar-value">0</div>
+                            <div class="bar-fill" style="height: 0%"></div>
+                            <div class="bar-label">😊</div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="card" id="studyStatsCard">
+                    <h2>📚 Postęp nauki</h2>
+                    <p style="font-size: 0.9em; color: #666; margin-top: -10px; margin-bottom: 10px;">Całkowity cel na cały challenge</p>
+                    <div class="chart-container">
+                        <svg class="circle-chart" viewBox="0 0 200 200">
+                            <circle class="circle-bg" cx="100" cy="100" r="80"></circle>
+                            <circle class="circle-progress" id="studyCircle" cx="100" cy="100" r="80"></circle>
+                        </svg>
+                        <div class="chart-center-text">
+                            <span class="chart-percent" id="studyPercent">0%</span>
+                            <span class="chart-label" id="studyLabel">0/100h</span>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="card" id="workoutsStatsCard" style="display: none;">
+                    <h2>💪 Postęp workoutów</h2>
+                    <p style="font-size: 0.9em; color: #666; margin-top: -10px; margin-bottom: 10px;">Ukończone podczas challenge'u</p>
+                    <div class="chart-container">
+                        <svg class="circle-chart" viewBox="0 0 200 200">
+                            <circle class="circle-bg" cx="100" cy="100" r="80"></circle>
+                            <circle class="circle-progress" id="workoutsCircle" cx="100" cy="100" r="80"></circle>
+                        </svg>
+                        <div class="chart-center-text">
+                            <span class="chart-percent" id="workoutsPercent">0%</span>
+                            <span class="chart-label" id="workoutsLabel">0 workoutów</span>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+
+        <div class="view" id="view-workouts">
+            <div class="workouts-shell">
+                <section class="hero-card hero-copy">
+                    <p class="eyebrow">Workout planner</p>
+                    <h2>💪 Workouty – uporządkowane i gotowe do codziennej roboty</h2>
+                    <p>Teraz treningi są podzielone na kategorie, masz szybki zapis biegu, podświetlenie partii ciała i listę filmów z YouTube bez rozjeżdżania całego panelu.</p>
+                </section>
+
+                <div class="workouts-grid">
+                    <section class="card workout-panel-card">
+                        <h3>🏃 Bieg / aktywność</h3>
+                        <p class="panel-copy">Zapisz dzisiejszy bieg, czas i rekord, a aplikacja pokaże Ci, jak wygląda Twój progres.</p>
+                        <div class="workout-inline-fields">
+                            <input type="number" id="runDistanceInput" min="0" step="0.1" placeholder="km">
+                            <input type="number" id="runDurationInput" min="0" step="1" placeholder="min">
+                            <button class="btn-primary" id="saveRunBtn">Zapisz bieg</button>
+                        </div>
+                        <div id="runSummaryBox" class="mini-stat-box">Brak danych jeszcze dziś.</div>
+                    </section>
+
+                    <section class="card workout-panel-card">
+                        <h3>🦾 Siłownia / partie ciała</h3>
+                        <p class="panel-copy">Wybierz partie, które dziś ćwiczyłaś i od razu zobaczysz swój plan w jednym miejscu.</p>
+                        <div id="bodyPartChips" class="chip-grid">
+                            <button class="body-part-chip" data-part="nogi">Nogi</button>
+                            <button class="body-part-chip" data-part="plecy">Plecy</button>
+                            <button class="body-part-chip" data-part="klatka">Klatka</button>
+                            <button class="body-part-chip" data-part="ramiona">Ramiona</button>
+                            <button class="body-part-chip" data-part="core">Core</button>
+                            <button class="body-part-chip" data-part="stretch">Rozciąganie</button>
+                        </div>
+                        <div id="focusSummaryBox" class="mini-stat-box">Brak wybranych partii.</div>
+                    </section>
+
+                    <section class="card workout-panel-card">
+                        <h3>🎥 Filmy / zadania</h3>
+                        <p class="panel-copy">Wszystkie treningi z YouTube i własne zadania są teraz w jednej, czytelnej sekcji z odznaką „wykonane dziś”.</p>
+                        <div id="todayWorkoutSummary" class="mini-stat-box">Ładuję dzisiejsze treningi…</div>
+                    </section>
+                </div>
+
+                <p id="workoutStatusMsg" class="workout-empty-state">Workouty wyłączone. Włącz je w ustawieniach!</p>
+                <div id="workoutsContent" style="display: none;">
+                    <div class="card workout-panel-card" style="margin-bottom: 1rem;">
+                        <h3>🗂️ Filtry kategorii</h3>
+                        <p class="panel-copy">Szybko przełączaj widok między bieganiem, siłownią, rozciąganiem i filmami z YouTube.</p>
+                        <div id="workoutCategoryFilter" class="chip-grid">
+                            <button class="body-part-chip active" data-filter="all">Wszystkie</button>
+                            <button class="body-part-chip" data-filter="running">🏃 Bieganie</button>
+                            <button class="body-part-chip" data-filter="gym">🦾 Siłownia</button>
+                            <button class="body-part-chip" data-filter="stretch">🧘 Rozciąganie</button>
+                            <button class="body-part-chip" data-filter="video">🎥 Film</button>
+                            <button class="body-part-chip" data-filter="custom">💪 Własne</button>
+                        </div>
+                    </div>
+                    <div id="workoutsViewList" class="workout-list"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="view" id="view-rules">
+            <div style="padding: 1rem;">
+                <h1>📜 Zasady Wyzwania</h1>
+                <p style="color: #999; font-size: 0.9em; margin-bottom: 1.5rem;">Przestrzegaj tych zasad przez cały czas trwania wyzwania!</p>
+                <div id="rulesList"></div>
+                <div style="text-align: center; margin-top: 2rem; padding: 1.5rem; background: var(--card-bg); border-radius: 12px;">
+                    <p id="rulesAcceptStatus" style="margin-bottom: 1rem; font-size: 1rem;"></p>
+                    <button id="btnAcceptRulesView" class="btn-primary" style="padding: 0.8rem 2rem; font-size: 1rem; display: none;">✅ Zgadzam się i akceptuję zasady</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="view" id="view-gallery">
+            <div class="gallery-container">
+                <div class="upload-area">
+                    <input type="file" id="photoInput" accept="image/*" multiple style="display: none;">
+                    <button class="btn-upload" id="uploadBtn">📸 Wybierz zdjęcie</button>
+                </div>
+                <div class="gallery-grid" id="galleryGrid">
+                    </div>
+            </div>
+        </div>
+
+        <div class="view" id="view-badges">
+            <div class="hero-banner" style="margin-bottom: 1rem;">
+                <section class="hero-card hero-copy">
+                    <p class="eyebrow" style="text-transform: uppercase; letter-spacing: 0.25em; font-size: 0.78rem; color: var(--text-secondary); font-weight: 700;">Odznaki</p>
+                    <h2>Twoja kolekcja postępów i osiągnięć</h2>
+                    <p>Każda odznaka to mały moment „to było tego warte, nie można się poddawać”</p>
+                </section>
+                <section class="hero-card hero-visual">
+                    <svg class="floating-element" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" style="display: block; width: 100%; max-width: 220px; height: auto; margin: 0 auto; animation-delay: 0.5s;">
+                      <defs>
+                        <filter id="soft-glow-badge" x="-20%" y="-20%" width="140%" height="140%">
+                          <feDropShadow dx="0" dy="12" stdDeviation="15" flood-color="var(--primary-color)" flood-opacity="0.25" />
+                        </filter>
+                      </defs>
+
+                      <g filter="url(#soft-glow-badge)">
+                        <path d="M 180 250 L 130 410 L 210 370 L 250 250 Z" fill="var(--primary-color)" opacity="0.2" />
+                        <path d="M 320 250 L 370 410 L 290 370 L 250 250 Z" fill="var(--primary-color)" opacity="0.4" />
+                        <path d="M 160 410 L 130 410 L 210 370 Z" fill="var(--primary-color)" opacity="0.6" />
+                        <path d="M 340 410 L 370 410 L 290 370 Z" fill="var(--primary-color)" opacity="0.6" />
+                        
+                        <circle cx="250" cy="220" r="100" fill="var(--card-bg)" />
+                        <circle cx="250" cy="220" r="85" fill="var(--primary-color)" opacity="0.6" />
+                        <circle cx="250" cy="220" r="75" fill="var(--primary-color)" />
+
+                        <path d="M 250 160 L 265 195 L 305 200 L 275 225 L 285 260 L 250 240 L 215 260 L 225 225 L 195 200 L 235 195 Z" fill="var(--card-bg)" />
+                      </g>
+
+                      <path d="M 130 110 Q 145 110 145 95 Q 145 110 160 110 Q 145 110 145 125 Q 145 110 130 110 Z" fill="var(--primary-color)" opacity="0.8"/>
+                      <path d="M 380 150 Q 395 150 395 135 Q 395 150 410 150 Q 395 150 395 165 Q 395 150 380 150 Z" fill="var(--primary-color)" opacity="0.9"/>
+                      <path d="M 160 320 Q 168 320 168 312 Q 168 320 176 320 Q 168 320 168 328 Q 168 320 160 320 Z" fill="var(--primary-color)" />
+                    </svg>
+                </section>
+            </div>
+            <div class="badges-grid">
+                <div class="badge-card locked" data-badge="first-steps">
+                    <div class="badge-icon">👣</div>
+                    <h3>Pierwsze kroki</h3>
+                    <p>Zapisz pierwsze kroki</p>
+                </div>
+                <div class="badge-card locked" data-badge="first-mood">
+                    <div class="badge-icon">💭</div>
+                    <h3>Pierwsze wrażenie</h3>
+                    <p>Zapisz pierwszy nastrój</p>
+                </div>
+                <div class="badge-card locked" data-badge="first-photo">
+                    <div class="badge-icon">📷</div>
+                    <h3>Pierwsza chwila</h3>
+                    <p>Dodaj pierwsze zdjęcie</p>
+                </div>
+                
+                <div class="badge-card locked" data-badge="3-day-streak">
+                    <div class="badge-icon">🔥</div>
+                    <h3>Startowy ogień</h3>
+                    <p>Utrzymaj streak przez 3 dni</p>
+                </div>
+                <div class="badge-card locked" data-badge="7-day-streak">
+                    <div class="badge-icon">🔥🔥</div>
+                    <h3>Tygodniowy płomień</h3>
+                    <p>Utrzymaj streak przez 7 dni</p>
+                </div>
+                <div class="badge-card locked" data-badge="14-day-streak">
+                    <div class="badge-icon">🔥🔥🔥</div>
+                    <h3>Dwutygodniowa fala</h3>
+                    <p>Utrzymaj streak przez 14 dni</p>
+                </div>
+                <div class="badge-card locked" data-badge="30-day-streak">
+                    <div class="badge-icon">🔥✨</div>
+                    <h3>Miesięczny mistrz</h3>
+                    <p>Utrzymaj streak przez 30 dni</p>
+                </div>
+                
+                <div class="badge-card locked" data-badge="task-beginner">
+                    <div class="badge-icon">✅</div>
+                    <h3>Początkujący</h3>
+                    <p>Ukończ wszystkie zadania raz</p>
+                </div>
+                <div class="badge-card locked" data-badge="task-master">
+                    <div class="badge-icon">✅✅</div>
+                    <h3>Mistrz zadań</h3>
+                    <p>Ukończ wszystkie zadania 10 razy</p>
+                </div>
+                <div class="badge-card locked" data-badge="task-legend">
+                    <div class="badge-icon">✅👑</div>
+                    <h3>Legendarny wykonawca</h3>
+                    <p>Ukończ wszystkie zadania 30 razy</p>
+                </div>
+                
+                <div class="badge-card locked" data-badge="mood-tracker">
+                    <div class="badge-icon">😊</div>
+                    <h3>Łowca nastrojów</h3>
+                    <p>Zapisz nastrój przez 5 dni</p>
+                </div>
+                <div class="badge-card locked" data-badge="mood-master">
+                    <div class="badge-icon">😊💖</div>
+                    <h3>Mistrz emocji</h3>
+                    <p>Zapisz nastrój przez 30 dni</p>
+                </div>
+                <div class="badge-card locked" data-badge="always-happy">
+                    <div class="badge-icon">🥰</div>
+                    <h3>Promyk słońca</h3>
+                    <p>Zapisz 5 dni z najlepszym nastrojem</p>
+                </div>
+                
+                <div class="badge-card locked" data-badge="steps-5k">
+                    <div class="badge-icon">🚶</div>
+                    <h3>Pierwsze kroki</h3>
+                    <p>Przejdź 5,000 kroków w jednym dniu</p>
+                </div>
+                <div class="badge-card locked" data-badge="steps-10k">
+                    <div class="badge-icon">🏃</div>
+                    <h3>Aktywny</h3>
+                    <p>Przejdź 10,000 kroków w jednym dniu</p>
+                </div>
+                <div class="badge-card locked" data-badge="steps-50k">
+                    <div class="badge-icon">🏃‍♀️</div>
+                    <h3>Biegacz</h3>
+                    <p>Przejdź 50,000 kroków łącznie</p>
+                </div>
+                <div class="badge-card locked" data-badge="steps-100k">
+                    <div class="badge-icon">🏃‍♀️💨</div>
+                    <h3>Maratończyk</h3>
+                    <p>Przejdź 100,000 kroków łącznie</p>
+                </div>
+                <div class="badge-card locked" data-badge="steps-250k">
+                    <div class="badge-icon">👟⚡</div>
+                    <h3>Legenda kroków</h3>
+                    <p>Przejdź 250,000 kroków łącznie</p>
+                </div>
+                
+                <div class="badge-card locked" data-badge="photographer">
+                    <div class="badge-icon">📸</div>
+                    <h3>Fotograf</h3>
+                    <p>Dodaj 10 zdjęć do galerii</p>
+                </div>
+                <div class="badge-card locked" data-badge="memory-keeper">
+                    <div class="badge-icon">📸✨</div>
+                    <h3>Strażnik wspomnień</h3>
+                    <p>Dodaj 50 zdjęć do galerii</p>
+                </div>
+                
+                <div class="badge-card locked" data-badge="workout-beginner">
+                    <div class="badge-icon">💪</div>
+                    <h3>Początkujący atleta</h3>
+                    <p>Ukończ pierwszy trening</p>
+                </div>
+                <div class="badge-card locked" data-badge="workout-warrior">
+                    <div class="badge-icon">🏋️</div>
+                    <h3>Wojownik siłowni</h3>
+                    <p>Ukończ 10 treningów</p>
+                </div>
+                <div class="badge-card locked" data-badge="workout-beast">
+                    <div class="badge-icon">🦍</div>
+                    <h3>Bestia treningu</h3>
+                    <p>Ukończ 30 treningów</p>
+                </div>
+                <div class="badge-card locked" data-badge="workout-legend">
+                    <div class="badge-icon">🏆💪</div>
+                    <h3>Legenda fitnessu</h3>
+                    <p>Ukończ 75 treningów</p>
+                </div>
+                <div class="badge-card locked" data-badge="iron-dedication">
+                    <div class="badge-icon">⚡💪</div>
+                    <h3>Żelazne zaangażowanie</h3>
+                    <p>7-dniowa passa treningowa</p>
+                </div>
+                
+                <div class="badge-card locked" data-badge="optimus-prime">
+                    <div class="badge-icon">🤖</div>
+                    <h3>Optimus Prime</h3>
+                    <p>Użyj motywu Transformers</p>
+                </div>
+                <div class="badge-card locked" data-badge="bumblebee">
+                    <div class="badge-icon">🐝⚡</div>
+                    <h3>Bumblebee</h3>
+                    <p>Zmień motyw na żółty</p>
+                </div>
+                <div class="badge-card locked" data-badge="dark-knight">
+                    <div class="badge-icon">🌙🦇</div>
+                    <h3>Mroczny rycerz</h3>
+                    <p>Użyj trybu ciemnego</p>
+                </div>
+                <div class="badge-card locked" data-badge="rainbow-master">
+                    <div class="badge-icon">🌈</div>
+                    <h3>Mistrz kolorów</h3>
+                    <p>Wypróbuj 5 różnych motywów</p>
+                </div>
+                <div class="badge-card locked" data-badge="theme-explorer">
+                    <div class="badge-icon">🎨✨</div>
+                    <h3>Odkrywca stylów</h3>
+                    <p>Wypróbuj wszystkie motywy</p>
+                </div>
+                
+                <div class="badge-card locked" data-badge="perfectionist">
+                    <div class="badge-icon">💯</div>
+                    <h3>Perfekcjonista</h3>
+                    <p>Ukończ 10 dni bez przegapienia żadnego zadania</p>
+                </div>
+                <div class="badge-card locked" data-badge="comeback-king">
+                    <div class="badge-icon">👑🔥</div>
+                    <h3>Król powrotu</h3>
+                    <p>Odzyskaj streak po jego zerwaniu</p>
+                </div>
+                <div class="badge-card locked" data-badge="social-butterfly">
+                    <div class="badge-icon">🦋✨</div>
+                    <h3>Motyl społeczny</h3>
+                    <p>Dodaj 25 zdjęć do galerii</p>
+                </div>
+                <div class="badge-card locked" data-badge="weekend-warrior">
+                    <div class="badge-icon">💪🎉</div>
+                    <h3>Wojownik weekendu</h3>
+                    <p>Ćwicz w sobotę i niedzielę</p>
+                </div>
+                <div class="badge-card locked" data-badge="megatron">
+                    <div class="badge-icon">🤖⚡</div>
+                    <h3>Megatron</h3>
+                    <p>Zmień motyw na czerwony lub fioletowy</p>
+                </div>
+
+                <div class="badge-card locked" data-badge="hydration-hero">
+                    <div class="badge-icon">💧🦸</div>
+                    <h3>Bohater nawodnienia</h3>
+                    <p>Zapisz 30 dni z 1L+ wody</p>
+                </div>
+                <div class="badge-card locked" data-badge="mood-swinger">
+                    <div class="badge-icon">🎭</div>
+                    <h3>Emocjonalna huśtawka</h3>
+                    <p>Zapisz wszystkie 5 typów nastroju</p>
+                </div>
+                <div class="badge-card locked" data-badge="consistency-champion">
+                    <div class="badge-icon">📅✨</div>
+                    <h3>Mistrz konsystencji</h3>
+                    <p>Zapisuj dane przez 14 dni z rzędu</p>
+                </div>
+                <div class="badge-card locked" data-badge="goku-ultra">
+                    <div class="badge-icon">👊⚡</div>
+                    <h3>Ultra Instinct</h3>
+                    <p>Osiągnij 50-dniowy streak</p>
+                </div>
+                <div class="badge-card locked" data-badge="one-punch">
+                    <div class="badge-icon">🥊💥</div>
+                    <h3>One Punch</h3>
+                    <p>Ukończ 100 treningów</p>
+                </div>
+                <div class="badge-card locked" data-badge="plus-ultra">
+                    <div class="badge-icon">⚡💪</div>
+                    <h3>Plus Ultra!</h3>
+                    <p>Przekrocz własne limity - 60-dniowy streak</p>
+                </div>
+                <div class="badge-card locked" data-badge="time-traveler">
+                    <div class="badge-icon">⏰🌀</div>
+                    <h3>Podróżnik w czasie</h3>
+                    <p>Zapisuj dane o różnych porach dnia</p>
+                </div>
+                <div class="badge-card locked" data-badge="no-days-off">
+                    <div class="badge-icon">🔥💯</div>
+                    <h3>No Days Off</h3>
+                    <p>21-dniowy streak bez przerwy</p>
+                </div>
+                <div class="badge-card locked" data-badge="rocky-balboa">
+                    <div class="badge-icon">🥊🏃</div>
+                    <h3>Rocky Balboa</h3>
+                    <p>Przebiegnij 500,000 kroków łącznie</p>
+                </div>
+                <div class="badge-card locked" data-badge="discipline-master">
+                    <div class="badge-icon">🎯💎</div>
+                    <h3>Mistrz dyscypliny</h3>
+                    <p>Ukończ 50 dni bez przegapienia zadań</p>
+                </div>
+                <div class="badge-card locked" data-badge="iron-man">
+                    <div class="badge-icon">🦾⚡</div>
+                    <h3>Iron Man</h3>
+                    <p>Zmień motyw na czerwony i osiągnij 30-dniowy streak</p>
+                </div>
+                <div class="badge-card locked" data-badge="legend-collector">
+                    <div class="badge-icon">🏆✨</div>
+                    <h3>Kolekcjoner legend</h3>
+                    <p>Zdobądź 50 odznak</p>
+                </div>
+                
+                <div class="badge-card locked" data-badge="15-day-warrior">
+                    <div class="badge-icon">🛡️</div>
+                    <h3>Początkujący wojownik</h3>
+                    <p>Ukończ 15 dni wyzwania</p>
+                </div>
+                <div class="badge-card locked" data-badge="30-day-warrior">
+                    <div class="badge-icon">⚔️</div>
+                    <h3>30-dniowy wojownik</h3>
+                    <p>Ukończ 30 dni wyzwania</p>
+                </div>
+                <div class="badge-card locked" data-badge="50-day-champion">
+                    <div class="badge-icon">🏆</div>
+                    <h3>Mistrz wyzwania</h3>
+                    <p>Ukończ 50 dni wyzwania</p>
+                </div>
+                <div class="badge-card locked" data-badge="75-day-legend">
+                    <div class="badge-icon">👑</div>
+                    <h3>Legenda 75 Hard</h3>
+                    <p>Ukończ wszystkie 75 dni!</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="view" id="view-settings">
+            <div class="settings-container">
+                <section class="settings-section">
+                    <h2>🎨 Personalizacja</h2>
+                    <div class="setting-item">
+                        <label>Język / Language:</label>
+                        <select id="languageSelect">
+                            <option value="pl">Polski</option>
+                            <option value="en">English</option>
+                            <option value="it">Italiano</option>
+                        </select>
+                    </div>
+                    <div class="setting-item">
+                        <label>Motyw:</label>
+                        <select id="themeSelect">
+                            <option value="pink">Kawaii Pink 🎀</option>
+                            <option value="ocean">Ocean Blue 🌊</option>
+                            <option value="mint">Mint Green 🍃</option>
+                            <option value="lavender">Lavender Purple 💜</option>
+                            <option value="strawberry">Strawberry 🍓</option>
+                            <option value="yellow">Sunny Yellow ☀️</option>
+                            <option value="orange">Orange Sunset 🍊</option>
+                            <option value="red">Ruby Red ❤️</option>
+                            <option value="blue">Sky Blue 💙</option>
+                            <option value="purple">Deep Purple 🔮</option>
+                            <option value="black">Dark Mode 🌙</option>
+                            <option value="transformers">Transformers 🤖⚡</option>
+                        </select>
+                    </div>
+                    <div class="setting-item">
+                        <label>Czcionka:</label>
+                        <select id="fontSelect">
+                            <optgroup label="✨ Czcionki Kawaii">
+                                <option value="'Comic Sans MS', 'Chalkboard SE', 'Comic Neue', cursive">Comic Sans (Kawaii)</option>
+                                <option value="'Quicksand', sans-serif">Quicksand (Miękka)</option>
+                                <option value="'Fredoka One', cursive">Fredoka (Zaokrąglona)</option>
+                                <option value="'Baloo 2', cursive">Baloo (Przyjazna)</option>
+                                <option value="'Bubblegum Sans', cursive">Bubblegum (Bąbelkowa)</option>
+                            </optgroup>
+                            <optgroup label="📝 Czcionki Podstawowe">
+                                <option value="'Segoe UI', Tahoma, Geneva, Verdana, sans-serif" selected>Segoe UI (Domyślna)</option>
+                                <option value="Arial, Helvetica, sans-serif">Arial</option>
+                                <option value="'Helvetica Neue', Helvetica, sans-serif">Helvetica</option>
+                                <option value="'Roboto', sans-serif">Roboto</option>
+                                <option value="'Open Sans', sans-serif">Open Sans</option>
+                                <option value="'Lato', sans-serif">Lato</option>
+                                <option value="'Montserrat', sans-serif">Montserrat</option>
+                                <option value="'Poppins', sans-serif">Poppins</option>
+                                <option value="Georgia, serif">Georgia</option>
+                                <option value="'Times New Roman', Times, serif">Times New Roman</option>
+                            </optgroup>
+                        </select>
+                    </div>
+                </section>
+
+                <section class="settings-section">
+                    <h2>🎯 Konfiguracja wyzwania</h2>
+                    <div class="setting-item">
+                        <label>Długość wyzwania (dni):</label>
+                        <input type="number" id="challengeLength" value="75" min="1" max="365">
+                    </div>
+                    <div class="setting-item">
+                        <label>
+                            <input type="checkbox" id="stepsToggle" checked>
+                            Włącz kroki
+                        </label>
+                        <small style="display: block; margin-top: 0.5rem;">Pokaż sekcję kroków w głównym widoku 👣</small>
+                    </div>
+                    <div class="setting-item" id="stepsGoalSetting">
+                        <label>Cel kroków:</label>
+                        <input type="number" id="stepsGoal" value="25000" min="1000" step="1000">
+                        <small>Całkowity cel kroków do osiągnięcia przez całe wyzwanie</small>
+                    </div>
+                    <div class="setting-item">
+                        <label>
+                            <input type="checkbox" id="studyToggle" checked>
+                            Włącz naukę
+                        </label>
+                        <small style="display: block; margin-top: 0.5rem;">Pokaż sekcję nauki w głównym widoku 📚</small>
+                    </div>
+                    <div class="setting-item" id="studyGoalSetting">
+                        <label>Cel godzin nauki:</label>
+                        <input type="number" id="studyGoal" value="100" min="1" step="10">
+                        <small>Całkowity cel godzin nauki do osiągnięcia przez całe wyzwanie</small>
+                    </div>
+                    <div class="setting-item">
+                        <label>
+                            <input type="checkbox" id="workoutsToggleMain">
+                            Włącz workouty
+                        </label>
+                        <small style="display: block; margin-top: 0.5rem;">Pokaż sekcję workoutów w głównym widoku 💪</small>
+                    </div>
+                    <div class="setting-item" id="workoutsGoalSetting">
+                        <label>Cel workoutów:</label>
+                        <input type="number" id="workoutsGoal" value="150" min="1" step="10">
+                        <small>Całkowity cel workoutów do zrobienia przez całe wyzwanie</small>
+                    </div>
+                    <div class="setting-item">
+                        <label>Dzień odpoczynku:</label>
+                        <select id="restDay">
+                            <option value="none">Brak</option>
+                            <option value="0">Niedziela</option>
+                            <option value="1">Poniedziałek</option>
+                            <option value="2">Wtorek</option>
+                            <option value="3">Środa</option>
+                            <option value="4">Czwartek</option>
+                            <option value="5">Piątek</option>
+                            <option value="6">Sobota</option>
+                        </select>
+                    </div>
+                    <div class="setting-item">
+                        <label>
+                            <input type="checkbox" id="countRestDays">
+                            Liczyć dni odpoczynku jako ukończone
+                        </label>
+                    </div>
+                </section>
+
+                <section class="settings-section">
+                    <h2>🔊 Dźwięki i efekty</h2>
+                    <div class="setting-item">
+                        <label>
+                            <input type="checkbox" id="soundToggle" checked>
+                            Dźwięki interfejsu
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <label>Głośność:</label>
+                        <input type="range" id="volumeSlider" min="0" max="100" value="70">
+                        <span id="volumeValue">70%</span>
+                    </div>
+                </section>
+
+                <section class="settings-section">
+                    <h2>📅 Zadania tygodniowe</h2>
+                    <div class="setting-item">
+                        <label>
+                            <input type="checkbox" id="weeklyTasksToggle">
+                            Dostosuj zadania do dnia tygodnia
+                        </label>
+                        <small style="display: block; margin-top: 0.5rem;">Zamiast tych samych zadań każdego dnia, możesz ustawić różne zadania dla każdego dnia tygodnia 🗓️</small>
+                    </div>
+                    <div id="weeklyTasksConfig" style="display: none; margin-top: 1rem;">
+                        <div class="weekly-tasks-editor">
+                            <div class="day-tasks-section">
+                                <h4>🌟 Poniedziałek</h4>
+                                <div id="mondayTasksList" class="day-tasks-list"></div>
+                                <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                                    <input type="text" id="mondayTaskInput" placeholder="Nowe zadanie..." style="flex: 1;">
+                                    <button class="btn-add-day-task" data-day="monday">➕</button>
+                                </div>
+                            </div>
+                            <div class="day-tasks-section">
+                                <h4>💪 Wtorek</h4>
+                                <div id="tuesdayTasksList" class="day-tasks-list"></div>
+                                <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                                    <input type="text" id="tuesdayTaskInput" placeholder="Nowe zadanie..." style="flex: 1;">
+                                    <button class="btn-add-day-task" data-day="tuesday">➕</button>
+                                </div>
+                            </div>
+                            <div class="day-tasks-section">
+                                <h4>🌸 Środa</h4>
+                                <div id="wednesdayTasksList" class="day-tasks-list"></div>
+                                <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                                    <input type="text" id="wednesdayTaskInput" placeholder="Nowe zadanie..." style="flex: 1;">
+                                    <button class="btn-add-day-task" data-day="wednesday">➕</button>
+                                </div>
+                            </div>
+                            <div class="day-tasks-section">
+                                <h4>⚡ Czwartek</h4>
+                                <div id="thursdayTasksList" class="day-tasks-list"></div>
+                                <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                                    <input type="text" id="thursdayTaskInput" placeholder="Nowe zadanie..." style="flex: 1;">
+                                    <button class="btn-add-day-task" data-day="thursday">➕</button>
+                                </div>
+                            </div>
+                            <div class="day-tasks-section">
+                                <h4>🎉 Piątek</h4>
+                                <div id="fridayTasksList" class="day-tasks-list"></div>
+                                <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                                    <input type="text" id="fridayTaskInput" placeholder="Nowe zadanie..." style="flex: 1;">
+                                    <button class="btn-add-day-task" data-day="friday">➕</button>
+                                </div>
+                            </div>
+                            <div class="day-tasks-section">
+                                <h4>🌈 Sobota</h4>
+                                <div id="saturdayTasksList" class="day-tasks-list"></div>
+                                <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                                    <input type="text" id="saturdayTaskInput" placeholder="Nowe zadanie..." style="flex: 1;">
+                                    <button class="btn-add-day-task" data-day="saturday">➕</button>
+                                </div>
+                            </div>
+                            <div class="day-tasks-section">
+                                <h4>✨ Niedziela</h4>
+                                <div id="sundayTasksList" class="day-tasks-list"></div>
+                                <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                                    <input type="text" id="sundayTaskInput" placeholder="Nowe zadanie..." style="flex: 1;">
+                                    <button class="btn-add-day-task" data-day="sunday">➕</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="settings-section">
+                    <h2>📊 Eksport danych</h2>
+                    <div class="setting-item">
+                        <button class="btn-export" id="exportDataBtn">📥 Pobierz pełny raport ze statystykami</button>
+                        <small>Pobierz kompletny raport z wszystkimi statystykami, odznakami, treningami i osiągnięciami. Plik HTML otworzy się automatycznie - naciśnij <strong>Ctrl+P</strong> (lub <strong>Cmd+P</strong> na Mac) i wybierz <strong>"Zapisz jako PDF"</strong> aby zapisać swoje osiągnięcia!</small>
+                    </div>
+                </section>
+
+                <section class="settings-section">
+                    <h2>📜 Zasady wyzwania - Edycja</h2>
+                    <div class="setting-item">
+                        <p style="margin-bottom: 1rem; color: var(--text-secondary);">Tutaj możesz edytować zasady wyzwania. Aby zaakceptować zasady, przejdź do zakładki "📜 Zasady".</p>
+                        <div id="rulesSettingsList"></div>
+                    </div>
+                </section>
+
+                <section class="settings-section" id="workoutsSettingsSection">
+                    <h2>💪 Workouty - Zarządzanie</h2>
+                    <div class="setting-item">
+                        <label>
+                            <input type="checkbox" id="weeklyWorkoutsToggle">
+                            Dostosuj workouty do dnia tygodnia
+                        </label>
+                        <small style="display: block; margin-top: 0.5rem;">Zamiast tych samych workoutów każdego dnia, możesz ustawić różne workouty dla każdego dnia tygodnia 🗓️</small>
+                    </div>
+                        
+                        <div id="normalWorkoutsConfig">
+                            <div class="setting-item">
+                                <label>Dodaj link YouTube:</label>
+                                <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                                    <input type="text" id="workoutURLInput" placeholder="https://www.youtube.com/watch?v=..." style="flex: 1; min-width: 260px;">
+                                    <select id="workoutCategorySelect" style="padding: 0.65rem 0.8rem; border-radius: 10px; border: 1px solid var(--border-color); background: var(--card-bg); color: var(--text-primary); font-family: var(--font-family);">
+                                        <option value="running">🏃 Bieganie</option>
+                                        <option value="gym">🦾 Siłownia</option>
+                                        <option value="stretch">🧘 Rozciąganie</option>
+                                        <option value="video">🎥 Film</option>
+                                    </select>
+                                    <button class="btn-add-workout" id="btnAddWorkout">➕ Dodaj</button>
+                                </div>
+                                <small style="display: block; margin-top: 0.5rem; color: #999;">Wklej link do YouTube z ćwiczeniami i przypisz kategorię dla lepszego porządku.</small>
+                            </div>
+                            <div id="workoutsList" style="margin-top: 1rem;"></div>
+                            
+                            <div class="setting-item" style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
+                                <label>Dodaj własne ćwiczenie (bez YouTube):</label>
+                                <div style="display: flex; gap: 0.5rem;">
+                                    <input type="text" id="customWorkoutInput" placeholder="Nazwa ćwiczenia, np. Pompki 50x" style="flex: 1;">
+                                    <button class="btn-add-workout" id="btnAddCustomWorkout">➕ Dodaj</button>
+                                </div>
+                                <small style="display: block; margin-top: 0.5rem; color: #999;">Własne ćwiczenia bez wideo 💪</small>
+                            </div>
+                            <div id="customWorkoutsList" style="margin-top: 1rem;"></div>
+                        </div>
+                        
+                        <div id="weeklyWorkoutsConfig" style="display: none; margin-top: 1rem;">
+                            <div class="weekly-tasks-editor">
+                                <div class="day-tasks-section">
+                                    <h4>🌟 Poniedziałek</h4>
+                                    <div id="mondayWorkoutsList" class="day-tasks-list"></div>
+                                    <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                                        <input type="text" id="mondayWorkoutInput" placeholder="Link YouTube..." style="flex: 1;">
+                                        <button class="btn-add-day-task" data-day="monday" onclick="addDayWorkout('monday')">▶️</button>
+                                    </div>
+                                    <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                                        <input type="text" id="mondayCustomWorkoutInput" placeholder="Własne ćwiczenie..." style="flex: 1;">
+                                        <button class="btn-add-day-task" data-day="monday" onclick="addDayCustomWorkout('monday')">💪</button>
+                                    </div>
+                                </div>
+                                <div class="day-tasks-section">
+                                    <h4>💪 Wtorek</h4>
+                                    <div id="tuesdayWorkoutsList" class="day-tasks-list"></div>
+                                    <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                                        <input type="text" id="tuesdayWorkoutInput" placeholder="Link YouTube..." style="flex: 1;">
+                                        <button class="btn-add-day-task" data-day="tuesday" onclick="addDayWorkout('tuesday')">▶️</button>
+                                    </div>
+                                    <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                                        <input type="text" id="tuesdayCustomWorkoutInput" placeholder="Własne ćwiczenie..." style="flex: 1;">
+                                        <button class="btn-add-day-task" data-day="tuesday" onclick="addDayCustomWorkout('tuesday')">💪</button>
+                                    </div>
+                                </div>
+                                <div class="day-tasks-section">
+                                    <h4>🌸 Środa</h4>
+                                    <div id="wednesdayWorkoutsList" class="day-tasks-list"></div>
+                                    <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                                        <input type="text" id="wednesdayWorkoutInput" placeholder="Link YouTube..." style="flex: 1;">
+                                        <button class="btn-add-day-task" data-day="wednesday" onclick="addDayWorkout('wednesday')">▶️</button>
+                                    </div>
+                                    <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                                        <input type="text" id="wednesdayCustomWorkoutInput" placeholder="Własne ćwiczenie..." style="flex: 1;">
+                                        <button class="btn-add-day-task" data-day="wednesday" onclick="addDayCustomWorkout('wednesday')">💪</button>
+                                    </div>
+                                </div>
+                                <div class="day-tasks-section">
+                                    <h4>⚡ Czwartek</h4>
+                                    <div id="thursdayWorkoutsList" class="day-tasks-list"></div>
+                                    <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                                        <input type="text" id="thursdayWorkoutInput" placeholder="Link YouTube..." style="flex: 1;">
+                                        <button class="btn-add-day-task" data-day="thursday" onclick="addDayWorkout('thursday')">▶️</button>
+                                    </div>
+                                    <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                                        <input type="text" id="thursdayCustomWorkoutInput" placeholder="Własne ćwiczenie..." style="flex: 1;">
+                                        <button class="btn-add-day-task" data-day="thursday" onclick="addDayCustomWorkout('thursday')">💪</button>
+                                    </div>
+                                </div>
+                                <div class="day-tasks-section">
+                                    <h4>🎉 Piątek</h4>
+                                    <div id="fridayWorkoutsList" class="day-tasks-list"></div>
+                                    <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                                        <input type="text" id="fridayWorkoutInput" placeholder="Link YouTube..." style="flex: 1;">
+                                        <button class="btn-add-day-task" data-day="friday" onclick="addDayWorkout('friday')">▶️</button>
+                                    </div>
+                                    <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                                        <input type="text" id="fridayCustomWorkoutInput" placeholder="Własne ćwiczenie..." style="flex: 1;">
+                                        <button class="btn-add-day-task" data-day="friday" onclick="addDayCustomWorkout('friday')">💪</button>
+                                    </div>
+                                </div>
+                                <div class="day-tasks-section">
+                                    <h4>🌈 Sobota</h4>
+                                    <div id="saturdayWorkoutsList" class="day-tasks-list"></div>
+                                    <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                                        <input type="text" id="saturdayWorkoutInput" placeholder="Link YouTube..." style="flex: 1;">
+                                        <button class="btn-add-day-task" data-day="saturday" onclick="addDayWorkout('saturday')">▶️</button>
+                                    </div>
+                                    <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                                        <input type="text" id="saturdayCustomWorkoutInput" placeholder="Własne ćwiczenie..." style="flex: 1;">
+                                        <button class="btn-add-day-task" data-day="saturday" onclick="addDayCustomWorkout('saturday')">💪</button>
+                                    </div>
+                                </div>
+                                <div class="day-tasks-section">
+                                    <h4>✨ Niedziela</h4>
+                                    <div id="sundayWorkoutsList" class="day-tasks-list"></div>
+                                    <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                                        <input type="text" id="sundayWorkoutInput" placeholder="Link YouTube..." style="flex: 1;">
+                                        <button class="btn-add-day-task" data-day="sunday" onclick="addDayWorkout('sunday')">▶️</button>
+                                    </div>
+                                    <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                                        <input type="text" id="sundayCustomWorkoutInput" placeholder="Własne ćwiczenie..." style="flex: 1;">
+                                        <button class="btn-add-day-task" data-day="sunday" onclick="addDayCustomWorkout('sunday')">💪</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="settings-section">
+                    <h2>🔁 Synchronizacja</h2>
+                    <div class="setting-item">
+                        <p><strong>Status logowania:</strong> <span id="syncLoginStatus">❓ Sprawdzam...</span></p>
+                        <p><strong>ID użytkownika:</strong> <span id="syncUserID">—</span></p>
+                        <p><strong>Realtime sync:</strong> <span id="syncRealtimeStatus">—</span></p>
+                        <p><strong>Ostatni sync:</strong> <span id="lastSyncStatus">—</span></p>
+                        <p><strong>Ostatni błąd:</strong> <span id="syncErrorStatus">—</span></p>
+                        <p><strong>Ostatni odczyt:</strong> <span id="syncLastRead">—</span></p>
+                        <p><strong>Ostatni zapis:</strong> <span id="syncLastWrite">—</span></p>
+                        <div style="margin-top: 10px;">
+                            <button id="btnSyncNow">🔄 Wymuś sync</button>
+                            <button id="btnForcePull">⬇️ Pobierz chmurę</button>
+                            <button id="btnForcePush">⬆️ Wypchnij lokalne</button>
+                        </div>
+                        <small>Synchronizacja odbywa się automatycznie przy powrocie do karty i po odzyskaniu połączenia. <strong>Musisz być zalogowany/a przez Google aby synchronizacja działała między urządzeniami.</strong></small>
+                        <small style="display: block; margin-top: 10px; color: #ff6b6b;"><strong>Jeśli widzisz błąd "permission-denied", skontaktuj się - trzeba zaktualizować reguły Firestore!</strong></small>
+                    </div>
+                </section>
+
+                <section class="settings-section">
+                    <h2>🔄 Aplikacja</h2>
+                    <div class="setting-item">
+                        <button class="btn-primary" id="refreshAppBtn">⬇️ Pobierz najnowszą wersję</button>
+                        <small style="display: block; margin-top: 0.5rem;">Pobiera najnowsze pliki aplikacji i od razu przeładowuje stronę</small>
+                    </div>
+                </section>
+
+                <section class="settings-section danger-zone">
+                    <h2>⚠️ Strefa niebezpieczna</h2>
+                    <div style="display: flex; flex-direction: column; gap: 1rem;">
+                        <button class="btn-danger" id="resetAllBtn">🗑️ Resetuj cały postęp</button>
+                        <button class="btn-danger" id="deleteAccountBtn" style="background: #b71c1c;">❌ Usuń konto i wszystkie dane</button>
+                    </div>
+                    <small style="display: block; margin-top: 1rem; color: var(--text-secondary);">
+                        <strong>Uwaga:</strong> Usunięcie konta spowoduje trwałe usunięcie wszystkich danych z urządzenia i chmury. Ta operacja jest nieodwracalna!
+                    </small>
+                </section>
+            </div>
+        </div>
+    </main>
+    
+    <div id="confettiContainer" class="confetti-container"></div>
+    
+    <div id="rulesModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 10000; justify-content: center; align-items: center; padding: 1rem;">
+        <div class="rules-modal-content" style="background: var(--card-bg); border-radius: 16px; max-width: 600px; width: 100%; padding: 2rem; max-height: 90vh; overflow-y: auto; color: var(--text-primary);">
+            <h2 style="margin-top: 0; margin-bottom: 1.5rem; text-align: center;">📜 Zasady Wyzwania</h2>
+            <p style="color: var(--text-secondary); margin-bottom: 1.5rem; text-align: center;">Przed rozpoczęciem challengu musisz zaakceptować poniższe zasady:</p>
+            <div id="rulesModalList" style="margin-bottom: 2rem;"></div>
+            <div style="display: flex; gap: 1rem; justify-content: center;">
+                <button id="btnAcceptRules" class="btn btn-primary" style="padding: 0.8rem 2rem; font-size: 1rem;">✅ Akceptuję zasady</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="workoutModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 9999; justify-content: center; align-items: center; padding: 1rem;">
+        <div style="position: relative; width: 100%; max-width: 800px;">
+            <button onclick="closeWorkoutModal()" style="position: absolute; top: -40px; right: 0; background: white; border: none; border-radius: 50%; width: 40px; height: 40px; font-size: 1.5rem; cursor: pointer; padding: 0;">✕</button>
+            <div id="workoutVideoContainer" style="width: 100%; padding-bottom: 56.25%; position: relative;">
+                <iframe id="workoutIframe" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 8px;" allowfullscreen></iframe>
+            </div>
+        </div>
+    </div>
+    
+    <footer>
+        <p>Made with 💖</p>
+    </footer>
+    
+    <script type="module" src="firebase-config.js"></script>
+    <script type="module" src="firebase-sync.js"></script>
+    <script src="i18n.js"></script>
+    <script src="app.js"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // --- SCRIPT DLA ZADAŃ (DRAG & DROP) ---
+        const list = document.getElementById('editTasksList');
+        if (list) {
+            let draggedItem = null;
+
+            list.addEventListener('dragstart', (e) => {
+                draggedItem = e.target.closest('.drag-handle-injected');
+                if (!draggedItem) return;
+                
+                setTimeout(() => {
+                    draggedItem.classList.add('dragging');
+                }, 0);
+            });
+
+            list.addEventListener('dragend', () => {
+                if (!draggedItem) return;
+                draggedItem.classList.remove('dragging');
+                draggedItem.setAttribute('draggable', 'false');
+                draggedItem = null;
+            });
+
+            list.addEventListener('dragover', (e) => {
+                e.preventDefault(); 
+                if (!draggedItem) return;
+
+                const afterElement = getDragAfterElement(list, e.clientY);
+                if (afterElement == null) {
+                    list.appendChild(draggedItem);
+                } else {
+                    list.insertBefore(draggedItem, afterElement);
+                }
+            });
+
+            function getDragAfterElement(container, y) {
+                const draggableElements = [...container.querySelectorAll('.drag-handle-injected:not(.dragging)')];
+
+                return draggableElements.reduce((closest, child) => {
+                    const box = child.getBoundingClientRect();
+                    const offset = y - box.top - box.height / 2;
+                    if (offset < 0 && offset > closest.offset) {
+                        return { offset: offset, element: child };
+                    } else {
+                        return closest;
+                    }
+                }, { offset: Number.NEGATIVE_INFINITY }).element;
+            }
+
+            const observer = new MutationObserver((mutations) => {
+                mutations.forEach((mutation) => {
+                    mutation.addedNodes.forEach((node) => {
+                        if (node.nodeType === 1 && !node.classList.contains('drag-handle-injected')) {
+                            node.classList.add('drag-handle-injected');
+                            
+                            const handle = document.createElement('div');
+                            handle.className = 'task-drag-handle';
+                            handle.innerHTML = '☰';
+                            handle.title = "Przeciągnij, aby zmienić kolejność";
+                            
+                            handle.addEventListener('mousedown', () => node.setAttribute('draggable', 'true'));
+                            handle.addEventListener('mouseup', () => node.setAttribute('draggable', 'false'));
+                            handle.addEventListener('mouseleave', () => node.setAttribute('draggable', 'false'));
+
+                            node.insertBefore(handle, node.firstChild);
+                        }
+                    });
+                });
+            });
+
+            observer.observe(list, { childList: true });
+        }
+
+        // --- GLOBALNY FIX DLA ZNAJOMYCH - Przycisk wymuszenia aktualizacji ---
+        const refreshBtn = document.getElementById('refreshAppBtn');
+        if (refreshBtn) {
+            refreshBtn.addEventListener('click', async (e) => {
+                e.preventDefault();
+                refreshBtn.innerHTML = "⏳ Trwa aktualizowanie...";
+                
+                try {
+                    if ('serviceWorker' in navigator) {
+                        const registrations = await navigator.serviceWorker.getRegistrations();
+                        for (let registration of registrations) {
+                            await registration.unregister();
+                        }
+                    }
+                    
+                    if ('caches' in window) {
+                        const keys = await caches.keys();
+                        await Promise.all(keys.map(key => caches.delete(key)));
+                    }
+                    
+                    window.location.href = window.location.href.split('?')[0] + '?update=' + new Date().getTime();
+                } catch (err) {
+                    console.error("Błąd podczas czyszczenia:", err);
+                    window.location.reload(true);
+                }
+            });
+        }
+    });
+    </script>
+</body>
+</html>
