@@ -4723,7 +4723,7 @@ function renderDayWorkouts(day) {
             const workoutId = workout.videoId;
             item.innerHTML = `
                 <img src="https://img.youtube.com/vi/${workout.videoId}/default.jpg" alt="Thumbnail" style="width: 60px; height: 45px; border-radius: 4px; object-fit: cover;">
-                <span class="day-task-text" style="flex: 1;">▶️ YouTube video</span>
+                <span class="day-task-text" style="flex: 1;">▶️ Wideo YouTube</span>
                 <button class="btn-remove-day-task" onclick="removeDayWorkout('${day}', '${workoutId}')">🗑️</button>
             `;
         } else if (workout.id && workout.name) {
