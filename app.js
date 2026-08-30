@@ -59,6 +59,7 @@ const AppData = {
         stepsGoal: 25000,
         studyGoal: 100,
         restDay: 'none',
+        restDays: [],
         countRestDays: false,
         soundEnabled: true,
         volume: 70,
@@ -327,6 +328,9 @@ function countCompletedWorkoutsMap(data) {
 function hasMeaningfulAppData(data) {
     const source = data || {};
 
+    if (source.settings && typeof source.settings === 'object' && Object.keys(source.settings).length > 0) {
+        return true;
+    }
     if (Array.isArray(source.tasks) && source.tasks.length > 0) return true;
     if (Array.isArray(source.gallery) && source.gallery.length > 0) return true;
 
@@ -467,6 +471,14 @@ function loadData() {
     if (!AppData.badges || typeof AppData.badges !== 'object') {
         AppData.badges = {};
     }
+
+    if (!Array.isArray(AppData.settings?.restDays)) {
+        AppData.settings.restDays = getRestDays();
+    }
+    if (AppData.settings.restDays.length === 0 && AppData.settings.restDay && AppData.settings.restDay !== 'none') {
+        AppData.settings.restDays = normalizeRestDayList(AppData.settings.restDay);
+    }
+    AppData.settings.restDay = AppData.settings.restDays.length > 0 ? AppData.settings.restDays[0] : 'none';
 
     if (Array.isArray(AppData.challenge?.completedDays)) {
         AppData.challenge.completedDays = Array.from(new Set(AppData.challenge.completedDays.map(d => normalizeDateKey(d)).filter(Boolean))).sort();
@@ -823,6 +835,43 @@ function normalizeDateKey(input) {
     return `${parsed.getFullYear()}-${String(parsed.getMonth() + 1).padStart(2, '0')}-${String(parsed.getDate()).padStart(2, '0')}`;
 }
 
+function normalizeRestDayList(value) {
+    const values = Array.isArray(value) ? value : [value];
+    const normalized = [];
+
+    values.forEach(item => {
+        if (item === null || item === undefined || item === 'none' || item === '') return;
+        const parsed = Number(item);
+        if (!Number.isNaN(parsed) && parsed >= 0 && parsed <= 6) {
+            normalized.push(String(parsed));
+        }
+    });
+
+    return Array.from(new Set(normalized)).sort((a, b) => Number(a) - Number(b));
+}
+
+function getRestDays() {
+    const settings = AppData?.settings || {};
+    const restDays = normalizeRestDayList(settings.restDays);
+
+    if (restDays.length > 0) {
+        settings.restDays = restDays;
+        settings.restDay = restDays[0];
+        return restDays;
+    }
+
+    const legacyRestDay = normalizeRestDayList(settings.restDay);
+    if (legacyRestDay.length > 0) {
+        settings.restDays = legacyRestDay;
+        settings.restDay = legacyRestDay[0];
+        return legacyRestDay;
+    }
+
+    settings.restDays = [];
+    settings.restDay = 'none';
+    return [];
+}
+
 function isRestDay() {
     // Use active date (selected in calendar) or today
     const dateKey = typeof getActiveDate === 'function' ? getActiveDate() : getTodayKey();
@@ -832,8 +881,8 @@ function isRestDay() {
 function isRestDayForDate(dateString) {
     const date = new Date(dateString + 'T12:00:00'); // Use noon to avoid timezone issues
     const dayOfWeek = date.getDay();
-    const restDay = AppData.settings.restDay;
-    return restDay !== 'none' && parseInt(restDay) === dayOfWeek;
+    const restDays = getRestDays();
+    return restDays.length > 0 && restDays.includes(String(dayOfWeek));
 }
 
 // ======================
@@ -2786,13 +2835,44 @@ function initSettings() {
         });
     }
     
-    // Rest day
-    const restDay = document.getElementById('restDay');
-    restDay.value = AppData.settings.restDay;
-    restDay.addEventListener('change', (e) => {
-        AppData.settings.restDay = e.target.value;
-        saveData();
-    });
+    // Rest day (multiple selection supported)
+    const restDayCheckBoxes = Array.from(document.querySelectorAll('.rest-day-checkbox'));
+    const restDayNone = document.getElementById('restDayNone');
+    const syncRestDaySelection = () => {
+        const selected = new Set(getRestDays());
+        restDayCheckBoxes.forEach(cb => {
+            cb.checked = selected.has(cb.value);
+        });
+        if (restDayNone) {
+            restDayNone.checked = selected.size === 0;
+        }
+    };
+
+    if (restDayCheckBoxes.length > 0) {
+        syncRestDaySelection();
+        restDayCheckBoxes.forEach(cb => {
+            cb.addEventListener('change', () => {
+                const selected = restDayCheckBoxes.filter(box => box.checked).map(box => box.value);
+                AppData.settings.restDays = normalizeRestDayList(selected);
+                AppData.settings.restDay = AppData.settings.restDays.length > 0 ? AppData.settings.restDays[0] : 'none';
+                if (restDayNone) restDayNone.checked = selected.length === 0;
+                saveData();
+                updateAllDisplays();
+            });
+        });
+    }
+
+    if (restDayNone) {
+        restDayNone.addEventListener('change', () => {
+            if (restDayNone.checked) {
+                AppData.settings.restDays = [];
+                AppData.settings.restDay = 'none';
+                saveData();
+                updateAllDisplays();
+                syncRestDaySelection();
+            }
+        });
+    }
     
     // Count rest days
     const countRestDays = document.getElementById('countRestDays');
@@ -3571,7 +3651,15 @@ function exportDataAsHTML() {
                 <div class="stat-card"><div class="stat-value">${data.settings.stepsGoal?.toLocaleString(locale) || '—'}</div><div class="stat-label">${tr('Cel kroków')}</div></div>
                 <div class="stat-card"><div class="stat-value">${data.settings.studyGoal || 0}h</div><div class="stat-label">${tr('Cel nauki')}</div></div>
                 <div class="stat-card"><div class="stat-value">${data.settings.workoutsGoal || 0}</div><div class="stat-label">${tr('Cel workoutów')}</div></div>
-                <div class="stat-card"><div class="stat-value">${data.settings.restDay === 'none' ? tr('Brak') : tr(data.settings.restDay || 'none')}</div><div class="stat-label">${tr('Dzień odpoczynku')}</div></div>
+                <div class="stat-card"><div class="stat-value">${(() => {
+                    const restDays = Array.isArray(data.settings?.restDays) && data.settings.restDays.length > 0 ? data.settings.restDays : (data.settings?.restDay && data.settings.restDay !== 'none' ? [data.settings.restDay] : []);
+                    if (restDays.length === 0) return tr('Brak');
+                    const labels = restDays.map(day => {
+                        const names = ['Niedziela', 'Poniedziałek', 'Wtorek', 'Środa', 'Czwartek', 'Piątek', 'Sobota'];
+                        return tr(names[Number(day)] || day);
+                    });
+                    return labels.join(', ');
+                })()}</div><div class="stat-label">${tr('Dni odpoczynku')}</div></div>
             </div>
         </section>
     `;

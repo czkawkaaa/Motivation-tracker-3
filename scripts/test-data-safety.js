@@ -16,6 +16,19 @@ function run() {
     settings: { theme: 'pink' }
   });
 
+  const settingsOnly = {
+    settings: {
+      studyEnabled: false,
+      restDay: '2',
+      restDays: ['2', '5'],
+      countRestDays: true
+    }
+  };
+
+  const normalizedSettingsOnly = normalizeAppData(settingsOnly);
+
+  assert.equal(isMeaningfulData(settingsOnly), true, 'Same ustawienia powinny być zapisane jako sensowne dane');
+  assert.deepEqual(normalizedSettingsOnly.settings.restDays, ['2', '5'], 'Powinno zachować wiele dni odpoczynku');
   assert.equal(data.challenge.completedDays.length, 1, 'Powinno usunąć duplikaty dat');
   assert.equal(typeof data.lastModified, 'number', 'Powinien dodać timestamp');
   assert.equal(data.settings.theme, 'pink', 'Powinien zachować ustawienia');

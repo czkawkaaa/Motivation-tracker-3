@@ -51,6 +51,7 @@ function createDefaultAppData() {
       stepsGoal: 25000,
       studyGoal: 100,
       restDay: 'none',
+      restDays: [],
       countRestDays: false,
       soundEnabled: true,
       volume: 70,
@@ -80,11 +81,12 @@ function normalizeDateKey(input) {
 
 function isMeaningfulData(data) {
   if (!data || typeof data !== 'object') return false;
+  const hasSettings = Boolean(data.settings && typeof data.settings === 'object' && Object.keys(data.settings).length > 0);
   const hasChallenge = Boolean(data.challenge && (Array.isArray(data.challenge.completedDays) || data.challenge.currentDay || data.challenge.totalDays));
   const hasSteps = Boolean(data.steps && Object.keys(data.steps).length > 0);
   const hasTasks = Boolean(Array.isArray(data.tasks) && data.tasks.length > 0);
   const hasCompleted = Boolean(data.completedTasks && Object.keys(data.completedTasks).length > 0);
-  return hasChallenge || hasSteps || hasTasks || hasCompleted;
+  return hasSettings || hasChallenge || hasSteps || hasTasks || hasCompleted;
 }
 
 function normalizeAppData(data) {

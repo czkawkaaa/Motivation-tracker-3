@@ -964,17 +964,17 @@
                         <small>Całkowity cel workoutów do zrobienia przez całe wyzwanie</small>
                     </div>
                     <div class="setting-item">
-                        <label>Dzień odpoczynku:</label>
-                        <select id="restDay">
-                            <option value="none">Brak</option>
-                            <option value="0">Niedziela</option>
-                            <option value="1">Poniedziałek</option>
-                            <option value="2">Wtorek</option>
-                            <option value="3">Środa</option>
-                            <option value="4">Czwartek</option>
-                            <option value="5">Piątek</option>
-                            <option value="6">Sobota</option>
-                        </select>
+                        <label>Dni odpoczynku:</label>
+                        <div style="display: grid; grid-template-columns: repeat(2, minmax(140px, 1fr)); gap: 0.5rem; margin-top: 0.5rem;">
+                            <label><input type="checkbox" class="rest-day-checkbox" value="0"> Niedziela</label>
+                            <label><input type="checkbox" class="rest-day-checkbox" value="1"> Poniedziałek</label>
+                            <label><input type="checkbox" class="rest-day-checkbox" value="2"> Wtorek</label>
+                            <label><input type="checkbox" class="rest-day-checkbox" value="3"> Środa</label>
+                            <label><input type="checkbox" class="rest-day-checkbox" value="4"> Czwartek</label>
+                            <label><input type="checkbox" class="rest-day-checkbox" value="5"> Piątek</label>
+                            <label><input type="checkbox" class="rest-day-checkbox" value="6"> Sobota</label>
+                            <label><input type="checkbox" id="restDayNone"> Brak</label>
+                        </div>
                     </div>
                     <div class="setting-item">
                         <label>
