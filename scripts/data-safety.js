@@ -118,7 +118,7 @@ function normalizeAppData(data) {
       .filter(Boolean))).sort();
   }
 
-  ['steps', 'studyHours', 'mood', 'completedTasks'].forEach((key) => {
+  ['steps', 'studyHours', 'mood', 'completedTasks', 'completedWorkouts'].forEach((key) => {
     if (normalized[key] && typeof normalized[key] === 'object') {
       merged[key] = {};
       Object.keys(normalized[key]).forEach((k) => {
@@ -126,7 +126,13 @@ function normalizeAppData(data) {
         if (!nk) return;
         if (key === 'completedTasks') {
           const uniqueValues = Array.from(new Set(Array.isArray(normalized[key][k]) ? normalized[key][k] : []));
-      merged[key][nk] = uniqueValues.sort((a, b) => a - b);
+          merged[key][nk] = uniqueValues.sort((a, b) => a - b);
+        } else if (key === 'completedWorkouts') {
+          const values = Array.isArray(normalized[key][k]) ? normalized[key][k] : [normalized[key][k]];
+          const uniqueValues = Array.from(new Set(values.filter(v => v !== null && v !== undefined && v !== '').map(v => String(v).trim()).filter(Boolean)));
+          if (uniqueValues.length > 0) {
+            merged[key][nk] = uniqueValues;
+          }
         } else {
           merged[key][nk] = normalized[key][k];
         }

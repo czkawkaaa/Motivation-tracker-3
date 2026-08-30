@@ -6,6 +6,7 @@ import { doc, getDoc, setDoc, onSnapshot, serverTimestamp } from "https://www.gs
 
 let currentUser = null;
 let unsubscribeSnapshot = null;
+let authStateInitialized = false;
 
 window.firebaseCurrentUser = null;
 window.firebaseRealtimeSyncActive = false;
@@ -145,6 +146,12 @@ async function logout() {
 }
 
 function onUserLogin(user) {
+    if (!user) return;
+    const previousUserId = currentUser && currentUser.uid ? currentUser.uid : null;
+    if (previousUserId && previousUserId === user.uid) {
+        return;
+    }
+
     currentUser = user;
     window.firebaseCurrentUser = user;
     const loginBtn = document.getElementById('loginBtn');
@@ -155,7 +162,12 @@ function onUserLogin(user) {
     if (userInfo) userInfo.style.display = 'flex';
     if (userName) userName.textContent = user.displayName || user.email;
     if (userPhoto) userPhoto.src = user.photoURL || 'https://via.placeholder.com/36';
-    
+
+    if (unsubscribeSnapshot) {
+        unsubscribeSnapshot();
+        unsubscribeSnapshot = null;
+    }
+
     (async () => {
         try {
             updateSyncStatus('syncing', 'Synchronizacja...', '🔄');
@@ -177,6 +189,11 @@ function onUserLogin(user) {
 }
 
 function onUserLogout() {
+    const previousUserId = currentUser && currentUser.uid ? currentUser.uid : null;
+    if (!previousUserId) {
+        return;
+    }
+
     currentUser = null;
     window.firebaseCurrentUser = null;
     window.firebaseRealtimeSyncActive = false;
@@ -431,11 +448,29 @@ window.deleteDataFromFirestore = deleteDataFromFirestore;
 
 async function initFirebaseSync() {
     if (!hasFirebaseConfig || !auth || !db) return;
-    
+
     setupAuthUI();
     onAuthStateChanged(auth, (user) => {
-        if (user) onUserLogin(user);
-        else onUserLogout();
+        const previousUserId = currentUser && currentUser.uid ? currentUser.uid : null;
+
+        if (!authStateInitialized && !user && !previousUserId) {
+            authStateInitialized = true;
+            return;
+        }
+
+        if (user && user.uid !== previousUserId) {
+            authStateInitialized = true;
+            onUserLogin(user);
+            return;
+        }
+
+        if (!user && previousUserId) {
+            authStateInitialized = true;
+            onUserLogout();
+            return;
+        }
+
+        authStateInitialized = true;
     });
     document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'visible' && typeof window.syncNow === 'function') window.syncNow();

@@ -54,6 +54,7 @@ const AppData = {
         language: 'pl',
         theme: 'pink',
         font: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
+        challengeName: 'Kawaii Quest',
         challengeLength: 75,
         stepsGoal: 25000,
         studyGoal: 100,
@@ -279,6 +280,26 @@ document.addEventListener('DOMContentLoaded', function() {
 // ======================
 // DATA MANAGEMENT
 // ======================
+function normalizeCompletedWorkoutEntries(value) {
+    if (Array.isArray(value)) {
+        return Array.from(new Set(value
+            .filter(item => item !== null && item !== undefined && item !== '')
+            .map(item => String(item).trim())
+            .filter(Boolean)));
+    }
+
+    if (value === null || value === undefined || value === '') {
+        return [];
+    }
+
+    return [String(value).trim()].filter(Boolean);
+}
+
+function countCompletedWorkoutsMap(data) {
+    if (!data || typeof data !== 'object') return 0;
+    return Object.values(data).reduce((sum, dailyWorkouts) => sum + normalizeCompletedWorkoutEntries(dailyWorkouts).length, 0);
+}
+
 function hasMeaningfulAppData(data) {
     const source = data || {};
 
@@ -289,7 +310,7 @@ function hasMeaningfulAppData(data) {
         return true;
     }
 
-    const mapsToCheck = ['steps', 'studyHours', 'mood', 'completedTasks', 'badges'];
+    const mapsToCheck = ['steps', 'studyHours', 'mood', 'completedTasks', 'completedWorkouts', 'badges'];
     for (const key of mapsToCheck) {
         if (source[key] && typeof source[key] === 'object' && Object.keys(source[key]).length > 0) {
             return true;
@@ -332,8 +353,8 @@ function loadData() {
                     AppData.challenge.completedDays = Array.from(new Set(normalized)).sort();
                 }
 
-                // Normalize per-day maps (steps, studyHours, mood, completedTasks)
-                const mapsToNormalize = ['steps', 'studyHours', 'mood', 'completedTasks'];
+                // Normalize per-day maps (steps, studyHours, mood, completedTasks, completedWorkouts)
+                const mapsToNormalize = ['steps', 'studyHours', 'mood', 'completedTasks', 'completedWorkouts'];
                 mapsToNormalize.forEach(mapName => {
                     if (AppData[mapName] && typeof AppData[mapName] === 'object') {
                         const newMap = {};
@@ -347,6 +368,11 @@ function loadData() {
                                 const incoming = Array.isArray(val) ? val : [];
                                 const merged = Array.from(new Set([...existing, ...incoming])).sort((a,b)=>a-b);
                                 newMap[nk] = merged;
+                            } else if (mapName === 'completedWorkouts') {
+                                const normalized = normalizeCompletedWorkoutEntries(val);
+                                if (normalized.length > 0) {
+                                    newMap[nk] = normalized;
+                                }
                             } else {
                                 // For numeric/string maps, last one wins
                                 newMap[nk] = val;
@@ -403,6 +429,9 @@ function loadData() {
         if (!AppData.settings.themesUsed) {
             AppData.settings.themesUsed = [AppData.settings.theme];
         }
+        if (!AppData.settings.challengeName) {
+            AppData.settings.challengeName = 'Kawaii Quest';
+        }
     } else {
         console.log('💾 No saved data found - using defaults');
         // Inicjalizuj śledzenie motywów dla nowych użytkowników
@@ -410,7 +439,18 @@ function loadData() {
             AppData.settings.themesUsed = [AppData.settings.theme];
         }
     }
+
+    if (!AppData.badges || typeof AppData.badges !== 'object') {
+        AppData.badges = {};
+    }
+
+    if (Array.isArray(AppData.challenge?.completedDays)) {
+        AppData.challenge.completedDays = Array.from(new Set(AppData.challenge.completedDays.map(d => normalizeDateKey(d)).filter(Boolean))).sort();
+    }
+
+    calculateStreak();
     applySettings();
+    checkBadges();
 }
 
 function saveData() {
@@ -513,6 +553,10 @@ function sendWidgetUpdateToSW() {
 function getTodayKey() {
     const today = new Date();
     return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+}
+
+function getRunWorkoutId(dateKey = getTodayKey()) {
+    return `run_${dateKey}`;
 }
 
 // Normalize a date key to YYYY-MM-DD (accepts Date or string)
@@ -1194,53 +1238,64 @@ function calculateStreak() {
         AppData.streak = 0;
         return;
     }
-    
-    // Sort completed days in descending order (newest first)
+
     const sorted = [...AppData.challenge.completedDays].sort().reverse();
-    
     const todayKey = getTodayKey();
     const today = new Date(todayKey + 'T12:00:00');
-    
-    // Check if today or yesterday is completed (to start counting streak)
+
     let currentDate = new Date(sorted[0] + 'T12:00:00');
     const latestCompletedDate = new Date(sorted[0] + 'T12:00:00');
-    
-    // If latest completed day is more than 1 day ago, streak is broken
+
     const daysSinceLastCompleted = Math.floor((today - latestCompletedDate) / (1000 * 60 * 60 * 24));
-    
+
     if (daysSinceLastCompleted > 1) {
         AppData.streak = 0;
         return;
     }
-    
-    // Count consecutive days
-    let streak = 1; // Start with 1 for the most recent day
-    
+
+    let streak = 1;
+
     for (let i = 1; i < sorted.length; i++) {
         const prevDate = new Date(sorted[i] + 'T12:00:00');
         const diff = Math.floor((currentDate - prevDate) / (1000 * 60 * 60 * 24));
-        
-        // If difference is 1 day, continue streak
+
         if (diff === 1) {
             streak++;
             currentDate = prevDate;
-        } 
-        // If difference is 2 days and the skipped day was a rest day, continue streak
-        else if (diff === 2 && isRestDayForDate(sorted[i-1])) {
-            streak++;
-            currentDate = prevDate;
+            continue;
         }
-        // Otherwise, streak is broken
-        else {
-            break;
+
+        if (diff === 2) {
+            const skippedDate = new Date(currentDate);
+            skippedDate.setDate(skippedDate.getDate() - 1);
+            const skippedKey = normalizeDateKey(skippedDate);
+            if (skippedKey && isRestDayForDate(skippedKey)) {
+                streak++;
+                currentDate = prevDate;
+                continue;
+            }
         }
+
+        break;
     }
-    
+
     AppData.streak = streak;
-    
-    // Update longest streak if current is better
+
     if (streak > (AppData.longestStreak || 0)) {
         AppData.longestStreak = streak;
+    }
+}
+
+function getChallengeDisplayName() {
+    const raw = AppData.settings?.challengeName;
+    const value = typeof raw === 'string' ? raw.trim() : '';
+    return value || 'Kawaii Quest';
+}
+
+function applyChallengeNameToUI() {
+    const label = document.getElementById('challengeNameLabel');
+    if (label) {
+        label.textContent = getChallengeDisplayName();
     }
 }
 
@@ -1250,6 +1305,7 @@ function updateAllDisplays() {
     updateStreakDisplay();
     updateTodaySteps();
     updateTodayMood();
+    applyChallengeNameToUI();
     
     // Odśwież też inne elementy UI
     if (typeof renderTasks === 'function') renderTasks();
@@ -1546,26 +1602,30 @@ function renderCalendar() {
         const sortedDaysDesc = [...AppData.challenge.completedDays].sort().reverse();
         const todayDate = new Date(today + 'T12:00:00');
         const latestCompletedDate = new Date(sortedDaysDesc[0] + 'T12:00:00');
-        
-        // Only calculate streak if latest completed day is today or yesterday
+
         const daysSinceLastCompleted = Math.floor((todayDate - latestCompletedDate) / (1000 * 60 * 60 * 24));
-        
+
         if (daysSinceLastCompleted <= 1) {
-            // Add the most recent day to streak
             streakDays.add(sortedDaysDesc[0]);
             let currentDate = latestCompletedDate;
-            
-            // Count backwards and add consecutive days
+
             for (let i = 1; i < sortedDaysDesc.length; i++) {
                 const prevDate = new Date(sortedDaysDesc[i] + 'T12:00:00');
                 const diff = Math.floor((currentDate - prevDate) / (1000 * 60 * 60 * 24));
-                
+
                 if (diff === 1) {
                     streakDays.add(sortedDaysDesc[i]);
                     currentDate = prevDate;
-                } else if (diff === 2 && isRestDayForDate(sortedDaysDesc[i-1])) {
-                    streakDays.add(sortedDaysDesc[i]);
-                    currentDate = prevDate;
+                } else if (diff === 2) {
+                    const skippedDate = new Date(currentDate);
+                    skippedDate.setDate(skippedDate.getDate() - 1);
+                    const skippedKey = normalizeDateKey(skippedDate);
+                    if (skippedKey && isRestDayForDate(skippedKey)) {
+                        streakDays.add(sortedDaysDesc[i]);
+                        currentDate = prevDate;
+                    } else {
+                        break;
+                    }
                 } else {
                     break;
                 }
@@ -1758,9 +1818,8 @@ function updateWorkoutsStats() {
     if (!AppData.completedWorkouts) {
         AppData.completedWorkouts = {};
     }
-    
-    // Count total workout completions (not unique)
-    const totalCompletions = Object.values(AppData.completedWorkouts).reduce((sum, dailyWorkouts) => sum + dailyWorkouts.length, 0);
+
+    const totalCompletions = countCompletedWorkoutsMap(AppData.completedWorkouts);
     
     // Calculate percentage based on goal
     const goal = AppData.settings.workoutsGoal || 150;
@@ -2053,9 +2112,7 @@ function checkBadges() {
     }
     
     // === TRENINGI ===
-    const totalWorkouts = Object.values(AppData.completedWorkouts).reduce((sum, workouts) => {
-        return sum + (Array.isArray(workouts) ? workouts.length : (workouts || 0));
-    }, 0);
+    const totalWorkouts = countCompletedWorkoutsMap(AppData.completedWorkouts);
     
     if (totalWorkouts >= 1) {
         unlockBadge('workout-beginner');
@@ -2365,6 +2422,20 @@ function initSettings() {
         saveData();
     });
     
+    // Challenge name
+    const challengeNameInput = document.getElementById('challengeName');
+    if (challengeNameInput) {
+        challengeNameInput.value = getChallengeDisplayName();
+        challengeNameInput.addEventListener('input', (e) => {
+            const nextName = (e.target.value || '').trim();
+            AppData.settings.challengeName = nextName || 'Kawaii Quest';
+            e.target.value = AppData.settings.challengeName;
+            saveData();
+            applyChallengeNameToUI();
+            updateAllDisplays();
+        });
+    }
+
     // Challenge length
     const challengeLength = document.getElementById('challengeLength');
     challengeLength.value = AppData.settings.challengeLength;
@@ -2868,6 +2939,8 @@ function applySettings() {
     setTheme(AppData.settings.theme);
     setFont(AppData.settings.font);
     AppData.challenge.totalDays = AppData.settings.challengeLength;
+    AppData.settings.challengeName = AppData.settings.challengeName || 'Kawaii Quest';
+    applyChallengeNameToUI();
 
     if (window.AppI18N && typeof window.AppI18N.apply === 'function') {
         window.AppI18N.apply(AppData.settings.language || 'pl');
@@ -2988,10 +3061,19 @@ function playHoverSound() {
 // ======================
 // UTILITIES
 // ======================
+function translateAppText(text) {
+    if (!text || typeof text !== 'string') return text;
+    if (window.AppI18N && typeof window.AppI18N.translateExact === 'function') {
+        const language = window.AppI18N.getCurrentLanguage ? window.AppI18N.getCurrentLanguage() : 'pl';
+        return window.AppI18N.translateExact(text, language);
+    }
+    return text;
+}
+
 function showNotification(message, type = 'success') {
     const notification = document.createElement('div');
     notification.className = `notification ${type}`;
-    notification.textContent = message;
+    notification.textContent = translateAppText(message);
     
     const colors = {
         'success': '#4caf50',
@@ -3118,6 +3200,7 @@ function createConfetti() {
 // ======================
 function exportDataAsHTML() {
     const data = AppData;
+    const challengeName = getChallengeDisplayName();
     const language = window.AppI18N && typeof window.AppI18N.getCurrentLanguage === 'function'
         ? window.AppI18N.getCurrentLanguage()
         : (data.settings.language || 'pl');
@@ -3138,6 +3221,18 @@ function exportDataAsHTML() {
     };
     const moodEmojis = { 1: '😔', 2: '🙁', 3: '😐', 4: '🙂', 5: '😊' };
     const localizedMoodLabel = (value) => (moodLabels[value] && moodLabels[value][language]) || String(value);
+    const normalizeCompletedWorkoutEntries = (value) => {
+        if (Array.isArray(value)) {
+            return Array.from(new Set(value
+                .filter(item => item !== null && item !== undefined && item !== '')
+                .map(item => String(item).trim())
+                .filter(Boolean)));
+        }
+        if (value === null || value === undefined || value === '') {
+            return [];
+        }
+        return [String(value).trim()].filter(Boolean);
+    };
 
     const runEntries = Object.entries(data.runLog || {}).sort((a, b) => a[0].localeCompare(b[0]));
     const totalRunDistance = runEntries.reduce((sum, [, entry]) => sum + Number(entry?.distance || 0), 0);
@@ -3194,7 +3289,7 @@ function exportDataAsHTML() {
         const steps = Number(data.steps?.[dateKey] || 0);
         const mood = data.mood?.[dateKey];
         const tasks = Array.isArray(data.completedTasks?.[dateKey]) ? data.completedTasks[dateKey].length : Number(data.completedTasks?.[dateKey] || 0);
-        const workouts = Array.isArray(data.completedWorkouts?.[dateKey]) ? data.completedWorkouts[dateKey].length : Number(data.completedWorkouts?.[dateKey] || 0);
+        const workouts = normalizeCompletedWorkoutEntries(data.completedWorkouts?.[dateKey]).length;
         const run = data.runLog?.[dateKey];
         const focusParts = Array.isArray(data.workoutFocus?.[dateKey]) ? data.workoutFocus[dateKey] : [];
         return `
@@ -3238,7 +3333,7 @@ function exportDataAsHTML() {
     const totalStudyHours = Object.values(data.studyHours).reduce((sum, val) => sum + val, 0);
     
     const totalWorkouts = Object.values(data.completedWorkouts || {}).reduce((sum, workouts) => {
-        return sum + (Array.isArray(workouts) ? workouts.length : (workouts || 0));
+        return sum + normalizeCompletedWorkoutEntries(workouts).length;
     }, 0);
     
     const totalTasks = Object.values(data.completedTasks).reduce((sum, tasks) => {
@@ -3285,7 +3380,7 @@ function exportDataAsHTML() {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${tr('Kawaii Quest - Raport Postępów')}</title>
+    <title>${challengeName} - ${tr('Raport Postępów')}</title>
     <style>
         * {
             margin: 0;
@@ -3627,7 +3722,7 @@ function exportDataAsHTML() {
 <body>
     <div class="container">
         <header>
-            <h1>🌸 Kawaii Quest 🌸</h1>
+            <h1>🌸 ${challengeName} 🌸</h1>
             <p class="date">${tr('Raport wygenerowany:')} ${now}</p>
         </header>
 
@@ -3865,13 +3960,13 @@ function exportDataAsHTML() {
         <section>
             <h2>${tr('📸 Galeria')} (${data.gallery.length} ${tr('zdjęć')})</h2>
             <div class="gallery-grid">
-                ${data.gallery.slice(0, 20).map(photo => `
+                ${data.gallery.slice(0, 12).map(photo => `
                     <div class="gallery-item">
-                        <img src="${typeof photo === 'string' ? photo : photo.url || photo}" alt="${tr('Zdjęcie z galerii')}">
+                        <img src="${typeof photo === 'string' ? photo : photo.url || photo}" alt="${tr('Zdjęcie z galerii')}" style="display: block; width: 100%; height: 100%; object-fit: cover; border-radius: 12px;">
                     </div>
                 `).join('')}
             </div>
-            ${data.gallery.length > 20 ? `<p style="margin-top: 1rem; color: #666;">${tr('... i')} ${data.gallery.length - 20} ${tr('więcej zdjęć')}</p>` : ''}
+            ${data.gallery.length > 12 ? `<p style="margin-top: 1rem; color: #666;">${tr('... i')} ${data.gallery.length - 12} ${tr('więcej zdjęć')}</p>` : ''}
         </section>
         ` : ''}
         
@@ -3888,16 +3983,6 @@ function exportDataAsHTML() {
             </div>
         </section>
         ` : ''}
-
-        <section>
-            <h2>${tr('📦 Informacje o danych')}</h2>
-            <div class="stats-grid">
-                <div class="stat-card"><div class="stat-value">${historyDates.size}</div><div class="stat-label">${tr('Dni z danymi')}</div></div>
-                <div class="stat-card"><div class="stat-value">${runEntries.length}</div><div class="stat-label">${tr('Zapisane biegi')}</div></div>
-                <div class="stat-card"><div class="stat-value">${Object.keys(focusCounts).length}</div><div class="stat-label">${tr('Wybrane partie')}</div></div>
-                <div class="stat-card"><div class="stat-value">${historyDates.size}</div><div class="stat-label">${progressHistorySummary}</div></div>
-            </div>
-        </section>
         
         <footer>
             <p>${tr('Made with 💖')}</p>
@@ -4073,6 +4158,8 @@ function initWorkouts() {
     const saveRunBtn = document.getElementById('saveRunBtn');
     const runDistanceInput = document.getElementById('runDistanceInput');
     const runDurationInput = document.getElementById('runDurationInput');
+    const saveManualWorkoutBtn = document.getElementById('saveManualWorkoutBtn');
+    const manualWorkoutNameInput = document.getElementById('manualWorkoutNameInput');
     
     // Initialize weeklyWorkouts if not exists
     if (!AppData.weeklyWorkouts) {
@@ -4129,6 +4216,12 @@ function initWorkouts() {
     if (runDurationInput) {
         runDurationInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') saveWorkoutRun();
+        });
+    }
+    if (saveManualWorkoutBtn && manualWorkoutNameInput) {
+        saveManualWorkoutBtn.addEventListener('click', saveManualWorkout);
+        manualWorkoutNameInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') saveManualWorkout();
         });
     }
 
@@ -4200,26 +4293,26 @@ function updateWorkoutQuickStats() {
 
     if (runSummaryBox) {
         if (runData && (Number(runData.distance) > 0 || Number(runData.duration) > 0)) {
-            runSummaryBox.textContent = `Dziś: ${Number(runData.distance).toFixed(1)} km • ${Number(runData.duration)} min • rekord: ${Math.max(Number(runData.distance) || 0, 0)} km`;
+            runSummaryBox.textContent = translateAppText(`Dziś: ${Number(runData.distance).toFixed(1)} km • ${Number(runData.duration)} min • rekord: ${Math.max(Number(runData.distance) || 0, 0)} km`);
         } else {
-            runSummaryBox.textContent = 'Brak danych biegu dziś – wpisz dystans i czas.';
+            runSummaryBox.textContent = translateAppText('Brak danych biegu dziś – wpisz dystans i czas.');
         }
     }
 
     if (focusSummaryBox) {
         if (focusList.length > 0) {
-            focusSummaryBox.textContent = 'Wybrane partie: ' + focusList.join(', ');
+            focusSummaryBox.textContent = translateAppText('Wybrane partie: ') + focusList.join(', ');
         } else {
-            focusSummaryBox.textContent = 'Brak wybranych partii – kliknij, aby zaznaczyć dziś trening.';
+            focusSummaryBox.textContent = translateAppText('Brak wybranych partii – kliknij, aby zaznaczyć dziś trening.');
         }
     }
 
     if (todayWorkoutSummary) {
         const plannedToday = (AppData.settings.workouts || []).length + (AppData.settings.customWorkouts || []).length;
         if (plannedToday > 0) {
-            todayWorkoutSummary.textContent = `Ukończono dziś ${completedToday.length} z ${plannedToday} zaplanowanych zadań treningowych. Kliknij „Zrób dziś” albo checkbox, aby śledzić progres.`;
+            todayWorkoutSummary.textContent = translateAppText(`Ukończono dziś ${completedToday.length} z ${plannedToday} zaplanowanych zadań treningowych. Kliknij „Zrób dziś” albo checkbox, aby śledzić progres.`);
         } else {
-            todayWorkoutSummary.textContent = 'Dodaj pierwszy film lub własne ćwiczenie, aby rozpocząć plan treningowy na dziś.';
+            todayWorkoutSummary.textContent = translateAppText('Dodaj pierwszy film lub własne ćwiczenie, aby rozpocząć plan treningowy na dziś.');
         }
     }
 }
@@ -4260,17 +4353,28 @@ function saveWorkoutRun() {
         return;
     }
 
+    const today = getTodayKey();
+
     if (!AppData.runLog) AppData.runLog = {};
-    AppData.runLog[getTodayKey()] = {
+    AppData.runLog[today] = {
         distance: distance || 0,
         duration: duration || 0,
         updatedAt: new Date().toISOString()
     };
 
+    if (!AppData.completedWorkouts) AppData.completedWorkouts = {};
+    const runWorkoutId = getRunWorkoutId(today);
+    const completedForDay = normalizeCompletedWorkoutEntries(AppData.completedWorkouts[today]);
+    if (!completedForDay.includes(runWorkoutId)) {
+        completedForDay.push(runWorkoutId);
+        AppData.completedWorkouts[today] = completedForDay;
+    }
+
     saveData();
+    updateWorkoutsDisplay();
     updateWorkoutQuickStats();
     updateStats();
-    showNotification('✅ Bieg zapisany!', 'success');
+    showNotification('✅ Bieg zapisany i dodany do workoutów!', 'success');
 }
 
 function addWorkout(selectedCategoryElement) {
@@ -4355,6 +4459,32 @@ function addCustomWorkout() {
     showNotification('✅ Własne ćwiczenie dodane!', 'success');
 }
 
+function saveManualWorkout() {
+    const input = document.getElementById('manualWorkoutNameInput');
+    if (!input || !input.value.trim()) {
+        showNotification('⚠️ Wpisz nazwę treningu!', 'warning');
+        return;
+    }
+
+    const name = input.value.trim();
+    const id = 'manual_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+
+    if (!AppData.settings.customWorkouts) AppData.settings.customWorkouts = [];
+    AppData.settings.customWorkouts.push({
+        id: id,
+        name: name,
+        addedDate: new Date().toISOString(),
+        manual: true
+    });
+
+    saveData();
+    input.value = '';
+    updateCustomWorkoutsDisplay();
+    updateWorkoutsDisplay();
+    updateStats();
+    showNotification('✅ Trening bez filmu dodany do listy. Zaznacz checkbox, gdy będzie wykonany.', 'success');
+}
+
 function removeCustomWorkout(id) {
     AppData.settings.customWorkouts = AppData.settings.customWorkouts.filter(w => w.id !== id);
     saveData();
@@ -4400,7 +4530,7 @@ function updateWorkoutsDisplay() {
     }
     
     const today = new Date().toISOString().split('T')[0];
-    const completedToday = AppData.completedWorkouts[today] || [];
+    const completedToday = normalizeCompletedWorkoutEntries(AppData.completedWorkouts[today]);
     
     // Determine which workouts to display
     let workoutsToDisplay = [];
@@ -4418,7 +4548,7 @@ function updateWorkoutsDisplay() {
     }
     
     const settingsHtml = !AppData.settings.workouts || AppData.settings.workouts.length === 0
-        ? '<p style="color: #999; font-size: 0.9em;">Brak dodanych workoutów</p>'
+        ? `<p style="color: #999; font-size: 0.9em;">${translateAppText('Brak dodanych workoutów')}</p>`
         : AppData.settings.workouts.map(workout => `
             <article class="workout-card" style="display: flex; gap: 1rem; margin-bottom: 1rem; padding: 1rem; background: var(--card-bg); border-radius: 14px; align-items: center; box-shadow: 0 14px 26px rgba(15, 23, 42, 0.08);">
                 <div style="position: relative; cursor: pointer; flex-shrink: 0;" onclick="playWorkoutVideo('${workout.videoId}')">
@@ -4438,9 +4568,36 @@ function updateWorkoutsDisplay() {
     
     // Get custom workouts (always the same every day)
     const customWorkouts = AppData.settings.customWorkouts || [];
+    const runData = AppData.runLog && AppData.runLog[today] ? AppData.runLog[today] : null;
+    const hasRunToday = !!(runData && (Number(runData.distance) > 0 || Number(runData.duration) > 0));
+    const runWorkoutId = getRunWorkoutId(today);
+    const completedTodayNormalized = normalizeCompletedWorkoutEntries(completedToday);
     
     // Build view HTML with both YouTube and custom workouts
     let viewHtmlParts = [];
+
+    if (hasRunToday) {
+        const isRunCompleted = completedTodayNormalized.includes(runWorkoutId);
+        viewHtmlParts.push(`
+            <article class="workout-card ${isRunCompleted ? 'workout-card--done' : ''}" style="display: grid; grid-template-columns: auto 120px 1fr auto; gap: 0.9rem; align-items: center; margin-bottom: 1rem; padding: 1rem; background: ${isRunCompleted ? 'linear-gradient(145deg, rgba(243,244,246,0.95), rgba(255,255,255,0.98))' : 'linear-gradient(145deg, rgba(255,255,255,0.96), var(--card-bg))'}; border-radius: 18px; box-shadow: 0 14px 26px rgba(15, 23, 42, 0.08); border: 1px solid rgba(255,255,255,0.9); opacity: ${isRunCompleted ? '0.82' : '1'};">
+                <label style="display: flex; align-items: center; justify-content: center; cursor: pointer;">
+                    <input type="checkbox" ${isRunCompleted ? 'checked' : ''} onchange="toggleWorkoutComplete('${runWorkoutId}')" style="width: 24px; height: 24px; cursor: pointer; accent-color: var(--primary-color);">
+                </label>
+                <div style="width: 120px; height: 90px; background: linear-gradient(145deg, #34d399, #0f766e); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 2rem; flex-shrink: 0;">
+                    🏃
+                </div>
+                <div style="min-width: 0;">
+                    <div style="display: flex; flex-wrap: wrap; gap: 0.45rem; align-items: center; margin-bottom: 0.35rem;">
+                        <span class="workout-chip">🏃 ${translateAppText('Bieganie')}</span>
+                        <span class="workout-chip" style="background: ${isRunCompleted ? 'rgba(34,197,94,0.12)' : 'rgba(59,130,246,0.14)'}; color: ${isRunCompleted ? '#166534' : 'var(--text-primary)'}; text-transform: none; letter-spacing: normal;">${isRunCompleted ? '✅ ' + translateAppText('Ukończone dziś') : '⏳ ' + translateAppText('Do zrobienia')}</span>
+                    </div>
+                    <p style="font-size: 0.95em; color: var(--text-color); margin: 0 0 0.25rem 0; font-weight: 700; ${isRunCompleted ? 'text-decoration: line-through;' : ''}">${translateAppText('Bieg / aktywność bez filmu')}</p>
+                    <p style="font-size: 0.85em; color: var(--text-secondary); margin: 0;">${translateAppText('Dystans:')} ${Number(runData.distance).toFixed(1)} km • ${translateAppText('Czas:')} ${Number(runData.duration)} min</p>
+                </div>
+                <button onclick="toggleWorkoutComplete('${runWorkoutId}')" style="padding: 0.45rem 0.75rem; background: ${isRunCompleted ? 'linear-gradient(145deg, #22c55e, #15803d)' : 'linear-gradient(145deg, var(--primary-color), #2563eb)'}; color: white; border: none; border-radius: 10px; cursor: pointer; white-space: nowrap; font-weight: 700;">${isRunCompleted ? '✔ ' + translateAppText('Gotowe') : translateAppText('Zrób dziś')}</button>
+            </article>
+        `);
+    }
     
     const filteredWorkouts = workoutsToDisplay.filter(workout => {
         if (activeFilter === 'all') return true;
@@ -4471,10 +4628,10 @@ function updateWorkoutsDisplay() {
                         <span class="workout-chip">${getWorkoutCategoryLabel(workout.category || 'video')}</span>
                         <span class="workout-chip" style="background: ${isCompleted ? 'rgba(34,197,94,0.12)' : 'rgba(59,130,246,0.14)'}; color: ${isCompleted ? '#166534' : 'var(--text-primary)'}; text-transform: none; letter-spacing: normal;">${isCompleted ? '✅ Ukończone dziś' : '⏳ Do zrobienia'}</span>
                     </div>
-                    <p style="font-size: 0.95em; color: var(--text-color); margin: 0 0 0.25rem 0; font-weight: 700; cursor: pointer; ${isCompleted ? 'text-decoration: line-through;' : ''}" onclick="playWorkoutVideo('${workout.videoId}')">Kliknij, aby odtworzyć film</p>
-                    <p style="font-size: 0.85em; color: var(--text-secondary); margin: 0;">Dodano: ${new Date(workout.addedDate).toLocaleDateString('pl-PL')}</p>
+                    <p style="font-size: 0.95em; color: var(--text-color); margin: 0 0 0.25rem 0; font-weight: 700; cursor: pointer; ${isCompleted ? 'text-decoration: line-through;' : ''}" onclick="playWorkoutVideo('${workout.videoId}')">${translateAppText('Kliknij, aby odtworzyć film')}</p>
+                    <p style="font-size: 0.85em; color: var(--text-secondary); margin: 0;">${translateAppText('Dodano:')} ${new Date(workout.addedDate).toLocaleDateString('pl-PL')}</p>
                 </div>
-                <button onclick="playWorkoutVideo('${workout.videoId}')" style="padding: 0.45rem 0.75rem; background: linear-gradient(145deg, var(--primary-color), #2563eb); color: white; border: none; border-radius: 10px; cursor: pointer; white-space: nowrap; font-weight: 700;">▶ Otwórz</button>
+                <button onclick="playWorkoutVideo('${workout.videoId}')" style="padding: 0.45rem 0.75rem; background: linear-gradient(145deg, var(--primary-color), #2563eb); color: white; border: none; border-radius: 10px; cursor: pointer; white-space: nowrap; font-weight: 700;">▶ ${translateAppText('Otwórz')}</button>
             </article>
         `);
             } else if (workout.id && workout.name) {
@@ -4490,13 +4647,13 @@ function updateWorkoutsDisplay() {
                 </div>
                 <div style="min-width: 0;">
                     <div style="display: flex; flex-wrap: wrap; gap: 0.45rem; align-items: center; margin-bottom: 0.35rem;">
-                        <span class="workout-chip">Własne</span>
-                        <span class="workout-chip" style="background: ${isCompleted ? 'rgba(34,197,94,0.12)' : 'rgba(59,130,246,0.14)'}; color: ${isCompleted ? '#166534' : 'var(--text-primary)'}; text-transform: none; letter-spacing: normal;">${isCompleted ? '✅ Ukończone dziś' : '⏳ Do zrobienia'}</span>
+                        <span class="workout-chip">${translateAppText('Własne')}</span>
+                        <span class="workout-chip" style="background: ${isCompleted ? 'rgba(34,197,94,0.12)' : 'rgba(59,130,246,0.14)'}; color: ${isCompleted ? '#166534' : 'var(--text-primary)'}; text-transform: none; letter-spacing: normal;">${isCompleted ? '✅ ' + translateAppText('Ukończone dziś') : '⏳ ' + translateAppText('Do zrobienia')}</span>
                     </div>
                     <p style="font-size: 0.95em; color: var(--text-color); margin: 0 0 0.25rem 0; font-weight: 700; ${isCompleted ? 'text-decoration: line-through;' : ''}">${workout.name}</p>
-                    <p style="font-size: 0.85em; color: var(--text-secondary); margin: 0;">Własne ćwiczenie (tygodniowe)</p>
+                    <p style="font-size: 0.85em; color: var(--text-secondary); margin: 0;">${translateAppText('Własne ćwiczenie (tygodniowe)')}</p>
                 </div>
-                <button onclick="toggleWorkoutComplete('${workout.id}')" style="padding: 0.45rem 0.75rem; background: ${isCompleted ? 'linear-gradient(145deg, #22c55e, #15803d)' : 'linear-gradient(145deg, var(--primary-color), #2563eb)'}; color: white; border: none; border-radius: 10px; cursor: pointer; white-space: nowrap; font-weight: 700;">${isCompleted ? '✔ Gotowe' : 'Zrób dziś'}</button>
+                <button onclick="toggleWorkoutComplete('${workout.id}')" style="padding: 0.45rem 0.75rem; background: ${isCompleted ? 'linear-gradient(145deg, #22c55e, #15803d)' : 'linear-gradient(145deg, var(--primary-color), #2563eb)'}; color: white; border: none; border-radius: 10px; cursor: pointer; white-space: nowrap; font-weight: 700;">${isCompleted ? '✔ ' + translateAppText('Gotowe') : translateAppText('Zrób dziś')}</button>
             </article>
         `);
             }
@@ -4522,13 +4679,13 @@ function updateWorkoutsDisplay() {
                 </div>
                 <div style="min-width: 0;">
                     <div style="display: flex; flex-wrap: wrap; gap: 0.45rem; align-items: center; margin-bottom: 0.35rem;">
-                        <span class="workout-chip">Własne</span>
-                        <span class="workout-chip" style="background: ${isCompleted ? 'rgba(34,197,94,0.12)' : 'rgba(59,130,246,0.14)'}; color: ${isCompleted ? '#166534' : 'var(--text-primary)'}; text-transform: none; letter-spacing: normal;">${isCompleted ? '✅ Ukończone dziś' : '⏳ Do zrobienia'}</span>
+                        <span class="workout-chip">${translateAppText('Własne')}</span>
+                        <span class="workout-chip" style="background: ${isCompleted ? 'rgba(34,197,94,0.12)' : 'rgba(59,130,246,0.14)'}; color: ${isCompleted ? '#166534' : 'var(--text-primary)'}; text-transform: none; letter-spacing: normal;">${isCompleted ? '✅ ' + translateAppText('Ukończone dziś') : '⏳ ' + translateAppText('Do zrobienia')}</span>
                     </div>
                     <p style="font-size: 0.95em; color: var(--text-color); margin: 0 0 0.25rem 0; font-weight: 700; ${isCompleted ? 'text-decoration: line-through;' : ''}">${workout.name}</p>
-                    <p style="font-size: 0.85em; color: var(--text-secondary); margin: 0;">Własne ćwiczenie</p>
+                    <p style="font-size: 0.85em; color: var(--text-secondary); margin: 0;">${translateAppText('Własne ćwiczenie')}</p>
                 </div>
-                <button onclick="toggleWorkoutComplete('${workout.id}')" style="padding: 0.45rem 0.75rem; background: ${isCompleted ? 'linear-gradient(145deg, #22c55e, #15803d)' : 'linear-gradient(145deg, var(--primary-color), #2563eb)'}; color: white; border: none; border-radius: 10px; cursor: pointer; white-space: nowrap; font-weight: 700;">${isCompleted ? '✔ Gotowe' : 'Zrób dziś'}</button>
+                <button onclick="toggleWorkoutComplete('${workout.id}')" style="padding: 0.45rem 0.75rem; background: ${isCompleted ? 'linear-gradient(145deg, #22c55e, #15803d)' : 'linear-gradient(145deg, var(--primary-color), #2563eb)'}; color: white; border: none; border-radius: 10px; cursor: pointer; white-space: nowrap; font-weight: 700;">${isCompleted ? '✔ ' + translateAppText('Gotowe') : translateAppText('Zrób dziś')}</button>
             </article>
         `);
             });
@@ -4536,7 +4693,7 @@ function updateWorkoutsDisplay() {
     }
     
     const viewHtml = viewHtmlParts.length === 0
-        ? '<p style="color: #999; font-size: 0.9em;">Brak workoutów w tej kategorii. Zmień filtr, aby zobaczyć inne treningi.</p>'
+        ? `<p style="color: #999; font-size: 0.9em;">${translateAppText('Brak workoutów w tej kategorii. Zmień filtr, aby zobaczyć inne treningi.')}</p>`
         : viewHtmlParts.join('');
     
     // Update settings view (no checkboxes)
@@ -4571,20 +4728,17 @@ function toggleWorkoutComplete(videoId) {
     }
     
     const today = new Date().toISOString().split('T')[0];
-    
-    if (!AppData.completedWorkouts[today]) {
-        AppData.completedWorkouts[today] = [];
-    }
-    
-    const index = AppData.completedWorkouts[today].indexOf(videoId);
+    const workoutKey = String(videoId).trim();
+    const todayEntries = normalizeCompletedWorkoutEntries(AppData.completedWorkouts[today]);
+    const index = todayEntries.indexOf(workoutKey);
     
     if (index > -1) {
-        // Remove from completed
-        AppData.completedWorkouts[today].splice(index, 1);
+        todayEntries.splice(index, 1);
+        AppData.completedWorkouts[today] = todayEntries;
         showNotification('⏱️ Workout oznaczony jako nieukończony', 'info');
     } else {
-        // Add to completed
-        AppData.completedWorkouts[today].push(videoId);
+        todayEntries.push(workoutKey);
+        AppData.completedWorkouts[today] = Array.from(new Set(todayEntries));
         playClickSound();
         showNotification('✅ Workout ukończony!', 'success');
     }
