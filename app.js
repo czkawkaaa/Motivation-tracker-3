@@ -5230,22 +5230,25 @@ function renderAllDayWorkouts() {
 // ========== RULES SYSTEM ==========
 
 function initRules() {
-    // Zawsze upewnij się że struktura rules istnieje - ale NIE nadpisuj istniejących zasad
-    // (użytkownik mógł je edytować w ustawieniach)
-    // Wersja zasad - zwiększ tę liczbę kiedy chcesz wymusić aktualizację zasad na wszystkich urządzeniach
+    // Zawsze upewnij się, że struktura rules istnieje, ale NIGDY nie nadpisuj istniejących zasad użytkownika.
+    // Wersja zasad służy głównie do migracji, a nie do kasowania danych edytowanych przez użytkownika.
     const RULES_VERSION = 2;
+    const defaultRules = [
+        { id: 'movement', title: 'Ruch', content: 'Codzienny zaplanowany ruch, minumum 7000 kroków dziennie.' },
+        { id: 'diet', title: 'Dieta', content: 'Codziennie zdrowy posiłek, zakaz kupowania słodyczy, jeden cheat meal w tygodniu, deficyt kaloryczny.' },
+        { id: 'water', title: 'Woda', content: 'Picie większej ilości wody niż dotychczas, rozpoczęcie dnia od wody.' },
+        { id: 'sleep', title: 'Sen', content: 'Minimum 7 godzin snu, pobudka około 8:30' },
+        { id: 'development', title: 'Rozwój', content: 'Ograniczenia tik toka i instagrama, regularne słuchanie książek, szydełkowanie, pisanie itp.' }
+    ];
 
-    const currentRulesVersion = AppData.settings.rulesVersion || 1;
-    const rulesOutdated = !AppData.settings.rules || !Array.isArray(AppData.settings.rules) || AppData.settings.rules.length === 0 || currentRulesVersion < RULES_VERSION;
+    const hasCustomRules = Array.isArray(AppData.settings.rules) && AppData.settings.rules.length > 0;
+    if (!hasCustomRules) {
+        AppData.settings.rules = [...defaultRules];
+    }
 
-    if (rulesOutdated) {
-        AppData.settings.rules = [
-            { id: 'movement', title: 'Ruch', content: 'Codzienny zaplanowany ruch, minumum 7000 kroków dziennie.' },
-            { id: 'diet', title: 'Dieta', content: 'Codziennie zdrowy posiłek, zakaz kupowania słodyczy, jeden cheat meal w tygodniu, deficyt kaloryczny.' },
-            { id: 'water', title: 'Woda', content: 'Picie większej ilości wody niż dotychczas, rozpoczęcie dnia od wody.' },
-            { id: 'sleep', title: 'Sen', content: 'Minimum 7 godzin snu, pobudka około 8:30' },
-            { id: 'development', title: 'Rozwój', content: 'Ograniczenia tik toka i instagrama, regularne słuchanie książek, szydełkowanie, pisanie itp.' }
-        ];
+    const currentRulesVersion = Number(AppData.settings.rulesVersion);
+    const versionMissing = AppData.settings.rulesVersion === undefined || AppData.settings.rulesVersion === null || Number.isNaN(currentRulesVersion);
+    if (versionMissing || currentRulesVersion < RULES_VERSION) {
         AppData.settings.rulesVersion = RULES_VERSION;
         saveData();
     }

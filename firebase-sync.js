@@ -98,6 +98,21 @@ function smartMergeData(local, cloud, cloudLastModified = 0) {
     return merged;
 }
 
+function applySnapshotFromSource(source, sourceTimestamp = Date.now()) {
+    if (!source || typeof source !== 'object') return false;
+    if (typeof AppData === 'undefined') return false;
+
+    const snapshot = JSON.parse(JSON.stringify(source));
+    Object.keys(AppData).forEach(key => {
+        if (key !== 'lastModified') delete AppData[key];
+    });
+    Object.assign(AppData, snapshot);
+    AppData.lastModified = Number(sourceTimestamp) || Date.now();
+    localStorage.setItem('kawaiiQuestData', JSON.stringify(AppData));
+    if (typeof updateAllDisplays === 'function') updateAllDisplays();
+    return true;
+}
+
 function setupAuthUI() {
     const loginBtn = document.getElementById('loginBtn');
     const logoutBtn = document.getElementById('logoutBtn');
@@ -134,6 +149,13 @@ async function loginWithGoogle() {
 async function logout() {
     if (!requireFirebaseAccess()) return;
     try {
+        if (typeof AppData !== 'undefined' && AppData && typeof AppData.lastModified !== 'undefined') {
+            AppData.lastModified = Date.now();
+            localStorage.setItem('kawaiiQuestData', JSON.stringify(AppData));
+        }
+        if (typeof window.flushPendingFirestoreSave === 'function') {
+            await window.flushPendingFirestoreSave();
+        }
         if (typeof playClickSound === 'function') playClickSound();
         await signOut(auth);
         updateSyncStatus('disconnected', 'Rozłączono', '⚠️');
@@ -229,20 +251,18 @@ async function loadDataFromFirestore() {
             }
             if (alreadyNotifiedDeletion) sessionStorage.removeItem('cloudDeletionPending');
             const localData = localStorage.getItem('kawaiiQuestData');
-            if (localData) {
-                const local = JSON.parse(localData);
-                if (local.lastModified && cloudData.lastModified && local.lastModified > cloudData.lastModified) {
-                    await saveDataToFirestore();
-                    return true;
-                }
+            const localLastModified = localData ? JSON.parse(localData).lastModified || 0 : 0;
+            const cloudLastModified = Number(cloudData.lastModified || 0);
+
+            if (localLastModified && cloudLastModified && localLastModified > cloudLastModified) {
+                await saveDataToFirestore();
+                return true;
             }
+
             if (typeof AppData !== 'undefined' && cloudData.data) {
                 const hasData = isMeaningfulData(cloudData.data);
                 if (hasData) {
-                    const merged = smartMergeData(AppData, cloudData.data, cloudData.lastModified || 0);
-                    Object.assign(AppData, merged);
-                    localStorage.setItem('kawaiiQuestData', JSON.stringify(AppData));
-                    if (typeof updateAllDisplays === 'function') updateAllDisplays();
+                    applySnapshotFromSource(cloudData.data, cloudLastModified || Date.now());
                 }
             }
             return true;
@@ -291,10 +311,7 @@ async function forcePull() {
         if (docSnap.exists()) {
             const cloud = docSnap.data();
             if (cloud.data) {
-                const merged = smartMergeData(AppData, cloud.data, cloud.lastModified || 0);
-                Object.assign(AppData, merged);
-                localStorage.setItem('kawaiiQuestData', JSON.stringify(AppData));
-                if (typeof updateAllDisplays === 'function') updateAllDisplays();
+                applySnapshotFromSource(cloud.data, cloud.lastModified || Date.now());
                 updateSyncStatus('connected', 'Dane pobrane!', '✅');
                 if (typeof showNotification === 'function') showNotification('✅ Dane pobrane z chmury!', 'success');
             } else {
@@ -393,15 +410,12 @@ function setupRealtimeSync() {
             if (sessionStorage.getItem('cloudDeletionPending')) sessionStorage.removeItem('cloudDeletionPending');
             
             if (typeof AppData !== 'undefined') {
-                if (cloudData.lastModified && cloudData.lastModified > (AppData.lastModified || 0)) {
-                    if (cloudData.data) {
-                        const hasData = isMeaningfulData(cloudData.data);
-                        if (hasData) {
-                            const merged = smartMergeData(AppData, cloudData.data, cloudData.lastModified || 0);
-                            Object.assign(AppData, merged);
-                            localStorage.setItem('kawaiiQuestData', JSON.stringify(AppData));
-                            if (typeof updateAllDisplays === 'function') updateAllDisplays();
-                        }
+                const cloudLastModified = Number(cloudData.lastModified || 0);
+                const localLastModified = Number(AppData.lastModified || 0);
+                if (cloudLastModified && cloudLastModified > localLastModified && cloudData.data) {
+                    const hasData = isMeaningfulData(cloudData.data);
+                    if (hasData) {
+                        applySnapshotFromSource(cloudData.data, cloudLastModified);
                     }
                 }
             }
@@ -415,6 +429,21 @@ function setupRealtimeSync() {
 
 let _saveTimer = null;
 let _savePendingResolve = null;
+async function flushPendingFirestoreSave() {
+    if (_saveTimer) {
+        clearTimeout(_saveTimer);
+        _saveTimer = null;
+    }
+    if (typeof saveDataToFirestore === 'function') {
+        await saveDataToFirestore();
+    }
+    if (_savePendingResolve) {
+        const resolve = _savePendingResolve;
+        _savePendingResolve = null;
+        resolve();
+    }
+}
+
 function scheduleSaveToFirestore(delay = 800) {
     if (_saveTimer) {
         clearTimeout(_saveTimer);
@@ -432,6 +461,7 @@ function scheduleSaveToFirestore(delay = 800) {
     });
 }
 window.saveDataToFirestore = scheduleSaveToFirestore;
+window.flushPendingFirestoreSave = flushPendingFirestoreSave;
 
 async function deleteDataFromFirestore() {
     if (!currentUser) return;
@@ -478,8 +508,15 @@ async function initFirebaseSync() {
     window.addEventListener('online', () => {
         if (typeof window.syncNow === 'function') window.syncNow();
     });
-    window.addEventListener('beforeunload', (e) => {
-        if (typeof window.forcePush === 'function') { try { window.forcePush(); } catch (err) {} }
+    window.addEventListener('beforeunload', async (e) => {
+        try {
+            if (typeof window.flushPendingFirestoreSave === 'function') {
+                await window.flushPendingFirestoreSave();
+            }
+            if (typeof window.forcePush === 'function') { await window.forcePush(); }
+        } catch (err) {
+            console.warn('⚠️ Nie udało się zapisać danych przed zamknięciem:', err);
+        }
     });
 }
 
