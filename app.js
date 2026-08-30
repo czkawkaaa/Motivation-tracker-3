@@ -80,6 +80,40 @@ const AppData = {
     }
 };
 
+const ALL_BADGE_IDS = [
+    'first-steps', 'first-mood', 'first-photo',
+    '3-day-streak', '7-day-streak', '14-day-streak', 'no-days-off', '30-day-streak',
+    'goku-ultra', 'plus-ultra',
+    'task-beginner', 'task-master', 'task-legend',
+    'mood-tracker', 'mood-master', 'always-happy', 'mood-swinger',
+    'steps-5k', 'steps-10k', 'steps-50k', 'steps-100k', 'steps-250k', 'rocky-balboa',
+    'photographer', 'social-butterfly', 'memory-keeper',
+    'workout-beginner', 'workout-warrior', 'workout-beast', 'workout-legend', 'one-punch',
+    'iron-dedication', 'weekend-warrior',
+    'optimus-prime', 'bumblebee', 'dark-knight', 'rainbow-master', 'theme-explorer',
+    'megatron', 'iron-man',
+    'perfectionist', 'discipline-master', 'comeback-king', 'consistency-champion', 'time-traveler',
+    'legend-collector',
+    '15-day-warrior', '30-day-warrior', '50-day-champion', '75-day-legend'
+];
+
+function getAllBadgeIds() {
+    return [...ALL_BADGE_IDS];
+}
+
+function getBadgeStats(data = AppData) {
+    const badgeMap = data && typeof data === 'object' && data.badges ? data.badges : {};
+    const allBadgeIds = getAllBadgeIds();
+    const unlockedBadges = allBadgeIds.filter(id => badgeMap[id] && badgeMap[id].unlocked).length;
+    const totalBadges = allBadgeIds.length;
+
+    return {
+        unlockedBadges,
+        totalBadges,
+        allBadgeIds
+    };
+}
+
 // Motivational quotes
 const motivationalQuotes = [
     "Jesteś silniejsza niż myślisz! 💖",
@@ -3350,9 +3384,8 @@ function exportDataAsHTML() {
     const currentStreak = data.streak || 0;
     const longestStreak = data.longestStreak || data.streak || 0;
     
-    // Count unlocked badges
-    const unlockedBadges = Object.values(data.badges).filter(b => b && b.unlocked).length;
-    const totalBadges = Object.keys(data.badges).length;
+    // Count unlocked badges against the full badge catalog, not only badges that were ever initialized in storage.
+    const { unlockedBadges, totalBadges } = getBadgeStats(data);
     
     // Get mood statistics
     const moodEntries = Object.entries(data.mood);
@@ -3367,9 +3400,9 @@ function exportDataAsHTML() {
     const heroCards = [
         { value: completedDays, label: tr('Dni ukończone') },
         { value: `${completionRate}%`, label: tr('Postęp wyzwania') },
+        { value: `${currentStreak} 🔥`, label: tr('Aktualna passa') },
         { value: `${totalSteps.toLocaleString(locale)}`, label: tr('Łącznie kroków') },
         { value: `${totalWorkouts}`, label: tr('Treningi ukończone') },
-        { value: `${totalRunDistance.toFixed(1)} km`, label: tr('Biegi łącznie') },
         { value: `${unlockedBadges}/${totalBadges}`, label: tr('Odznaki zdobyte') }
     ];
     
@@ -3771,14 +3804,6 @@ function exportDataAsHTML() {
                     <div class="stat-label">${tr('Łącznie kroków')}</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-value">${formatNumber(Math.round(avgSteps))}</div>
-                    <div class="stat-label">${tr('Średnio kroków/dzień')}</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value">${formatNumber(maxSteps)}</div>
-                    <div class="stat-label">${tr('Rekord kroków')}</div>
-                </div>
-                <div class="stat-card">
                     <div class="stat-value">${totalWorkouts}</div>
                     <div class="stat-label">${tr('Treningi ukończone')} 💪</div>
                 </div>
@@ -3793,10 +3818,6 @@ function exportDataAsHTML() {
                 <div class="stat-card">
                     <div class="stat-value">${totalStudyHours.toFixed(1)}h</div>
                     <div class="stat-label">${tr('Godzin nauki')} 📚</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value">${avgMood} / 5</div>
-                    <div class="stat-label">${tr('Średni nastrój')} 😊</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-value">${data.gallery.length}</div>
@@ -4091,8 +4112,10 @@ function exportDataAsHTML() {
             '50-day-champion': { name: 'Mistrz wyzwania', icon: '🏆' },
             '75-day-legend': { name: 'Legenda 75 Hard', icon: '👑' }
         };
-        
-        return Object.entries(badges).map(([id, badge]) => {
+
+        const badgeIds = getAllBadgeIds();
+        return badgeIds.map((id) => {
+            const badge = badges && badges[id] ? badges[id] : null;
             const info = badgeInfo[id] || { name: id, icon: '🏅' };
             const unlocked = badge && badge.unlocked ? 'unlocked' : '';
             return `

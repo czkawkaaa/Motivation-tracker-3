@@ -108,9 +108,11 @@ const context = {
 };
 
 vm.createContext(context);
-const app = vm.runInContext(`(function() { ${source}; return { AppData, loadData, checkBadges }; })()`, context);
+const app = vm.runInContext(`(function() { ${source}; return { AppData, loadData, checkBadges, getAllBadgeIds, getBadgeStats }; })()`, context);
 
 assert.ok(app.AppData, 'AppData should exist');
+assert.equal(app.getAllBadgeIds().length, 50, 'the full badge catalog should contain 50 badge IDs');
+assert.equal(app.getBadgeStats({ badges: {} }).totalBadges, 50, 'report total should use the full badge catalog, not only initialized badges');
 app.loadData();
 assert.equal(app.AppData.streak, 1, 'streak should be recalculated after loading saved data');
 assert.equal(app.AppData.badges['first-steps']?.unlocked, true, 'first-steps should unlock after loading saved data');
