@@ -69,6 +69,14 @@ const AppData = {
         workoutsGoal: 150,
         stepsEnabled: true,
         studyEnabled: true,
+        widgetSettings: {
+            enabled: true,
+            compact: false,
+            showProgress: true,
+            showTasks: true,
+            showStreak: true,
+            refreshMinutes: 15
+        },
         rulesAccepted: false,
         rules: [
             { id: 'movement', title: 'Ruch', content: 'Codzienny trening, spacer minimum 20 minut i rozciąganie.' },
@@ -550,6 +558,14 @@ function gatherWidgetData() {
     const tasksTotal = AppData.tasks ? AppData.tasks.length : 0;
     const tasksCompleted = Array.isArray(tasksToday) ? tasksToday.length : (tasksToday || 0);
     const percent = totalDays > 0 ? Number(((completed / totalDays) * 100).toFixed(1)) : 0;
+    const widgetSettings = AppData.settings?.widgetSettings || {
+        enabled: true,
+        compact: false,
+        showProgress: true,
+        showTasks: true,
+        showStreak: true,
+        refreshMinutes: 15
+    };
 
     return {
         currentDay: AppData.challenge?.currentDay || 0,
@@ -562,6 +578,12 @@ function gatherWidgetData() {
             total: tasksTotal,
             completed: tasksCompleted
         },
+        widgetEnabled: widgetSettings.enabled !== false,
+        widgetMode: widgetSettings.compact ? 'compact' : 'balanced',
+        showProgress: widgetSettings.showProgress !== false,
+        showTasks: widgetSettings.showTasks !== false,
+        showStreak: widgetSettings.showStreak !== false,
+        refreshMinutes: Number(widgetSettings.refreshMinutes) || 15,
         lastUpdated: new Date().toISOString()
     };
 }
@@ -2585,6 +2607,89 @@ function initSettings() {
         saveData();
     });
     
+    // Widget settings
+    const widgetSettings = AppData.settings.widgetSettings || {
+        enabled: true,
+        compact: false,
+        showProgress: true,
+        showTasks: true,
+        showStreak: true,
+        refreshMinutes: 15
+    };
+    const widgetToggle = document.getElementById('widgetToggle');
+    const widgetCompact = document.getElementById('widgetCompact');
+    const widgetShowProgress = document.getElementById('widgetShowProgress');
+    const widgetShowTasks = document.getElementById('widgetShowTasks');
+    const widgetShowStreak = document.getElementById('widgetShowStreak');
+    const widgetRefresh = document.getElementById('widgetRefresh');
+    const widgetPreview = document.getElementById('widgetPreview');
+
+    if (widgetToggle) {
+        widgetToggle.checked = widgetSettings.enabled !== false;
+        widgetToggle.addEventListener('change', (e) => {
+            AppData.settings.widgetSettings = AppData.settings.widgetSettings || {};
+            AppData.settings.widgetSettings.enabled = e.target.checked;
+            saveData();
+            sendWidgetUpdateToSW();
+            if (widgetPreview) widgetPreview.classList.toggle('muted', !e.target.checked);
+        });
+    }
+
+    if (widgetCompact) {
+        widgetCompact.checked = !!widgetSettings.compact;
+        widgetCompact.addEventListener('change', (e) => {
+            AppData.settings.widgetSettings = AppData.settings.widgetSettings || {};
+            AppData.settings.widgetSettings.compact = e.target.checked;
+            saveData();
+            sendWidgetUpdateToSW();
+        });
+    }
+
+    if (widgetShowProgress) {
+        widgetShowProgress.checked = widgetSettings.showProgress !== false;
+        widgetShowProgress.addEventListener('change', (e) => {
+            AppData.settings.widgetSettings = AppData.settings.widgetSettings || {};
+            AppData.settings.widgetSettings.showProgress = e.target.checked;
+            saveData();
+            sendWidgetUpdateToSW();
+        });
+    }
+
+    if (widgetShowTasks) {
+        widgetShowTasks.checked = widgetSettings.showTasks !== false;
+        widgetShowTasks.addEventListener('change', (e) => {
+            AppData.settings.widgetSettings = AppData.settings.widgetSettings || {};
+            AppData.settings.widgetSettings.showTasks = e.target.checked;
+            saveData();
+            sendWidgetUpdateToSW();
+        });
+    }
+
+    if (widgetShowStreak) {
+        widgetShowStreak.checked = widgetSettings.showStreak !== false;
+        widgetShowStreak.addEventListener('change', (e) => {
+            AppData.settings.widgetSettings = AppData.settings.widgetSettings || {};
+            AppData.settings.widgetSettings.showStreak = e.target.checked;
+            saveData();
+            sendWidgetUpdateToSW();
+        });
+    }
+
+    if (widgetRefresh) {
+        widgetRefresh.value = Number(widgetSettings.refreshMinutes) || 15;
+        widgetRefresh.addEventListener('change', (e) => {
+            const minutes = Number(e.target.value) || 15;
+            AppData.settings.widgetSettings = AppData.settings.widgetSettings || {};
+            AppData.settings.widgetSettings.refreshMinutes = minutes;
+            saveData();
+            sendWidgetUpdateToSW();
+        });
+    }
+
+    if (widgetPreview) {
+        widgetPreview.classList.toggle('muted', widgetSettings.enabled === false);
+    }
+
     // Sound toggle
     const soundToggle = document.getElementById('soundToggle');
     soundToggle.checked = AppData.settings.soundEnabled;

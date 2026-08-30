@@ -985,7 +985,60 @@
                 </section>
 
                 <section class="settings-section">
-                    <h2>🔊 Dźwięki i efekty</h2>
+                    <h2>� Widżety</h2>
+                    <div class="setting-item">
+                        <label>
+                            <input type="checkbox" id="widgetToggle" checked>
+                            Włącz widżety na ekranie głównym / Androidzie
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <label>
+                            <input type="checkbox" id="widgetCompact">
+                            Tryb kompaktowy
+                        </label>
+                        <small style="display: block; margin-top: 0.5rem;">Mniej informacji, bardziej "mini widget" dla małych ekranów.</small>
+                    </div>
+                    <div class="setting-item">
+                        <label>
+                            <input type="checkbox" id="widgetShowProgress" checked>
+                            Pokaż postęp wyzwania
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <label>
+                            <input type="checkbox" id="widgetShowTasks" checked>
+                            Pokaż zadania dnia
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <label>
+                            <input type="checkbox" id="widgetShowStreak" checked>
+                            Pokaż serię / streak
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <label>Odświeżanie widżetu:</label>
+                        <select id="widgetRefresh">
+                            <option value="5">5 minut</option>
+                            <option value="10">10 minut</option>
+                            <option value="15" selected>15 minut</option>
+                            <option value="30">30 minut</option>
+                            <option value="60">60 minut</option>
+                        </select>
+                    </div>
+                    <div class="widget-preview" id="widgetPreview">
+                        <div class="widget-preview-header">Kawaii Quest</div>
+                        <div class="widget-preview-body">
+                            <span>📈 68%</span>
+                            <span>✅ 3/8 zadań</span>
+                            <span>🔥 7 dni</span>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="settings-section">
+                    <h2>�🔊 Dźwięki i efekty</h2>
                     <div class="setting-item">
                         <label>
                             <input type="checkbox" id="soundToggle" checked>
