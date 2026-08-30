@@ -80,15 +80,13 @@ https://czkawkaaa.github.io/Motivation-tracker-3/
 - Konfiguracja wyzwania (długość, cele)
 - Ustawienie dni odpoczynku
 - **Zarządzanie workoutami**
-- **Opcje widżetów**: włączanie, tryb kompaktowy, sekcje do pokazania, odświeżanie
 - **PWA / instalacja na telefonie** z ikonami i wsparciem dla Androida
 - **Eksport pełnego raportu z wszystkimi statystykami do PDF**
 
-### 📱 Widżety i PWA
-- Mini widżety postępu wyzwania i zadań dnia
-- Możliwość dostosowania widoku do małych ekranów
-- Obsługa instalacji aplikacji jako PWA na telefonach
-- Aktualizacja widgetów po zmianach danych i ustawień
+### 📱 PWA / instalacja na telefonie
+- Aplikacja może być zainstalowana na telefonie jako PWA
+- Działa jako pełna aplikacja webowa z wygodnym dostępem na urządzeniu mobilnym
+- Obsługa zachowania mobilnego i instalacji bez sztucznie wprowadzających opcji widżetów
 
 ### 📥 Eksport do PDF
 - Kompletny raport ze statystykami:

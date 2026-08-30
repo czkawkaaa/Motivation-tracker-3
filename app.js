@@ -69,14 +69,6 @@ const AppData = {
         workoutsGoal: 150,
         stepsEnabled: true,
         studyEnabled: true,
-        widgetSettings: {
-            enabled: true,
-            compact: false,
-            showProgress: true,
-            showTasks: true,
-            showStreak: true,
-            refreshMinutes: 15
-        },
         rulesAccepted: false,
         rules: [
             { id: 'movement', title: 'Ruch', content: 'Codzienny trening, spacer minimum 20 minut i rozciąganie.' },
@@ -266,11 +258,15 @@ document.addEventListener('DOMContentLoaded', function() {
     updateAllDisplays();
     startQuoteRotation();
     
+    // Daily engagement features
+    checkDailyLogin();
+    checkDailyMilestones();
+    
     // Sprawdź czy jest zaplanowany reset danych
     // WYŁĄCZONE: checkScheduledReset() może powodować niechciane resety
     // checkScheduledReset();
     
-    // Zarejestruj Service Workera dla PWA / widgetów
+    // Zarejestruj Service Workera dla PWA / instalacji na telefonie
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('/Motivation-tracker-3/sw.js', { scope: '/Motivation-tracker-3/' })
             .then((reg) => {
@@ -301,20 +297,6 @@ document.addEventListener('DOMContentLoaded', function() {
         navigator.serviceWorker.addEventListener('controllerchange', () => {
             console.log('🔁 Service Worker przejął kontrolę — odświeżam aplikację');
             window.location.reload();
-        });
-
-        // Odbieraj zapytania od SW o dane widgetu (MessageChannel z portem)
-        navigator.serviceWorker.addEventListener('message', (event) => {
-            try {
-                if (event.data && event.data.type === 'GET_WIDGET_DATA') {
-                    // Jeśli port jest dostarczony przez MessageChannel, odeślij dane
-                    if (event.ports && event.ports[0]) {
-                        event.ports[0].postMessage(gatherWidgetData());
-                    }
-                }
-            } catch (e) {
-                console.error('Błąd w handlerze message od SW:', e);
-            }
         });
     }
 });
@@ -539,76 +521,289 @@ function saveData() {
     }
     
     checkBadges();
-
-    // Wyślij aktualizację do Service Workera aby odświeżyć widgety
-    try {
-        sendWidgetUpdateToSW();
-    } catch (e) {
-        // Nie blokujemy zapisu jeśli wysyłka widgetu się nie powiedzie
-        console.warn('Nie udało się wysłać aktualizacji widgetu:', e);
-    }
-}
-
-// Przygotowuje obiekt danych dla widgetów na podstawie AppData
-function gatherWidgetData() {
-    const totalDays = (AppData.challenge && (AppData.challenge.totalDays || AppData.settings?.challengeLength)) || 75;
-    const completed = Array.isArray(AppData.challenge?.completedDays) ? AppData.challenge.completedDays.length : (AppData.challenge?.completedDays || 0);
-    const todayKey = getTodayKey();
-    const tasksToday = (AppData.completedTasks && AppData.completedTasks[todayKey]) || [];
-    const tasksTotal = AppData.tasks ? AppData.tasks.length : 0;
-    const tasksCompleted = Array.isArray(tasksToday) ? tasksToday.length : (tasksToday || 0);
-    const percent = totalDays > 0 ? Number(((completed / totalDays) * 100).toFixed(1)) : 0;
-    const widgetSettings = AppData.settings?.widgetSettings || {
-        enabled: true,
-        compact: false,
-        showProgress: true,
-        showTasks: true,
-        showStreak: true,
-        refreshMinutes: 15
-    };
-
-    return {
-        currentDay: AppData.challenge?.currentDay || 0,
-        totalDays: totalDays,
-        completedDays: completed,
-        currentStreak: AppData.streak || 0,
-        todayCompleted: !!(AppData.challenge && AppData.challenge.completedDays && AppData.challenge.completedDays.includes(todayKey)),
-        progressPercent: percent,
-        tasksToday: {
-            total: tasksTotal,
-            completed: tasksCompleted
-        },
-        widgetEnabled: widgetSettings.enabled !== false,
-        widgetMode: widgetSettings.compact ? 'compact' : 'balanced',
-        showProgress: widgetSettings.showProgress !== false,
-        showTasks: widgetSettings.showTasks !== false,
-        showStreak: widgetSettings.showStreak !== false,
-        refreshMinutes: Number(widgetSettings.refreshMinutes) || 15,
-        lastUpdated: new Date().toISOString()
-    };
-}
-
-// Wyślij aktualizację do aktywnego Service Workera
-function sendWidgetUpdateToSW() {
-    if (!('serviceWorker' in navigator)) return;
-    const data = gatherWidgetData();
-    // PostMessage do aktywnego SW (jeśli jest)
-    navigator.serviceWorker.ready.then((reg) => {
-        if (reg && reg.active) {
-            try {
-                reg.active.postMessage({ type: 'UPDATE_WIDGET', widgetData: data });
-            } catch (e) {
-                console.warn('Nie udało się wysłać postMessage do SW:', e);
-            }
-        }
-    }).catch((e) => {
-        console.warn('navigator.serviceWorker.ready error:', e);
-    });
 }
 
 function getTodayKey() {
     const today = new Date();
     return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+}
+
+// ======================
+// DAILY ENGAGEMENT FEATURES
+// ======================
+
+/**
+ * Sprawdź czy użytkownik wraca po nowym dniu
+ * Pokaż modal powitalny z motivacją
+ */
+function checkDailyLogin() {
+    const today = getTodayKey();
+    const lastLoginDate = localStorage.getItem('kawaiiQuestLastLogin');
+    
+    if (lastLoginDate !== today) {
+        // Nowy dzień! Pokaż powitanie
+        localStorage.setItem('kawaiiQuestLastLogin', today);
+        showDailyCheckinModal();
+        
+        // Sprawdź czy streak jest zagrożony
+        if (AppData.streak > 0 && AppData.streak % 7 === 0) {
+            setTimeout(() => showStreakMilestoneNotification(), 800);
+        }
+    }
+}
+
+/**
+ * Pokaż ładny modal powitalny na nowy dzień
+ */
+function showDailyCheckinModal() {
+    const motivationalQuote = [
+        "🌅 Witaj! Nowy dzień = Nowe możliwości!",
+        "💪 Dzisiaj wygrywasz dla siebie!",
+        "✨ Jesteś silniejsza niż myślisz!",
+        "🎯 Dzisiaj robisz to dla swojego zdrowia!",
+        "🔥 Pokaż dzisiaj co w Tobie siedzi!",
+        "🌟 Każdy dzień to szansa na wielkie rzeczy!",
+        "💖 Wierzę w Ciebie! Teraz TY uwierz w siebie!",
+        "🎉 Gratulacje! Jesteś tutaj ZNOWU!",
+        "⚡ Energia czeka - załóż sobie sportowe ubrania!",
+        "👑 Dzisiaj jesteś TY - zawłaszczaj dzień!"
+    ];
+    
+    const randomMotivation = motivationalQuote[Math.floor(Math.random() * motivationalQuote.length)];
+    
+    const modal = document.createElement('div');
+    modal.className = 'daily-checkin-modal';
+    modal.innerHTML = `
+        <div class="daily-checkin-content">
+            <div class="daily-checkin-emoji">🌸</div>
+            <h2>Witaj ponownie!</h2>
+            <p class="daily-message">"${randomMotivation}"</p>
+            
+            <div class="daily-stats">
+                <div class="stat-mini">
+                    <span class="stat-value">${AppData.streak}</span>
+                    <span class="stat-label">🔥 Seria</span>
+                </div>
+                <div class="stat-mini">
+                    <span class="stat-value">${AppData.challenge.currentDay}</span>
+                    <span class="stat-label">📅 Dzień</span>
+                </div>
+                <div class="stat-mini">
+                    <span class="stat-value">${Object.values(AppData.badges || {}).filter(b => b.unlocked).length}</span>
+                    <span class="stat-label">🏆 Odznak</span>
+                </div>
+            </div>
+            
+            <div class="daily-tips">
+                <p style="margin: 0; font-size: 0.9rem; color: #666;">
+                    💡 ${getRandomTip()}
+                </p>
+            </div>
+            
+            <button class="daily-checkin-btn" id="dailyCheckinBtn">
+                🚀 Zaatakuj dzień!
+            </button>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // Add styles
+    if (!document.querySelector('style[data-daily-modal]')) {
+        const styles = document.createElement('style');
+        styles.setAttribute('data-daily-modal', 'true');
+        styles.textContent = `
+            .daily-checkin-modal {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0, 0, 0, 0.5);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 10000;
+                animation: fadeIn 0.3s ease;
+            }
+            
+            @keyframes fadeIn {
+                from { opacity: 0; }
+                to { opacity: 1; }
+            }
+            
+            .daily-checkin-content {
+                background: linear-gradient(135deg, #ff9ac2, #ffc1e0);
+                color: white;
+                border-radius: 25px;
+                padding: 2.5rem;
+                text-align: center;
+                max-width: 400px;
+                box-shadow: 0 20px 60px rgba(255, 154, 194, 0.3);
+                animation: slideUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            }
+            
+            @keyframes slideUp {
+                from { transform: translateY(30px); opacity: 0; }
+                to { transform: translateY(0); opacity: 1; }
+            }
+            
+            .daily-checkin-emoji {
+                font-size: 3.5rem;
+                margin-bottom: 1rem;
+                animation: bounce 1.5s infinite;
+            }
+            
+            @keyframes bounce {
+                0%, 100% { transform: translateY(0); }
+                50% { transform: translateY(-10px); }
+            }
+            
+            .daily-checkin-content h2 {
+                font-size: 2rem;
+                margin: 0 0 1rem 0;
+                font-weight: 800;
+            }
+            
+            .daily-message {
+                font-size: 1.1rem;
+                font-weight: 600;
+                margin: 0 0 1.5rem 0;
+                opacity: 0.95;
+                line-height: 1.4;
+            }
+            
+            .daily-stats {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 1rem;
+                margin: 1.5rem 0;
+                background: rgba(255, 255, 255, 0.15);
+                padding: 1.2rem;
+                border-radius: 15px;
+            }
+            
+            .stat-mini {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 0.5rem;
+            }
+            
+            .stat-mini .stat-value {
+                font-size: 1.8rem;
+                font-weight: 900;
+                line-height: 1;
+            }
+            
+            .stat-mini .stat-label {
+                font-size: 0.75rem;
+                opacity: 0.9;
+                white-space: nowrap;
+            }
+            
+            .daily-tips {
+                background: rgba(255, 255, 255, 0.15);
+                padding: 1rem;
+                border-radius: 12px;
+                margin: 1.5rem 0;
+                font-size: 0.9rem;
+                line-height: 1.5;
+            }
+            
+            .daily-checkin-btn {
+                background: white;
+                color: #ff9ac2;
+                border: none;
+                padding: 1rem 2rem;
+                border-radius: 14px;
+                font-size: 1rem;
+                font-weight: 700;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+            }
+            
+            .daily-checkin-btn:hover {
+                transform: translateY(-3px);
+                box-shadow: 0 12px 25px rgba(0, 0, 0, 0.3);
+            }
+            
+            .daily-checkin-btn:active {
+                transform: translateY(-1px);
+            }
+        `;
+        document.head.appendChild(styles);
+    }
+    
+    document.getElementById('dailyCheckinBtn').addEventListener('click', () => {
+        playSuccessSound();
+        modal.remove();
+    });
+}
+
+/**
+ * Pokaż powiadomienie o osiągnięciu milestone'a streaku
+ */
+function showStreakMilestoneNotification() {
+    const streak = AppData.streak;
+    let message = '';
+    let emoji = '🔥';
+    
+    if (streak === 7) {
+        message = '🎉 TYDZIEŃ! Już 7 dni z rzędu! To jest niesamowite!';
+        emoji = '🌟';
+    } else if (streak === 14) {
+        message = '👑 DWA TYGODNIE! Jesteś LEGENDA! Śmiałam się nie wierzyć!';
+        emoji = '👑';
+    } else if (streak === 21) {
+        message = '🚀 TRZY TYGODNIE! Konsystencja robi cuda! Jesteś niezniszczalna!';
+        emoji = '🚀';
+    } else if (streak === 30) {
+        message = '💎 MIESIĄC! PEŁNY MIESIĄC BEZ PRZERWY! To jest EPICKIE!';
+        emoji = '💎';
+    } else if (streak % 10 === 0 && streak > 30) {
+        message = `🔥 ${streak} DNI! Wow! Jesteś nieprzerwanie aktywna!`;
+        emoji = '💪';
+    } else {
+        return; // Nie pokazuj dla innych liczb
+    }
+    
+    showNotification(message, 'success');
+    playSuccessSound();
+    createConfetti();
+}
+
+/**
+ * Losowy tip motywacyjny
+ */
+function getRandomTip() {
+    const tips = [
+        "Pamiętaj: małe kroki każdego dnia tworzą wielkie zmiany!",
+        "Nie czekaj na idealny moment - zacznij TERAZ!",
+        "Streaki są magiczne - nie przerywaj!",
+        "Każdy trening zbliża Cię do celu!",
+        "Woda, ruch, sny - to Twoja recepta na sukces!",
+        "Konsystencja to Twoja supermoc!",
+        "Czytaj, trenuj, śpij - proste!",
+        "Dzisiaj jesteś o krok bliżej do celu!",
+        "Gratulacje że wróciłaś! To pokazuje Twoją determinację!",
+        "Każdy dzień liczy się. Nawet jeśli będzie ciężko!"
+    ];
+    return tips[Math.floor(Math.random() * tips.length)];
+}
+
+/**
+ * Sprawdź czy są milestone'i streaku do świętowania
+ */
+function checkDailyMilestones() {
+    const milestones = [3, 7, 14, 21, 30, 50, 75, 100];
+    
+    if (milestones.includes(AppData.streak)) {
+        setTimeout(() => {
+            showStreakMilestoneNotification();
+        }, 2000);
+    }
 }
 
 function getRunWorkoutId(dateKey = getTodayKey()) {
@@ -2607,89 +2802,6 @@ function initSettings() {
         saveData();
     });
     
-    // Widget settings
-    const widgetSettings = AppData.settings.widgetSettings || {
-        enabled: true,
-        compact: false,
-        showProgress: true,
-        showTasks: true,
-        showStreak: true,
-        refreshMinutes: 15
-    };
-    const widgetToggle = document.getElementById('widgetToggle');
-    const widgetCompact = document.getElementById('widgetCompact');
-    const widgetShowProgress = document.getElementById('widgetShowProgress');
-    const widgetShowTasks = document.getElementById('widgetShowTasks');
-    const widgetShowStreak = document.getElementById('widgetShowStreak');
-    const widgetRefresh = document.getElementById('widgetRefresh');
-    const widgetPreview = document.getElementById('widgetPreview');
-
-    if (widgetToggle) {
-        widgetToggle.checked = widgetSettings.enabled !== false;
-        widgetToggle.addEventListener('change', (e) => {
-            AppData.settings.widgetSettings = AppData.settings.widgetSettings || {};
-            AppData.settings.widgetSettings.enabled = e.target.checked;
-            saveData();
-            sendWidgetUpdateToSW();
-            if (widgetPreview) widgetPreview.classList.toggle('muted', !e.target.checked);
-        });
-    }
-
-    if (widgetCompact) {
-        widgetCompact.checked = !!widgetSettings.compact;
-        widgetCompact.addEventListener('change', (e) => {
-            AppData.settings.widgetSettings = AppData.settings.widgetSettings || {};
-            AppData.settings.widgetSettings.compact = e.target.checked;
-            saveData();
-            sendWidgetUpdateToSW();
-        });
-    }
-
-    if (widgetShowProgress) {
-        widgetShowProgress.checked = widgetSettings.showProgress !== false;
-        widgetShowProgress.addEventListener('change', (e) => {
-            AppData.settings.widgetSettings = AppData.settings.widgetSettings || {};
-            AppData.settings.widgetSettings.showProgress = e.target.checked;
-            saveData();
-            sendWidgetUpdateToSW();
-        });
-    }
-
-    if (widgetShowTasks) {
-        widgetShowTasks.checked = widgetSettings.showTasks !== false;
-        widgetShowTasks.addEventListener('change', (e) => {
-            AppData.settings.widgetSettings = AppData.settings.widgetSettings || {};
-            AppData.settings.widgetSettings.showTasks = e.target.checked;
-            saveData();
-            sendWidgetUpdateToSW();
-        });
-    }
-
-    if (widgetShowStreak) {
-        widgetShowStreak.checked = widgetSettings.showStreak !== false;
-        widgetShowStreak.addEventListener('change', (e) => {
-            AppData.settings.widgetSettings = AppData.settings.widgetSettings || {};
-            AppData.settings.widgetSettings.showStreak = e.target.checked;
-            saveData();
-            sendWidgetUpdateToSW();
-        });
-    }
-
-    if (widgetRefresh) {
-        widgetRefresh.value = Number(widgetSettings.refreshMinutes) || 15;
-        widgetRefresh.addEventListener('change', (e) => {
-            const minutes = Number(e.target.value) || 15;
-            AppData.settings.widgetSettings = AppData.settings.widgetSettings || {};
-            AppData.settings.widgetSettings.refreshMinutes = minutes;
-            saveData();
-            sendWidgetUpdateToSW();
-        });
-    }
-
-    if (widgetPreview) {
-        widgetPreview.classList.toggle('muted', widgetSettings.enabled === false);
-    }
-
     // Sound toggle
     const soundToggle = document.getElementById('soundToggle');
     soundToggle.checked = AppData.settings.soundEnabled;
