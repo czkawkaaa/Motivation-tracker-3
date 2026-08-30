@@ -1,7 +1,7 @@
 // 🌸 Kawaii Quest - Service Worker
 // Obsługuje PWA, cache, i widgety
 
-const CACHE_NAME = 'kawaii-quest-v10'; // <-- Zmieniono na v10 dla wymuszenia aktualizacji u znajomych
+const CACHE_NAME = 'kawaii-quest-v11';
 const urlsToCache = [
   '/Motivation-tracker-3/',
   '/Motivation-tracker-3/index.html',
@@ -11,7 +11,13 @@ const urlsToCache = [
   '/Motivation-tracker-3/script.js',
   '/Motivation-tracker-3/firebase-config.js',
   '/Motivation-tracker-3/firebase-sync.js',
-  '/Motivation-tracker-3/manifest.json'
+  '/Motivation-tracker-3/manifest.json',
+  '/Motivation-tracker-3/widget-data.json',
+  '/Motivation-tracker-3/widget-progress.json',
+  '/Motivation-tracker-3/widget-tasks.json',
+  '/Motivation-tracker-3/icon.svg',
+  '/Motivation-tracker-3/icon-192.png',
+  '/Motivation-tracker-3/icon-512.png'
 ];
 
 // Instalacja Service Worker
@@ -185,10 +191,11 @@ async function updateWidgetContent(widgetData) {
     const widgetDataResponse = new Response(JSON.stringify(widgetData), {
       headers: { 'Content-Type': 'application/json' }
     });
-    
-  await cache.put('widget-data.json', widgetDataResponse);
-    
-    console.log('✅ Widget data updated in cache:', widgetData);    if (self.widgets && typeof self.widgets.updateByTag === 'function') {
+
+    await cache.put('/Motivation-tracker-3/widget-data.json', widgetDataResponse);
+
+    console.log('✅ Widget data updated in cache:', widgetData);
+    if (self.widgets && typeof self.widgets.updateByTag === 'function') {
       try {
         await self.widgets.updateByTag('challenge-progress', { data: widgetData });
         await self.widgets.updateByTag('daily-tasks', { data: widgetData });
