@@ -1675,33 +1675,28 @@ function startChallenge() {
 }
 
 function syncChallengeByDates() {
-    // Ensure startDate exists
     if (!AppData.challenge.startDate) return;
+    
+    // Jeśli wyzwanie jest ukończone, nie przeliczaj
+    if (AppData.challenge.completionTime) return;
 
     const start = new Date(AppData.challenge.startDate + 'T00:00:00');
     const today = new Date();
 
-    // Calculate days passed since start (start day = day 0, next day = day 1, etc.)
     const msPerDay = 24 * 60 * 60 * 1000;
     const daysPassed = Math.floor((Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()) - Date.UTC(start.getFullYear(), start.getMonth(), start.getDate())) / msPerDay);
 
-    // Clamp to totalDays
     const total = AppData.challenge.totalDays || AppData.settings.challengeLength || 75;
-    
-    // currentDay represents the current day NUMBER (1-based: day 1, day 2, etc.)
-    // daysPassed is 0-based (0 on start day, 1 next day, etc.)
-    // So currentDay should be daysPassed + 1, clamped to total
     const correctCurrentDay = Math.max(1, Math.min(daysPassed + 1, total));
     
-    // Always sync currentDay to match calendar (not just when it's greater)
     if (correctCurrentDay !== AppData.challenge.currentDay) {
         AppData.challenge.currentDay = correctCurrentDay;
         saveData();
         updateAllDisplays();
     }
 
-    // If challenge finished, trigger completion handler
-    if (AppData.challenge.currentDay >= total && !AppData.challenge.completionTime) {
+    // Wywołaj completion tylko jeśli faktycznie ukończono wszystkie dni
+    if (AppData.challenge.completedDays.length >= total && !AppData.challenge.completionTime) {
         handleChallengeCompletion();
     }
 }
