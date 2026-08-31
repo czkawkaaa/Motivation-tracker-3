@@ -5,6 +5,7 @@ function createDefaultAppData() {
       totalDays: 75,
       completedDays: []
     },
+    challengeHistory: [],
     streak: 0,
     longestStreak: 0,
     steps: {},
@@ -114,6 +115,10 @@ function normalizeAppData(data) {
     merged.challenge.completedDays = Array.from(new Set(normalized.challenge.completedDays
       .map(normalizeDateKey)
       .filter(Boolean))).sort();
+  }
+
+  if (Array.isArray(normalized.challengeHistory)) {
+    merged.challengeHistory = normalized.challengeHistory;
   }
 
   ['steps', 'studyHours', 'mood', 'completedTasks', 'completedWorkouts'].forEach((key) => {

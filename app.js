@@ -9,6 +9,7 @@ const AppData = {
         totalDays: 75,
         completedDays: []
     },
+    challengeHistory: [],
     streak: 0,
     longestStreak: 0,
     steps: {},
@@ -568,6 +569,30 @@ function getDaySummary(dateKey) {
     const isRest = isRestDayForDate(dateKey);
     const status = isRest ? 'odpoczynek' : completedCount >= tasks.length && tasks.length > 0 ? 'ukończony' : completedCount > 0 ? 'częściowy' : 'nieudany';
     return { completedCount: Math.min(completedCount, tasks.length), totalTasks: tasks.length, status };
+}
+
+function archiveCurrentChallenge() {
+    if (!AppData.challenge?.startDate) return;
+
+    const reflections = Object.fromEntries(Object.entries(AppData.reflections || {}).filter(([dateKey]) => isChallengeDayEligible(dateKey)));
+    const completedDays = Array.isArray(AppData.challenge.completedDays) ? [...AppData.challenge.completedDays] : [];
+    const dayStatuses = {};
+    for (const dateKey of completedDays) {
+        dayStatuses[dateKey] = getDaySummary(dateKey).status;
+    }
+
+    AppData.challengeHistory = Array.isArray(AppData.challengeHistory) ? AppData.challengeHistory : [];
+    AppData.challengeHistory.unshift({
+        id: `challenge-${Date.now()}`,
+        name: getChallengeDisplayName(),
+        startDate: AppData.challenge.startDate,
+        endDate: getTodayKey(),
+        totalDays: AppData.challenge.totalDays,
+        completedDays,
+        bestStreak: AppData.longestStreak || AppData.streak || 0,
+        reflections,
+        dayStatuses
+    });
 }
 
 function getReflectionQuestion(dateKey = getTodayKey()) {
@@ -1936,12 +1961,72 @@ function initCalendar() {
         currentCalendarDate.setMonth(currentCalendarDate.getMonth() + 1);
         renderCalendar();
     });
+
+    const reflectionButton = document.getElementById('calendarReflectionBtn');
+    if (reflectionButton) {
+        reflectionButton.addEventListener('click', () => showReflectionEditorModal(getActiveDate()));
+    }
     
     renderCalendar();
 }
 
 function getActiveDate() {
     return selectedDate || getTodayKey();
+}
+
+function showReflectionEditorModal(dateKey) {
+    const reflection = AppData.reflections?.[dateKey];
+    const modal = document.createElement('div');
+    modal.className = 'reflection-modal';
+
+    const content = document.createElement('div');
+    content.className = 'reflection-modal-content';
+    const title = document.createElement('h2');
+    title.textContent = translateAppText('Refleksja');
+    const question = document.createElement('p');
+    question.className = 'reflection-modal-question';
+    question.textContent = reflection?.question || getReflectionQuestion(dateKey);
+    const input = document.createElement('textarea');
+    input.rows = 5;
+    input.maxLength = 700;
+    input.placeholder = translateAppText('Twoja odpowiedź...');
+    input.value = reflection?.answer || '';
+    const counter = document.createElement('span');
+    counter.className = 'reflection-modal-count';
+    const updateCounter = () => { counter.textContent = `${countWords(input.value)} / 100 ${translateAppText('słów')}`; };
+    input.addEventListener('input', updateCounter);
+    updateCounter();
+
+    const actions = document.createElement('div');
+    actions.className = 'reflection-modal-actions';
+    const cancelButton = document.createElement('button');
+    cancelButton.type = 'button';
+    cancelButton.className = 'btn-secondary';
+    cancelButton.textContent = translateAppText('Anuluj');
+    cancelButton.addEventListener('click', () => modal.remove());
+    const saveButton = document.createElement('button');
+    saveButton.type = 'button';
+    saveButton.className = 'btn-primary';
+    saveButton.textContent = translateAppText('Zapisz refleksję');
+    saveButton.addEventListener('click', () => {
+        const answer = input.value.trim();
+        if (countWords(answer) > 100) {
+            showNotification(translateAppText('⚠️ Refleksja może mieć maksymalnie 100 słów.'), 'warning');
+            return;
+        }
+        AppData.reflections = AppData.reflections || {};
+        if (answer) AppData.reflections[dateKey] = { question: question.textContent, answer };
+        else delete AppData.reflections[dateKey];
+        saveData();
+        if (selectedDate === dateKey) renderSelectedDaySummary(dateKey);
+        renderCalendar();
+        modal.remove();
+    });
+    actions.append(cancelButton, saveButton);
+    content.append(title, question, input, counter, actions);
+    modal.appendChild(content);
+    document.body.appendChild(modal);
+    input.focus();
 }
 
 function loadDataForDate(dateKey) {
@@ -1995,6 +2080,31 @@ function renderSelectedDaySummary(dateKey) {
         reflectionText.textContent = `${translateAppText('Refleksja')}: ${reflection.answer}`;
         summaryElement.appendChild(reflectionText);
     }
+
+    const editor = document.createElement('textarea');
+    editor.rows = 3;
+    editor.maxLength = 700;
+    editor.placeholder = translateAppText('Twoja odpowiedź...');
+    editor.value = reflection?.answer || '';
+    editor.className = 'reflection-editor';
+    const saveButton = document.createElement('button');
+    saveButton.type = 'button';
+    saveButton.className = 'btn-secondary reflection-save-btn';
+    saveButton.textContent = translateAppText('Zapisz refleksję');
+    saveButton.addEventListener('click', () => {
+        const answer = editor.value.trim();
+        if (countWords(answer) > 100) {
+            showNotification(translateAppText('⚠️ Refleksja może mieć maksymalnie 100 słów.'), 'warning');
+            return;
+        }
+        AppData.reflections = AppData.reflections || {};
+        if (answer) AppData.reflections[dateKey] = { question: reflection?.question || getReflectionQuestion(dateKey), answer };
+        else delete AppData.reflections[dateKey];
+        saveData();
+        renderSelectedDaySummary(dateKey);
+        renderCalendar();
+    });
+    summaryElement.append(editor, saveButton);
 }
 
 function returnToToday() {
@@ -2138,6 +2248,7 @@ function renderCalendar() {
         // Check if day is in challenge range
         const isInChallengeRange = isDayInChallengeRange(dayKey);
         const isCompleted = Array.isArray(AppData.challenge.completedDays) && AppData.challenge.completedDays.includes(dayKey);
+        const daySummary = getDaySummary(dayKey);
         
         if (isCompleted) {
             dayDiv.classList.add('completed');
@@ -2149,6 +2260,21 @@ function renderCalendar() {
         // Add streak indicator
         if (streakDays.has(dayKey)) {
             dayDiv.classList.add('has-streak');
+        }
+
+        if (isInChallengeRange) {
+            const statusClass = daySummary.status === 'ukończony' ? 'complete' : daySummary.status === 'częściowy' ? 'partial' : daySummary.status === 'odpoczynek' ? 'rest' : 'missed';
+            const statusIcon = document.createElement('span');
+            statusIcon.className = `calendar-status-icon status-${statusClass}`;
+            statusIcon.textContent = daySummary.status === 'ukończony' ? '✓' : daySummary.status === 'częściowy' ? '◐' : daySummary.status === 'odpoczynek' ? '☾' : '−';
+            dayDiv.appendChild(statusIcon);
+        }
+
+        if (AppData.reflections?.[dayKey]?.answer) {
+            const reflectionIcon = document.createElement('span');
+            reflectionIcon.className = 'calendar-reflection-icon';
+            reflectionIcon.textContent = '✦';
+            dayDiv.appendChild(reflectionIcon);
         }
         
         calendarGrid.appendChild(dayDiv);
@@ -3156,6 +3282,7 @@ function initSettings() {
             playClickSound();
             if (!confirm('Rozpocząć nowe wyzwanie od dzisiaj? Zadania i ustawienia zostaną zachowane.')) return;
 
+            archiveCurrentChallenge();
             AppData.challenge = {
                 currentDay: 1,
                 totalDays: AppData.settings.challengeLength || 75,
@@ -3167,6 +3294,7 @@ function initSettings() {
             AppData.steps = {};
             AppData.mood = {};
             AppData.studyHours = {};
+            AppData.reflections = {};
             AppData.completedWorkouts = {};
             AppData.runLog = {};
             AppData.workoutFocus = {};
@@ -3177,6 +3305,7 @@ function initSettings() {
             AppData.badges = {};
             saveData();
             updateAllDisplays();
+            renderChallengeHistory();
             if (typeof window.flushPendingFirestoreSave === 'function') {
                 await window.flushPendingFirestoreSave();
             }
@@ -3359,6 +3488,7 @@ function initSettings() {
     
     // Render rules in settings
     renderRulesSettings();
+    renderChallengeHistory();
 
     // Workouts init
     initWorkouts();
@@ -3389,6 +3519,44 @@ function renderDayTasks(day) {
         });
         
         tasksList.appendChild(taskItem);
+    });
+}
+
+function renderChallengeHistory() {
+    const list = document.getElementById('challengeHistoryList');
+    if (!list) return;
+
+    list.replaceChildren();
+    const history = Array.isArray(AppData.challengeHistory) ? AppData.challengeHistory : [];
+    if (history.length === 0) {
+        const empty = document.createElement('p');
+        empty.textContent = translateAppText('Nie masz jeszcze zapisanych wcześniejszych wyzwań.');
+        list.appendChild(empty);
+        return;
+    }
+
+    history.forEach((challenge) => {
+        const item = document.createElement('article');
+        item.className = 'challenge-history-item';
+        const title = document.createElement('h3');
+        title.textContent = challenge.name || translateAppText('Wyzwanie');
+        const dates = document.createElement('p');
+        dates.textContent = `${challenge.startDate} - ${challenge.endDate}`;
+        const stats = document.createElement('p');
+        const reflectionCount = Object.keys(challenge.reflections || {}).length;
+        stats.textContent = `${(challenge.completedDays || []).length}/${challenge.totalDays || 75} ${translateAppText('dni')} · ${translateAppText('Najlepszy streak')}: ${challenge.bestStreak || 0} · ${translateAppText('Refleksje')}: ${reflectionCount}`;
+        const deleteButton = document.createElement('button');
+        deleteButton.type = 'button';
+        deleteButton.className = 'btn-danger challenge-history-delete';
+        deleteButton.textContent = translateAppText('Usuń z archiwum');
+        deleteButton.addEventListener('click', () => {
+            if (!confirm(translateAppText('Usunąć to wyzwanie z archiwum?'))) return;
+            AppData.challengeHistory = AppData.challengeHistory.filter(entry => entry.id !== challenge.id);
+            saveData();
+            renderChallengeHistory();
+        });
+        item.append(title, dates, stats, deleteButton);
+        list.appendChild(item);
     });
 }
 

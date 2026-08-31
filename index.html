@@ -380,7 +380,10 @@
                 <div class="calendar-header">
                     <button class="calendar-nav-btn" id="prevMonth">◀</button>
                     <h2 class="calendar-title" id="calendarTitle">Styczeń 2025</h2>
-                    <button class="calendar-nav-btn" id="nextMonth">▶</button>
+                    <div class="calendar-header-actions">
+                        <button class="calendar-reflection-btn" id="calendarReflectionBtn" type="button" title="Dodaj refleksję" aria-label="Dodaj refleksję">✦</button>
+                        <button class="calendar-nav-btn" id="nextMonth">▶</button>
+                    </div>
                 </div>
                 <div class="calendar-grid" id="calendarGrid">
                     </div>
@@ -1262,6 +1265,11 @@
                         <button class="btn-primary" id="refreshAppBtn">⬇️ Pobierz najnowszą wersję</button>
                         <small style="display: block; margin-top: 0.5rem;">Pobiera najnowsze pliki aplikacji i od razu przeładowuje stronę</small>
                     </div>
+                </section>
+
+                <section class="settings-section">
+                    <h2>🗂️ Historia wyzwań</h2>
+                    <div id="challengeHistoryList" class="challenge-history-list"></div>
                 </section>
 
                 <section class="settings-section danger-zone">

@@ -39,7 +39,7 @@ const context = {
 };
 
 vm.createContext(context);
-const app = vm.runInContext(`(function() { ${source}; return { AppData, checkDailyLogin, getTodayKey, getDaySummary }; })()`, context);
+const app = vm.runInContext(`(function() { ${source}; return { AppData, checkDailyLogin, getTodayKey, getDaySummary, archiveCurrentChallenge }; })()`, context);
 const today = app.getTodayKey();
 app.AppData.settings.soundEnabled = false;
 
@@ -72,5 +72,15 @@ assert.equal(app.getDaySummary(today).status, 'nieudany', 'no completed tasks sh
 
 app.AppData.settings.restDays = [String(new Date(today + 'T12:00:00').getDay())];
 assert.equal(app.getDaySummary(today).status, 'odpoczynek', 'a configured rest day should override task status');
+
+app.AppData.settings.restDays = [];
+app.AppData.challenge = { startDate: today, currentDay: 1, totalDays: 75, completedDays: [today] };
+app.AppData.longestStreak = 1;
+app.AppData.reflections = { [today]: { question: 'Test?', answer: 'Odpowiedz.' } };
+app.AppData.challengeHistory = [];
+app.archiveCurrentChallenge();
+assert.equal(app.AppData.challengeHistory.length, 1, 'resetting a cycle should archive its summary');
+assert.deepEqual([...app.AppData.challengeHistory[0].completedDays], [today], 'archive should retain completed challenge days');
+assert.equal(app.AppData.challengeHistory[0].reflections[today].answer, 'Odpowiedz.', 'archive should retain cycle reflections');
 
 console.log('daily check-in popup tests passed');
