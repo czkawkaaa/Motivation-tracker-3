@@ -53,16 +53,9 @@ function smartMergeData(local, cloud, cloudLastModified = 0) {
         });
     }
     ['steps', 'studyHours', 'mood', 'completedTasks'].forEach(k => mergeMaps(k));
-    const localDays = Array.isArray(local.challenge?.completedDays) ? local.challenge.completedDays : [];
-    const cloudDays = Array.isArray(cloud.challenge?.completedDays) ? cloud.challenge.completedDays : [];
-    merged.challenge = merged.challenge || {};
-    merged.challenge.completedDays = Array.from(new Set([...localDays, ...cloudDays])).sort();
-    merged.challenge.currentDay = (local.challenge?.currentDay || 0);
-    if (cloud.challenge?.currentDay && cloudLastModified > (local.lastModified || 0)) merged.challenge.currentDay = cloud.challenge.currentDay;
-    merged.challenge.totalDays = cloud.challenge?.totalDays || local.challenge?.totalDays || merged.challenge.totalDays || 75;
-    merged.challenge.startDate = local.challenge?.startDate || cloud.challenge?.startDate;
-    if (local.challenge?.completionTime || cloud.challenge?.completionTime) merged.challenge.completionTime = local.challenge?.completionTime || cloud.challenge?.completionTime;
-    if (local.challenge?.resetScheduled || cloud.challenge?.resetScheduled) merged.challenge.resetScheduled = local.challenge?.resetScheduled || cloud.challenge?.resetScheduled;
+    const cloudIsNewer = cloudLastModified > (local.lastModified || 0);
+    // A challenge reset is a complete new lifecycle: never merge its completed days.
+    merged.challenge = { ...(cloudIsNewer ? cloud.challenge : local.challenge) };
     merged.tasks = cloud.tasks || local.tasks;
     if (local.weeklyTasks || cloud.weeklyTasks) {
         merged.weeklyTasks = {
@@ -76,7 +69,8 @@ function smartMergeData(local, cloud, cloudLastModified = 0) {
             sunday: [...new Set([...(local.weeklyTasks?.sunday || []), ...(cloud.weeklyTasks?.sunday || [])])]
         };
     }
-    merged.badges = { ...(local.badges || {}), ...(cloud.badges || {}) };
+    // Badge resets must win over stale unlocked badges from another device.
+    merged.badges = { ...(cloudIsNewer ? cloud.badges : local.badges) };
     // Deduplikacja zdjęć - Set nie działa dla długich stringów base64, używamy odcisku palca
     if (Array.isArray(local.gallery) || Array.isArray(cloud.gallery)) {
         const allPhotos = [...(local.gallery || []), ...(cloud.gallery || [])];
@@ -262,7 +256,7 @@ async function loadDataFromFirestore() {
             if (typeof AppData !== 'undefined' && cloudData.data) {
                 const hasData = isMeaningfulData(cloudData.data);
                 if (hasData) {
-                    applySnapshotFromSource(cloudData.data, cloudLastModified || Date.now());
+                    applySnapshotFromSource(smartMergeData(AppData, cloudData.data, cloudLastModified), cloudLastModified || Date.now());
                 }
             }
             return true;
@@ -415,7 +409,7 @@ function setupRealtimeSync() {
                 if (cloudLastModified && cloudLastModified > localLastModified && cloudData.data) {
                     const hasData = isMeaningfulData(cloudData.data);
                     if (hasData) {
-                        applySnapshotFromSource(cloudData.data, cloudLastModified);
+                        applySnapshotFromSource(smartMergeData(AppData, cloudData.data, cloudLastModified), cloudLastModified);
                     }
                 }
             }

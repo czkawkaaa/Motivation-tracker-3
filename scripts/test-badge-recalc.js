@@ -6,6 +6,7 @@ const source = fs.readFileSync(new URL('../app.js', import.meta.url), 'utf8');
 const storage = {
   data: JSON.stringify({
     challenge: {
+      startDate: '2026-08-30',
       currentDay: 1,
       totalDays: 75,
       completedDays: ['2026-08-30']
@@ -111,8 +112,8 @@ vm.createContext(context);
 const app = vm.runInContext(`(function() { ${source}; return { AppData, loadData, checkBadges, getAllBadgeIds, getBadgeStats }; })()`, context);
 
 assert.ok(app.AppData, 'AppData should exist');
-assert.equal(app.getAllBadgeIds().length, 50, 'the full badge catalog should contain 50 badge IDs');
-assert.equal(app.getBadgeStats({ badges: {} }).totalBadges, 50, 'report total should use the full badge catalog, not only initialized badges');
+assert.equal(app.getAllBadgeIds().length, 53, 'the full badge catalog should contain 53 badge IDs');
+assert.equal(app.getBadgeStats({ badges: {} }).totalBadges, 53, 'report total should use the full badge catalog, not only initialized badges');
 app.loadData();
 assert.equal(app.AppData.streak, 1, 'streak should be recalculated after loading saved data');
 assert.equal(app.AppData.badges['first-steps']?.unlocked, true, 'first-steps should unlock after loading saved data');
@@ -120,6 +121,7 @@ assert.equal(app.AppData.badges['task-beginner']?.unlocked, true, 'task-beginner
 
 storage.data = JSON.stringify({
   challenge: {
+    startDate: '2026-08-29',
     currentDay: 1,
     totalDays: 75,
     completedDays: ['2026-08-31', '2026-08-30', '2026-08-29']
@@ -160,5 +162,25 @@ storage.data = JSON.stringify({
 
 app.loadData();
 assert.equal(app.AppData.streak, 3, 'streak should be calculated from completedDays history on load');
+
+storage.data = JSON.stringify({
+  challenge: {
+    startDate: '2026-08-30',
+    currentDay: 2,
+    totalDays: 75,
+    completedDays: ['2026-08-29', '2026-08-30', '2026-09-01']
+  },
+  steps: {},
+  mood: {},
+  completedTasks: {},
+  completedWorkouts: {},
+  gallery: [],
+  settings: { challengeLength: 75, restDay: 'none', restDays: [] },
+  tasks: ['a'],
+  badges: {}
+});
+
+app.loadData();
+assert.deepEqual([...app.AppData.challenge.completedDays], ['2026-08-30'], 'days outside the challenge range should be discarded on load');
 
 console.log('badge recalculation regression test passed');

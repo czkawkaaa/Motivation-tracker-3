@@ -11,14 +11,7 @@ function createDefaultAppData() {
     mood: {},
     studyHours: {},
     tasks: [
-      'Codzienny trening',
-      'Spacer minimum 20 minut',
-      'Rozciąganie',
-      'Sen - minimum 7 godzin',
-      '10 minut czytania lub słuchania książki',
-      'Jeden zdrowy posiłek domowy',
-      'Zero słodzonych napojów',
-      'Picie większej ilości wody'
+      'Zapisz swoje zadania!'
     ],
     weeklyTasks: {
       enabled: false,
@@ -62,7 +55,9 @@ function createDefaultAppData() {
       stepsEnabled: true,
       studyEnabled: true,
       rulesAccepted: false,
-      rules: []
+      rules: [
+        { id: 'your-rules', title: 'Zapisz swoje zasady <33', content: '' }
+      ]
     },
     lastModified: Date.now()
   };

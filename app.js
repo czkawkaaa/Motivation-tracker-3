@@ -15,14 +15,7 @@ const AppData = {
     mood: {},
     studyHours: {},
     tasks: [
-        "Codzienny trening",
-        "Spacer minimum 20 minut",
-        "Rozciąganie",
-        "Sen - minimum 7 godzin",
-        "10 minut czytania lub słuchania książki",
-        "Jeden zdrowy posiłek domowy",
-        "Zero słodzonych napojów",
-        "Picie większej ilości wody"
+        "Zapisz swoje zadania!"
     ],
     weeklyTasks: {
         enabled: false,
@@ -72,11 +65,7 @@ const AppData = {
         studyEnabled: true,
         rulesAccepted: false,
         rules: [
-            { id: 'movement', title: 'Ruch', content: 'Codzienny trening, spacer minimum 20 minut i rozciąganie.' },
-            { id: 'diet', title: 'Dieta', content: 'Jeden zdrowy posiłek domowy dziennie, zero słodzonych napojów i ograniczenie niezdrowego jedzenia (jeden cheat meal na tydzień).' },
-            { id: 'water', title: 'Woda', content: 'Picie większej ilości wody niż dotychczas.' },
-            { id: 'sleep', title: 'Sen', content: 'Minimum 7 godzin snu.' },
-            { id: 'development', title: 'Rozwój', content: '10 minut czytania lub słuchania książki.' }
+            { id: 'your-rules', title: 'Zapisz swoje zasady <33', content: '' }
         ]
     }
 };
@@ -85,14 +74,15 @@ const ALL_BADGE_IDS = [
     'first-steps', 'first-mood', 'first-photo',
     '3-day-streak', '7-day-streak', '14-day-streak', 'no-days-off', '30-day-streak',
     'goku-ultra', 'plus-ultra',
-    'task-beginner', 'task-master', 'task-legend',
+    'first-task', 'task-beginner', 'task-master', 'task-legend',
+    'study-starter', 'study-scholar',
     'mood-tracker', 'mood-master', 'always-happy', 'mood-swinger',
     'steps-5k', 'steps-10k', 'steps-50k', 'steps-100k', 'steps-250k', 'rocky-balboa',
     'photographer', 'social-butterfly', 'memory-keeper',
     'workout-beginner', 'workout-warrior', 'workout-beast', 'workout-legend', 'one-punch',
     'iron-dedication', 'weekend-warrior',
     'optimus-prime', 'bumblebee', 'dark-knight', 'rainbow-master', 'theme-explorer',
-    'megatron', 'iron-man',
+    'megatron', 'challenge-named',
     'perfectionist', 'discipline-master', 'comeback-king', 'consistency-champion', 'time-traveler',
     'legend-collector',
     '15-day-warrior', '30-day-warrior', '50-day-champion', '75-day-legend'
@@ -483,6 +473,7 @@ function loadData() {
     if (Array.isArray(AppData.challenge?.completedDays)) {
         AppData.challenge.completedDays = Array.from(new Set(AppData.challenge.completedDays.map(d => normalizeDateKey(d)).filter(Boolean))).sort();
     }
+    sanitizeChallengeCompletedDays();
 
     calculateStreak();
     applySettings();
@@ -588,21 +579,21 @@ function showDailyCheckinModal() {
     modal.innerHTML = `
         <div class="daily-checkin-content">
             <div class="daily-checkin-emoji">🌸</div>
-            <h2>Witaj ponownie!</h2>
+            <h2>${translateAppText('Witaj ponownie!')}</h2>
             <p class="daily-message">"${randomMotivation}"</p>
             
             <div class="daily-stats">
                 <div class="stat-mini">
                     <span class="stat-value">${AppData.streak}</span>
-                    <span class="stat-label">🔥 Seria</span>
+                    <span class="stat-label">🔥 ${translateAppText('Seria')}</span>
                 </div>
                 <div class="stat-mini">
                     <span class="stat-value">${AppData.challenge.currentDay}</span>
-                    <span class="stat-label">📅 Dzień</span>
+                    <span class="stat-label">📅 ${translateAppText('Dzień')}</span>
                 </div>
                 <div class="stat-mini">
                     <span class="stat-value">${Object.values(AppData.badges || {}).filter(b => b.unlocked).length}</span>
-                    <span class="stat-label">🏆 Odznak</span>
+                    <span class="stat-label">🏆 ${translateAppText('Odznak')}</span>
                 </div>
             </div>
             
@@ -613,7 +604,7 @@ function showDailyCheckinModal() {
             </div>
             
             <button class="daily-checkin-btn" id="dailyCheckinBtn">
-                🚀 Zaatakuj dzień!
+                🚀 ${translateAppText('Zaatakuj dzień!')}
             </button>
         </div>
     `;
@@ -959,7 +950,13 @@ function setTheme(themeName) {
         'theme-blue',
         'theme-purple',
         'theme-black',
-        'theme-transformers'
+        'theme-transformers',
+        'theme-aurora',
+        'theme-peach-pop',
+        'theme-forest-glow',
+        'theme-cotton-candy',
+        'theme-macaron',
+        'theme-rose-garden'
     ];
     
     themeClasses.forEach(cls => body.classList.remove(cls));
@@ -1174,9 +1171,11 @@ function renderTasks() {
         // Auto-complete rest day if setting is enabled
         if (AppData.settings.countRestDays) {
             const dateKey = normalizeDateKey(getActiveDate()); // Normalize
-            if (dateKey && Array.isArray(AppData.challenge.completedDays) && !AppData.challenge.completedDays.includes(dateKey)) {
+            if (dateKey === getTodayKey() && isChallengeDayEligible(dateKey) && Array.isArray(AppData.challenge.completedDays) && !AppData.challenge.completedDays.includes(dateKey)) {
                 AppData.challenge.completedDays.push(dateKey);
-                AppData.challenge.currentDay++;
+                if (AppData.challenge.completedDays.length >= AppData.challenge.totalDays) {
+                    handleChallengeCompletion();
+                }
                 calculateStreak();
                 saveData();
             }
@@ -1245,9 +1244,8 @@ function renderTasks() {
     const allTasksChecked = Array.from(document.querySelectorAll('.task-checkbox')).every(cb => cb.checked);
     if (allTasksChecked && tasksToShow.length > 0) {
         const markDateKey = normalizeDateKey(getActiveDate());
-        if (markDateKey && Array.isArray(AppData.challenge.completedDays) && !AppData.challenge.completedDays.includes(markDateKey)) {
+        if (markDateKey && isChallengeDayEligible(markDateKey) && Array.isArray(AppData.challenge.completedDays) && !AppData.challenge.completedDays.includes(markDateKey)) {
             AppData.challenge.completedDays.push(markDateKey);
-            AppData.challenge.currentDay++;
             calculateStreak();
             saveData();
             updateAllDisplays();
@@ -1314,13 +1312,14 @@ function handleChallengeCompletion() {
 }
 
 function showChallengeCompletionModal() {
+    const totalDays = AppData.challenge.totalDays || AppData.settings.challengeLength || 75;
     const modal = document.createElement('div');
     modal.className = 'completion-modal';
     modal.innerHTML = `
         <div class="completion-modal-content">
             <div class="completion-header">
                 <h2>🎊 GRATULACJE! 🎊</h2>
-                <p class="completion-title">Ukończyłeś 75-dniowe wyzwanie!</p>
+                <p class="completion-title">Ukończyłeś ${totalDays}-dniowe wyzwanie!</p>
             </div>
             
             <div class="completion-body">
@@ -1329,16 +1328,7 @@ function showChallengeCompletionModal() {
                     To niesamowite osiągnięcie! Jesteś prawdziwą legendą! 🌟
                 </p>
                 
-                <div class="completion-warning">
-                    <p><strong>⏰ WAŻNE:</strong></p>
-                    <p>Twoje dane historyczne (kroki, nastroje, nauka) oraz <strong>wszystkie odznaki</strong> zostaną automatycznie zresetowane za <strong>1 godzinę</strong>.</p>
-                    <p>Masz czas aby pobrać raport ze swoimi osiągnięciami!</p>
-                </div>
-                
-                <div class="completion-timer">
-                    <p>Czas do resetu:</p>
-                    <div id="resetCountdown" class="countdown-display">59:59</div>
-                </div>
+                <p class="completion-message">Twoje dane pozostają zapisane. Możesz pobrać raport lub rozpocząć nowy cykl w ustawieniach, kiedy zechcesz.</p>
                 
                 <button class="btn-download-now" id="downloadReportBtn">
                     📥 Pobierz raport teraz
@@ -1362,8 +1352,6 @@ function showChallengeCompletionModal() {
         modal.remove();
     });
     
-    // Start countdown
-    updateResetCountdown();
 }
 
 function updateResetCountdown() {
@@ -1492,7 +1480,7 @@ function updateBannerCountdown() {
 
 function checkDayCompletion() {
     const dateKey = normalizeDateKey(getActiveDate()); // Use active date instead of today, normalized
-    if (!dateKey) return;
+    if (!dateKey || !isChallengeDayEligible(dateKey)) return;
     const taskCheckboxes = document.querySelectorAll('.task-checkbox');
     const allCompleted = Array.from(taskCheckboxes).every(cb => cb.checked);
     
@@ -1646,6 +1634,27 @@ function isDayInChallengeRange(dayKey) {
     return daysSinceStart < AppData.challenge.currentDay;
 }
 
+function isChallengeDayEligible(dayKey) {
+    if (!AppData.challenge.startDate) return false;
+
+    const normalizedDayKey = normalizeDateKey(dayKey);
+    if (!normalizedDayKey) return false;
+
+    const startDate = new Date(AppData.challenge.startDate + 'T00:00:00');
+    const checkDate = new Date(normalizedDayKey + 'T00:00:00');
+    const today = new Date(getTodayKey() + 'T00:00:00');
+    const totalDays = AppData.challenge.totalDays || AppData.settings.challengeLength || 75;
+    const daysSinceStart = Math.floor((checkDate - startDate) / (24 * 60 * 60 * 1000));
+
+    return checkDate <= today && daysSinceStart >= 0 && daysSinceStart < totalDays;
+}
+
+function sanitizeChallengeCompletedDays() {
+    if (!Array.isArray(AppData.challenge?.completedDays)) return;
+
+    AppData.challenge.completedDays = AppData.challenge.completedDays.filter(isChallengeDayEligible);
+}
+
 function startChallenge() {
     // Check if rules were accepted
     if (!AppData.settings.rulesAccepted) {
@@ -1660,7 +1669,9 @@ function startChallenge() {
         AppData.challenge.totalDays = AppData.settings.challengeLength || AppData.challenge.totalDays || 75;
         // Start at day 1 (today is day 1 of the challenge)
         AppData.challenge.currentDay = 1;
-        AppData.challenge.completedDays = AppData.challenge.completedDays || [];
+        AppData.challenge.completedDays = [];
+        delete AppData.challenge.completionTime;
+        delete AppData.challenge.resetScheduled;
         saveData();
         
         // Hide start button in UI
@@ -2339,6 +2350,14 @@ function checkBadges() {
     }
     
     // === ZADANIA ===
+    const hasCompletedTask = Object.values(AppData.completedTasks).some(tasks => {
+        const count = Array.isArray(tasks) ? tasks.length : Number(tasks) || 0;
+        return count > 0;
+    });
+    if (hasCompletedTask) {
+        unlockBadge('first-task');
+    }
+
     // Policz dni, w których ukończono wszystkie zadania (3 lub więcej)
     const completedAllCount = Object.values(AppData.completedTasks).filter(tasks => {
         // Wspieraj zarówno nowy format (tablica) jak i stary (liczba)
@@ -2353,6 +2372,16 @@ function checkBadges() {
     }
     if (completedAllCount >= 30) {
         unlockBadge('task-legend');
+    }
+
+    // === NAUKA ===
+    const studySessions = Object.values(AppData.studyHours).filter(hours => Number(hours) > 0);
+    const totalStudyHours = studySessions.reduce((sum, hours) => sum + Number(hours), 0);
+    if (studySessions.length >= 1) {
+        unlockBadge('study-starter');
+    }
+    if (totalStudyHours >= 10) {
+        unlockBadge('study-scholar');
     }
     
     // === NASTRÓJ ===
@@ -2463,7 +2492,7 @@ function checkBadges() {
     if (uniqueThemes.size >= 5) {
         unlockBadge('rainbow-master');
     }
-    if (uniqueThemes.size >= 12) { // Wszystkie motywy
+    if (uniqueThemes.size >= 18) { // Wszystkie motywy
         unlockBadge('theme-explorer');
     }
     
@@ -2573,9 +2602,11 @@ function checkBadges() {
         unlockBadge('time-traveler');
     }
     
-    // Iron Man - czerwony motyw + 30-dniowy streak
-    if (AppData.settings.theme === 'red' && AppData.streak >= 30) {
-        unlockBadge('iron-man');
+    const challengeName = typeof AppData.settings.challengeName === 'string'
+        ? AppData.settings.challengeName.trim()
+        : '';
+    if (challengeName && challengeName !== 'Kawaii Quest') {
+        unlockBadge('challenge-named');
     }
     
     // Kolekcjoner legend - 50 odznak
@@ -2971,6 +3002,39 @@ function initSettings() {
         }
     });
     
+    const resetChallengeDaysBtn = document.getElementById('resetChallengeDaysBtn');
+    if (resetChallengeDaysBtn) {
+        resetChallengeDaysBtn.addEventListener('click', () => {
+            playClickSound();
+            if (!confirm('Rozpocząć nowe wyzwanie od dzisiaj? Zadania i ustawienia zostaną zachowane.')) return;
+
+            AppData.challenge = {
+                currentDay: 1,
+                totalDays: AppData.settings.challengeLength || 75,
+                completedDays: [],
+                startDate: getTodayKey()
+            };
+            AppData.completedTasks = {};
+            AppData.steps = {};
+            AppData.mood = {};
+            AppData.studyHours = {};
+            AppData.completedWorkouts = {};
+            AppData.runLog = {};
+            AppData.workoutFocus = {};
+            AppData.gallery = [];
+            AppData.activityTimes = [];
+            AppData.streak = 0;
+            AppData.longestStreak = 0;
+            AppData.badges = {};
+            saveData();
+            updateAllDisplays();
+
+            const startChallengeBtn = document.getElementById('startChallengeBtn');
+            if (startChallengeBtn) startChallengeBtn.style.display = 'none';
+            showNotification('🔄 Nowe wyzwanie rozpoczęte! Dzień 1 zaczyna się dzisiaj.', 'success');
+        });
+    }
+
     // Reset button
     const resetAllBtn = document.getElementById('resetAllBtn');
     if (resetAllBtn) {
@@ -2979,22 +3043,39 @@ function initSettings() {
             if (confirm('⚠️ Czy na pewno chcesz zresetować cały postęp? Ta akcja jest nieodwracalna!')) {
                 if (confirm('🚨 Ostatnie ostrzeżenie! Wszystkie dane zostaną usunięte bezpowrotnie!')) {
                     try {
-                        // Najpierw usuń dane z Firebase/chmury
-                        if (window.deleteDataFromFirestore) {
-                            try {
-                                await window.deleteDataFromFirestore();
-                                console.log('✅ Dane usunięte z chmury');
-                            } catch (error) {
-                                console.error('❌ Błąd usuwania z chmury:', error);
-                            }
-                        }
-                        
-                        // Następnie usuń lokalnie
-                        localStorage.clear();
-                        console.log('✅ localStorage wyczyszczony');
-                        
-                        // Odśwież stronę
-                        location.reload();
+                        // Zapisz nowy stan zamiast zostawiać pusty localStorage.
+                        // Pusty stan może zostać zastąpiony starym snapshotem z chmury.
+                        const resetData = {
+                            challenge: {
+                                currentDay: 0,
+                                totalDays: AppData.settings.challengeLength || 75,
+                                completedDays: []
+                            },
+                            streak: 0,
+                            longestStreak: 0,
+                            steps: {},
+                            mood: {},
+                            studyHours: {},
+                            completedTasks: {},
+                            completedWorkouts: {},
+                            runLog: {},
+                            workoutFocus: {},
+                            gallery: [],
+                            badges: {},
+                            tasks: AppData.tasks,
+                            weeklyTasks: AppData.weeklyTasks,
+                            weeklyWorkouts: AppData.weeklyWorkouts,
+                            settings: AppData.settings,
+                            lastModified: Date.now()
+                        };
+
+                        Object.keys(AppData).forEach(key => delete AppData[key]);
+                        Object.assign(AppData, resetData);
+                        saveData();
+                        updateAllDisplays();
+                        const startChallengeBtn = document.getElementById('startChallengeBtn');
+                        if (startChallengeBtn) startChallengeBtn.style.display = 'block';
+                        console.log('✅ Postęp wyzwania został zresetowany');
                     } catch (error) {
                         console.error('❌ Błąd podczas resetowania:', error);
                         alert('Wystąpił błąd podczas resetowania. Spróbuj ponownie.');
@@ -4357,9 +4438,14 @@ function exportDataAsHTML() {
             'plus-ultra': { name: 'Plus Ultra!', icon: '⚡💪' },
             
             // Zadania
+            'first-task': { name: 'Pierwsze zadanie', icon: '🌱' },
             'task-beginner': { name: 'Początkujący', icon: '✅' },
             'task-master': { name: 'Mistrz zadań', icon: '✅✅' },
             'task-legend': { name: 'Legendarny wykonawca', icon: '✅👑' },
+
+            // Nauka
+            'study-starter': { name: 'Pierwsza lekcja', icon: '📚✨' },
+            'study-scholar': { name: 'Wiedza rośnie', icon: '🎓📖' },
             
             // Nastrój
             'mood-tracker': { name: 'Łowca nastrojów', icon: '😊' },
@@ -4396,7 +4482,7 @@ function exportDataAsHTML() {
             'rainbow-master': { name: 'Mistrz kolorów', icon: '🌈' },
             'theme-explorer': { name: 'Odkrywca stylów', icon: '🎨✨' },
             'megatron': { name: 'Megatron', icon: '🤖⚡' },
-            'iron-man': { name: 'Iron Man', icon: '🦾⚡' },
+            'challenge-named': { name: 'Po swojemu', icon: '✍️✨' },
             
             // Fun odznaki
             'perfectionist': { name: 'Perfekcjonista', icon: '💯' },

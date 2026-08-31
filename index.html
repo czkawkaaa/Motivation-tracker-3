@@ -174,7 +174,6 @@
                     <div class="hero-pills">
                         <span class="hero-pill">✨ personalizacja motywów</span>
                         <span class="hero-pill">🏆 odznaki i progres</span>
-                        <span class="hero-pill">📈 dashboard bez chaosu</span>
                     </div>
                 </section>
                 
@@ -631,6 +630,11 @@
                     <p>Utrzymaj streak przez 30 dni</p>
                 </div>
                 
+                <div class="badge-card locked" data-badge="first-task">
+                    <div class="badge-icon">🌱</div>
+                    <h3>Pierwsze zadanie</h3>
+                    <p>Ukończ pierwsze zadanie</p>
+                </div>
                 <div class="badge-card locked" data-badge="task-beginner">
                     <div class="badge-icon">✅</div>
                     <h3>Początkujący</h3>
@@ -778,10 +782,10 @@
                     <p>Zmień motyw na czerwony lub fioletowy</p>
                 </div>
 
-                <div class="badge-card locked" data-badge="hydration-hero">
-                    <div class="badge-icon">💧🦸</div>
-                    <h3>Bohater nawodnienia</h3>
-                    <p>Zapisz 30 dni z 1L+ wody</p>
+                <div class="badge-card locked" data-badge="study-starter">
+                    <div class="badge-icon">📚✨</div>
+                    <h3>Pierwsza lekcja</h3>
+                    <p>Zapisz pierwszą sesję nauki</p>
                 </div>
                 <div class="badge-card locked" data-badge="mood-swinger">
                     <div class="badge-icon">🎭</div>
@@ -828,10 +832,15 @@
                     <h3>Mistrz dyscypliny</h3>
                     <p>Ukończ 50 dni bez przegapienia zadań</p>
                 </div>
-                <div class="badge-card locked" data-badge="iron-man">
-                    <div class="badge-icon">🦾⚡</div>
-                    <h3>Iron Man</h3>
-                    <p>Zmień motyw na czerwony i osiągnij 30-dniowy streak</p>
+                <div class="badge-card locked" data-badge="study-scholar">
+                    <div class="badge-icon">🎓📖</div>
+                    <h3>Wiedza rośnie</h3>
+                    <p>Zapisz łącznie 10 godzin nauki</p>
+                </div>
+                <div class="badge-card locked" data-badge="challenge-named">
+                    <div class="badge-icon">✍️✨</div>
+                    <h3>Po swojemu</h3>
+                    <p>Nadaj wyzwaniu własną nazwę</p>
                 </div>
                 <div class="badge-card locked" data-badge="legend-collector">
                     <div class="badge-icon">🏆✨</div>
@@ -889,6 +898,12 @@
                             <option value="purple">Deep Purple 🔮</option>
                             <option value="black">Dark Mode 🌙</option>
                             <option value="transformers">Transformers 🤖⚡</option>
+                            <option value="aurora">Aurora ✨</option>
+                            <option value="peach-pop">Peach Pop 🍑</option>
+                            <option value="forest-glow">Forest Glow 🌿</option>
+                            <option value="cotton-candy">Cotton Candy 🍬</option>
+                            <option value="macaron">Macaron 🧁</option>
+                            <option value="rose-garden">Rose Garden 🌷</option>
                         </select>
                     </div>
                     <div class="setting-item">
@@ -987,7 +1002,7 @@
                 <section class="settings-section">
 
                 <section class="settings-section">
-                    <h2>�🔊 Dźwięki i efekty</h2>
+                    <h2>🔊 Dźwięki i efekty</h2>
                     <div class="setting-item">
                         <label>
                             <input type="checkbox" id="soundToggle" checked>
@@ -1248,9 +1263,11 @@
                 <section class="settings-section danger-zone">
                     <h2>⚠️ Strefa niebezpieczna</h2>
                     <div style="display: flex; flex-direction: column; gap: 1rem;">
+                        <button class="btn-secondary" id="resetChallengeDaysBtn">🔄 Resetuj dni wyzwania</button>
                         <button class="btn-danger" id="resetAllBtn">🗑️ Resetuj cały postęp</button>
                         <button class="btn-danger" id="deleteAccountBtn" style="background: #b71c1c;">❌ Usuń konto i wszystkie dane</button>
                     </div>
+                    <small style="display: block; margin-top: 1rem; color: var(--text-secondary);">Reset dni rozpoczyna nowe wyzwanie dzisiaj, zachowując Twoje zadania i ustawienia.</small>
                     <small style="display: block; margin-top: 1rem; color: var(--text-secondary);">
                         <strong>Uwaga:</strong> Usunięcie konta spowoduje trwałe usunięcie wszystkich danych z urządzenia i chmury. Ta operacja jest nieodwracalna!
                     </small>
