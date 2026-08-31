@@ -2486,7 +2486,7 @@ footer p {
 }
 
 .btn-add-workout:hover {
-    background: var(--secondary-color);
+    background: var(--secondary-color, var(--primary-color));
     transform: translateY(-2px);
 }
 
@@ -3182,7 +3182,7 @@ footer p {
 
 /* Date indicator banner */
 .date-indicator {
-    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color, var(--primary-color)) 100%);
     color: white;
     padding: 1rem 1.5rem;
     border-radius: 16px;
@@ -3326,7 +3326,7 @@ footer p {
 
 /* Calendar day selected state */
 .calendar-day.selected {
-    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color, var(--primary-color)) 100%);
     color: white;
     font-weight: bold;
     transform: scale(1.1);

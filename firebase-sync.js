@@ -52,7 +52,31 @@ function smartMergeData(local, cloud, cloudLastModified = 0) {
             }
         });
     }
-    ['steps', 'studyHours', 'mood', 'completedTasks'].forEach(k => mergeMaps(k));
+    ['steps', 'studyHours', 'mood', 'completedTasks', 'reflections'].forEach(k => mergeMaps(k));
+
+    // completedWorkouts to mapa dat -> tablica id treningów, więc łączymy unią zamiast nadpisywać
+    {
+        const localMap = local.completedWorkouts || {};
+        const cloudMap = cloud.completedWorkouts || {};
+        const allKeys = Array.from(new Set([...Object.keys(localMap), ...Object.keys(cloudMap)]));
+        merged.completedWorkouts = {};
+        allKeys.forEach(k => {
+            const lv = Array.isArray(localMap[k]) ? localMap[k] : [];
+            const cv = Array.isArray(cloudMap[k]) ? cloudMap[k] : [];
+            merged.completedWorkouts[k] = Array.from(new Set([...lv, ...cv]));
+        });
+    }
+
+    // challengeHistory to lista zarchiwizowanych wyzwań - łączymy po unikalnym id
+    {
+        const localHistory = Array.isArray(local.challengeHistory) ? local.challengeHistory : [];
+        const cloudHistory = Array.isArray(cloud.challengeHistory) ? cloud.challengeHistory : [];
+        const byId = new Map();
+        [...cloudHistory, ...localHistory].forEach(entry => {
+            if (entry && entry.id) byId.set(entry.id, entry);
+        });
+        merged.challengeHistory = Array.from(byId.values());
+    }
     const cloudIsNewer = cloudLastModified > (local.lastModified || 0);
     const localCycleStartedAt = Number(local.challenge?.cycleStartedAt || 0);
     const cloudCycleStartedAt = Number(cloud.challenge?.cycleStartedAt || 0);
