@@ -5,6 +5,8 @@ import vm from 'node:vm';
 const source = fs.readFileSync(new URL('../app.js', import.meta.url), 'utf8');
 const storage = new Map();
 const modals = [];
+const reflectionInput = { value: '', addEventListener() {} };
+let saveCheckin;
 
 const context = {
   console,
@@ -22,8 +24,13 @@ const context = {
     head: { appendChild() {} },
     documentElement: { style: { setProperty() {} } },
     addEventListener() {},
-    createElement() { return { style: {}, classList: { add() {}, remove() {} }, setAttribute() {}, appendChild() {} }; },
-    getElementById() { return { addEventListener() {} }; },
+    createElement() { return { style: {}, classList: { add() {}, remove() {} }, setAttribute() {}, appendChild() {}, remove() {} }; },
+    getElementById(id) {
+      if (id === 'dailyReflectionInput') return reflectionInput;
+      if (id === 'dailyReflectionCount') return { textContent: '' };
+      if (id === 'dailyCheckinBtn') return { addEventListener(_, handler) { saveCheckin = handler; } };
+      return null;
+    },
     querySelector() { return null; },
     querySelectorAll() { return []; }
   },
@@ -32,12 +39,18 @@ const context = {
 };
 
 vm.createContext(context);
-const app = vm.runInContext(`(function() { ${source}; return { checkDailyLogin, getTodayKey }; })()`, context);
+const app = vm.runInContext(`(function() { ${source}; return { AppData, checkDailyLogin, getTodayKey, getDaySummary }; })()`, context);
 const today = app.getTodayKey();
+app.AppData.settings.soundEnabled = false;
 
 app.checkDailyLogin();
 assert.equal(storage.get('kawaiiQuestLastLogin'), today, 'first visit should record today');
 assert.equal(modals.length, 1, 'first visit should display the check-in popup');
+
+reflectionInput.value = 'To byla krotka refleksja o moim dniu.';
+saveCheckin();
+const savedData = JSON.parse(storage.get('kawaiiQuestData'));
+assert.equal(savedData.reflections[today].answer, reflectionInput.value, 'saving the popup should store today\'s reflection');
 
 app.checkDailyLogin();
 assert.equal(modals.length, 1, 'a second visit on the same day should not display another popup');
@@ -45,5 +58,19 @@ assert.equal(modals.length, 1, 'a second visit on the same day should not displa
 storage.set('kawaiiQuestLastLogin', '2000-01-01');
 app.checkDailyLogin();
 assert.equal(modals.length, 2, 'a new day should display the popup again');
+
+app.AppData.tasks = ['a', 'b'];
+app.AppData.settings.restDays = [];
+app.AppData.completedTasks = { [today]: [0, 1] };
+assert.equal(app.getDaySummary(today).status, 'ukończony', 'all tasks should mark a day complete');
+
+app.AppData.completedTasks[today] = [0];
+assert.equal(app.getDaySummary(today).status, 'częściowy', 'one completed task should mark a day partial');
+
+app.AppData.completedTasks[today] = [];
+assert.equal(app.getDaySummary(today).status, 'nieudany', 'no completed tasks should mark a day missed');
+
+app.AppData.settings.restDays = [String(new Date(today + 'T12:00:00').getDay())];
+assert.equal(app.getDaySummary(today).status, 'odpoczynek', 'a configured rest day should override task status');
 
 console.log('daily check-in popup tests passed');

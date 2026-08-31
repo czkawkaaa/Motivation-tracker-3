@@ -54,8 +54,12 @@ function smartMergeData(local, cloud, cloudLastModified = 0) {
     }
     ['steps', 'studyHours', 'mood', 'completedTasks'].forEach(k => mergeMaps(k));
     const cloudIsNewer = cloudLastModified > (local.lastModified || 0);
+    const localCycleStartedAt = Number(local.challenge?.cycleStartedAt || 0);
+    const cloudCycleStartedAt = Number(cloud.challenge?.cycleStartedAt || 0);
+    const cloudHasNewerChallenge = cloudCycleStartedAt > localCycleStartedAt ||
+        (cloudCycleStartedAt === localCycleStartedAt && cloudIsNewer);
     // A challenge reset is a complete new lifecycle: never merge its completed days.
-    merged.challenge = { ...(cloudIsNewer ? cloud.challenge : local.challenge) };
+    merged.challenge = { ...(cloudHasNewerChallenge ? cloud.challenge : local.challenge) };
     merged.tasks = cloud.tasks || local.tasks;
     if (local.weeklyTasks || cloud.weeklyTasks) {
         merged.weeklyTasks = {

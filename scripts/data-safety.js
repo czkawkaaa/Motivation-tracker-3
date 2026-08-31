@@ -10,6 +10,7 @@ function createDefaultAppData() {
     steps: {},
     mood: {},
     studyHours: {},
+    reflections: {},
     tasks: [
       'Zapisz swoje zadania!'
     ],

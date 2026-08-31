@@ -14,6 +14,7 @@ const AppData = {
     steps: {},
     mood: {},
     studyHours: {},
+    reflections: {},
     tasks: [
         "Zapisz swoje zadania!"
     ],
@@ -531,6 +532,75 @@ function getTodayKey() {
     return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 }
 
+const reflectionQuestions = [
+    'Co dziś było dla Ciebie ważne?', 'Z czego jesteś dziś dumna?', 'Co dało Ci dziś najwięcej energii?',
+    'Co chcesz zapamiętać z tego dnia?', 'Jaki mały krok dziś zrobiłaś?', 'Co było dziś łatwiejsze niż zwykle?',
+    'Za co możesz sobie dziś podziękować?', 'Co Cię dziś rozbawiło?', 'Czego dziś potrzebujesz?',
+    'Co pomogło Ci zadbać o siebie?', 'Jaki moment dnia był najspokojniejszy?', 'Co chcesz jutro zrobić inaczej?',
+    'Co dziś poszło lepiej, niż się spodziewałaś?', 'Jakie uczucie było dziś najsilniejsze?', 'Co Cię dziś zainspirowało?',
+    'Jak okazałaś sobie dziś życzliwość?', 'Co było dziś Twoim małym sukcesem?', 'Co chcesz odpuścić po tym dniu?',
+    'Jaka rzecz dała Ci dziś radość?', 'Co pomogło Ci ruszyć z miejsca?', 'Co dziś zrobiłaś tylko dla siebie?',
+    'Za co jesteś dziś wdzięczna?', 'Co chciałabyś usłyszeć od bliskiej osoby?', 'Jak zadbałaś dziś o swoje ciało?',
+    'Co dało Ci dziś poczucie spokoju?', 'Jaką myśl chcesz zabrać ze sobą na jutro?', 'Co było dziś wyzwaniem?',
+    'Jak poradziłaś sobie z trudniejszym momentem?', 'Co chcesz częściej robić?', 'Co dziś zauważyłaś w sobie dobrego?',
+    'Jaki drobiazg poprawił Ci dziś humor?', 'Co możesz sobie wybaczyć?', 'Co dziś było naprawdę Twoje?',
+    'Jak wyglądałby dla Ciebie dobry wieczór?', 'Czego nauczył Cię dzisiejszy dzień?', 'Co dziś warto celebrować?',
+    'Jaką troskę chcesz sobie jutro dać?', 'Co dziś dodało Ci odwagi?', 'Kiedy czułaś się dziś najbardziej sobą?',
+    'Co pomogło Ci zwolnić?', 'Co chciałabyś zachować w swojej rutynie?', 'Jaki był Twój ulubiony moment dnia?',
+    'Co dziś zrobiłaś mimo braku ochoty?', 'Jak możesz ułatwić sobie jutro?', 'Co dziś było wystarczająco dobre?',
+    'Co Cię dziś pozytywnie zaskoczyło?', 'Jakie słowo opisuje Twój dzień?', 'Co daje Ci teraz nadzieję?',
+    'Jaki mały gest możesz zrobić dla siebie jutro?', 'Z czym kończysz dzisiejszy dzień?'
+];
+
+function getTasksForDate(dateKey) {
+    if (AppData.weeklyTasks?.enabled) {
+        const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+        const weeklyTasks = AppData.weeklyTasks[dayNames[new Date(dateKey + 'T12:00:00').getDay()]];
+        if (Array.isArray(weeklyTasks) && weeklyTasks.length > 0) return weeklyTasks;
+    }
+    return Array.isArray(AppData.tasks) ? AppData.tasks : [];
+}
+
+function getDaySummary(dateKey) {
+    const tasks = getTasksForDate(dateKey);
+    const savedTasks = AppData.completedTasks[dateKey];
+    const completedCount = Array.isArray(savedTasks) ? new Set(savedTasks).size : Number(savedTasks) || 0;
+    const isRest = isRestDayForDate(dateKey);
+    const status = isRest ? 'odpoczynek' : completedCount >= tasks.length && tasks.length > 0 ? 'ukończony' : completedCount > 0 ? 'częściowy' : 'nieudany';
+    return { completedCount: Math.min(completedCount, tasks.length), totalTasks: tasks.length, status };
+}
+
+function getReflectionQuestion(dateKey = getTodayKey()) {
+    const dayNumber = Math.floor(new Date(dateKey + 'T12:00:00').getTime() / (24 * 60 * 60 * 1000));
+    return reflectionQuestions[Math.abs(dayNumber) % reflectionQuestions.length];
+}
+
+function isPartOfCurrentStreak(dayKey) {
+    const completedDays = Array.isArray(AppData.challenge.completedDays) ? [...AppData.challenge.completedDays].sort().reverse() : [];
+    if (completedDays.length === 0) return false;
+
+    const today = new Date(getTodayKey() + 'T12:00:00');
+    let currentDate = new Date(completedDays[0] + 'T12:00:00');
+    if (Math.floor((today - currentDate) / (24 * 60 * 60 * 1000)) > 1) return false;
+
+    if (completedDays[0] === dayKey) return true;
+    for (let index = 1; index < completedDays.length; index++) {
+        const previousDate = new Date(completedDays[index] + 'T12:00:00');
+        const difference = Math.floor((currentDate - previousDate) / (24 * 60 * 60 * 1000));
+        if (difference === 1 || (difference === 2 && isRestDayForDate(normalizeDateKey(new Date(currentDate.getTime() - 24 * 60 * 60 * 1000))))) {
+            if (completedDays[index] === dayKey) return true;
+            currentDate = previousDate;
+            continue;
+        }
+        break;
+    }
+    return false;
+}
+
+function countWords(text) {
+    return text.trim() ? text.trim().split(/\s+/).length : 0;
+}
+
 // ======================
 // DAILY ENGAGEMENT FEATURES
 // ======================
@@ -602,9 +672,15 @@ function showDailyCheckinModal() {
                     💡 ${getRandomTip()}
                 </p>
             </div>
+
+            <div class="daily-reflection">
+                <p class="daily-reflection-question">${getReflectionQuestion()}</p>
+                <textarea id="dailyReflectionInput" maxlength="700" rows="4" placeholder="${translateAppText('Twoja odpowiedź...')}"></textarea>
+                <span id="dailyReflectionCount" class="daily-reflection-count">0 / 100 ${translateAppText('słów')}</span>
+            </div>
             
             <button class="daily-checkin-btn" id="dailyCheckinBtn">
-                🚀 ${translateAppText('Zaatakuj dzień!')}
+                🚀 ${translateAppText('Zapisz i zacznij dzień')}
             </button>
         </div>
     `;
@@ -713,6 +789,32 @@ function showDailyCheckinModal() {
                 font-size: 0.9rem;
                 line-height: 1.5;
             }
+
+            .daily-reflection {
+                margin: 1rem 0 1.5rem;
+                text-align: left;
+            }
+
+            .daily-reflection-question {
+                margin: 0 0 0.6rem;
+                font-weight: 700;
+            }
+
+            .daily-reflection textarea {
+                width: 100%;
+                resize: vertical;
+                border: 0;
+                border-radius: 10px;
+                padding: 0.75rem;
+                font: inherit;
+            }
+
+            .daily-reflection-count {
+                display: block;
+                margin-top: 0.35rem;
+                font-size: 0.75rem;
+                text-align: right;
+            }
             
             .daily-checkin-btn {
                 background: white;
@@ -739,7 +841,24 @@ function showDailyCheckinModal() {
         document.head.appendChild(styles);
     }
     
+    const reflectionInput = document.getElementById('dailyReflectionInput');
+    const reflectionCount = document.getElementById('dailyReflectionCount');
+    reflectionInput.addEventListener('input', () => {
+        const words = countWords(reflectionInput.value);
+        reflectionCount.textContent = `${words} / 100 ${translateAppText('słów')}`;
+    });
+
     document.getElementById('dailyCheckinBtn').addEventListener('click', () => {
+        const answer = reflectionInput.value.trim();
+        if (countWords(answer) > 100) {
+            showNotification(translateAppText('⚠️ Refleksja może mieć maksymalnie 100 słów.'), 'warning');
+            return;
+        }
+        if (answer) {
+            AppData.reflections = AppData.reflections || {};
+            AppData.reflections[getTodayKey()] = { question: getReflectionQuestion(), answer };
+            saveData();
+        }
         playSuccessSound();
         modal.remove();
     });
@@ -1665,6 +1784,7 @@ function startChallenge() {
     const todayKey = getTodayKey();
     if (!AppData.challenge.startDate) {
         AppData.challenge.startDate = todayKey;
+        AppData.challenge.cycleStartedAt = Date.now();
         // Ensure totalDays is synced with settings
         AppData.challenge.totalDays = AppData.settings.challengeLength || AppData.challenge.totalDays || 75;
         // Start at day 1 (today is day 1 of the challenge)
@@ -1845,8 +1965,33 @@ function loadDataForDate(dateKey) {
     
     // Tasks - render with data for selected date
     renderTasks();
+    renderSelectedDaySummary(dateKey);
     
     console.log(`📅 Loaded data for ${dateKey}`);
+}
+
+function renderSelectedDaySummary(dateKey) {
+    const summaryElement = document.getElementById('dateDaySummary');
+    if (!summaryElement) return;
+
+    const summary = getDaySummary(dateKey);
+    const reflection = AppData.reflections?.[dateKey];
+    const isStreakDay = isPartOfCurrentStreak(dateKey);
+
+    summaryElement.replaceChildren();
+    const status = document.createElement('strong');
+    status.textContent = `${translateAppText('Status')}: ${translateAppText(summary.status)}`;
+    const tasks = document.createElement('span');
+    tasks.textContent = `${translateAppText('Zadania')}: ${summary.completedCount}/${summary.totalTasks}`;
+    const streak = document.createElement('span');
+    streak.textContent = `${translateAppText('Streak')}: ${translateAppText(isStreakDay ? 'tak' : 'nie')}`;
+    summaryElement.append(status, tasks, streak);
+
+    if (reflection?.answer) {
+        const reflectionText = document.createElement('p');
+        reflectionText.textContent = `${translateAppText('Refleksja')}: ${reflection.answer}`;
+        summaryElement.appendChild(reflectionText);
+    }
 }
 
 function returnToToday() {
@@ -3004,7 +3149,7 @@ function initSettings() {
     
     const resetChallengeDaysBtn = document.getElementById('resetChallengeDaysBtn');
     if (resetChallengeDaysBtn) {
-        resetChallengeDaysBtn.addEventListener('click', () => {
+        resetChallengeDaysBtn.addEventListener('click', async () => {
             playClickSound();
             if (!confirm('Rozpocząć nowe wyzwanie od dzisiaj? Zadania i ustawienia zostaną zachowane.')) return;
 
@@ -3012,7 +3157,8 @@ function initSettings() {
                 currentDay: 1,
                 totalDays: AppData.settings.challengeLength || 75,
                 completedDays: [],
-                startDate: getTodayKey()
+                startDate: getTodayKey(),
+                cycleStartedAt: Date.now()
             };
             AppData.completedTasks = {};
             AppData.steps = {};
@@ -3028,6 +3174,9 @@ function initSettings() {
             AppData.badges = {};
             saveData();
             updateAllDisplays();
+            if (typeof window.flushPendingFirestoreSave === 'function') {
+                await window.flushPendingFirestoreSave();
+            }
 
             const startChallengeBtn = document.getElementById('startChallengeBtn');
             if (startChallengeBtn) startChallengeBtn.style.display = 'none';
