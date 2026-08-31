@@ -651,6 +651,20 @@ main {
     font-weight: 600;
 }
 
+.hero-pill-link {
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.hero-pill-link:hover,
+.hero-pill-link:focus-visible {
+    background: var(--primary-color);
+    color: #fff;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.15);
+    outline: none;
+}
+
 .hero-visual {
     display: grid;
     place-items: center;

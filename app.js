@@ -87,7 +87,8 @@ const ALL_BADGE_IDS = [
     'megatron', 'challenge-named',
     'perfectionist', 'discipline-master', 'comeback-king', 'consistency-champion', 'time-traveler',
     'legend-collector',
-    '15-day-warrior', '30-day-warrior', '50-day-champion', '75-day-legend'
+    '15-day-warrior', '30-day-warrior', '50-day-champion', '75-day-legend',
+    'rules-master', 'report-exporter'
 ];
 
 function getAllBadgeIds() {
@@ -1049,6 +1050,29 @@ function initNavigation() {
         hamburger.addEventListener('click', () => {
             mainNav.classList.toggle('active');
             hamburger.classList.toggle('active');
+        });
+    }
+
+    // Pigułki "Challenge mode" - skróty do motywów i odznak
+    const goToView = (viewName) => {
+        playClickSound();
+        switchView(viewName);
+        navLinks.forEach(l => l.classList.toggle('active', l.dataset.view === viewName));
+    };
+
+    const pillThemes = document.getElementById('pillThemes');
+    if (pillThemes) {
+        pillThemes.addEventListener('click', () => goToView('settings'));
+        pillThemes.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goToView('settings'); }
+        });
+    }
+
+    const pillBadges = document.getElementById('pillBadges');
+    if (pillBadges) {
+        pillBadges.addEventListener('click', () => goToView('badges'));
+        pillBadges.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goToView('badges'); }
         });
     }
 }
@@ -2903,6 +2927,17 @@ function checkBadges() {
         unlockBadge('75-day-legend');
     }
     
+    // === KLUCZOWE FUNKCJE APLIKACJI ===
+    // Zasady zaakceptowane - świadomy start wyzwania
+    if (AppData.settings.rulesAccepted) {
+        unlockBadge('rules-master');
+    }
+    
+    // Eksport raportu postępów
+    if (AppData.settings.hasExportedReport) {
+        unlockBadge('report-exporter');
+    }
+    
     // Pokaż powiadomienie o nowych odznakach
     if (newlyUnlocked.length > 0) {
         showBadgeNotification(newlyUnlocked);
@@ -3423,6 +3458,9 @@ function initSettings() {
     const exportDataBtn = document.getElementById('exportDataBtn');
     exportDataBtn.addEventListener('click', () => {
         playClickSound(); // Dźwięk kliknięcia
+        AppData.settings.hasExportedReport = true;
+        checkBadges();
+        saveData();
         exportDataAsHTML();
     });
     
@@ -4816,7 +4854,9 @@ function exportDataAsHTML() {
             '15-day-warrior': { name: 'Początkujący wojownik', icon: '🛡️' },
             '30-day-warrior': { name: '30-dniowy wojownik', icon: '⚔️' },
             '50-day-champion': { name: 'Mistrz wyzwania', icon: '🏆' },
-            '75-day-legend': { name: 'Legenda 75 Hard', icon: '👑' }
+            '75-day-legend': { name: 'Legenda 75 Hard', icon: '👑' },
+            'rules-master': { name: 'Świadomy start', icon: '📜✅' },
+            'report-exporter': { name: 'Kronikarz postępów', icon: '📊📥' }
         };
 
         const badgeIds = getAllBadgeIds();
@@ -5667,6 +5707,7 @@ function initRules() {
     if (btnAcceptRulesView) {
         btnAcceptRulesView.addEventListener('click', () => {
             AppData.settings.rulesAccepted = true;
+            checkBadges();
             saveData();
             renderRulesView();
             
@@ -5710,6 +5751,7 @@ function showRulesModal() {
 
 function acceptRules() {
     AppData.settings.rulesAccepted = true;
+    checkBadges();
     saveData();
     
     const modal = document.getElementById('rulesModal');

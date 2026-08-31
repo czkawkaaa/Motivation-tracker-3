@@ -743,7 +743,9 @@
         '15-day-warrior': { icon: '🛡️', name: { pl: 'Początkujący wojownik', en: 'Beginner warrior', it: 'Guerriero principiante' }, description: { pl: 'Ukończ 15 dni wyzwania', en: 'Complete 15 challenge days', it: 'Completa 15 giorni di sfida' } },
         '30-day-warrior': { icon: '⚔️', name: { pl: '30-dniowy wojownik', en: '30-day warrior', it: 'Guerriero di 30 giorni' }, description: { pl: 'Ukończ 30 dni wyzwania', en: 'Complete 30 challenge days', it: 'Completa 30 giorni di sfida' } },
         '50-day-champion': { icon: '🏆', name: { pl: 'Mistrz wyzwania', en: 'Challenge champion', it: 'Campione della sfida' }, description: { pl: 'Ukończ 50 dni wyzwania', en: 'Complete 50 challenge days', it: 'Completa 50 giorni di sfida' } },
-        '75-day-legend': { icon: '👑', name: { pl: 'Legenda 75 Hard', en: '75 Hard legend', it: 'Leggenda 75 Hard' }, description: { pl: 'Ukończ wszystkie 75 dni!', en: 'Complete all 75 days!', it: 'Completa tutti i 75 giorni!' } }
+        '75-day-legend': { icon: '👑', name: { pl: 'Legenda 75 Hard', en: '75 Hard legend', it: 'Leggenda 75 Hard' }, description: { pl: 'Ukończ wszystkie 75 dni!', en: 'Complete all 75 days!', it: 'Completa tutti i 75 giorni!' } },
+        'rules-master': { icon: '📜✅', name: { pl: 'Świadomy start', en: 'Mindful start', it: 'Inizio consapevole' }, description: { pl: 'Zaakceptuj zasady wyzwania', en: 'Accept the challenge rules', it: 'Accetta le regole della sfida' } },
+        'report-exporter': { icon: '📊📥', name: { pl: 'Kronikarz postępów', en: 'Progress chronicler', it: 'Cronista dei progressi' }, description: { pl: 'Pobierz raport ze swoimi statystykami', en: 'Download a report of your stats', it: 'Scarica un report delle tue statistiche' } }
     };
 
     const taskTranslations = {
