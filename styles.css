@@ -204,135 +204,201 @@
 }
 
 .theme-aurora {
-    --primary-color: #18b7b0;
-    --bg-gradient-start: #e8fbf8;
-    --bg-gradient-end: #fbe9f7;
+    --primary-color: #7868c9;
+    --bg-gradient-start: #f5f2ff;
+    --bg-gradient-end: #f5f2ff;
     --card-bg: #ffffff;
-    --hover-bg: #eaf6ff;
-    --text-primary: #17313e;
-    --text-secondary: #50646d;
-    --progress-bg: #d9f0ee;
-    --calendar-completed-bg: #d8d1ff;
-    --calendar-completed-text: #6b43bd;
-    --calendar-completed-check: #e24c94;
+    --hover-bg: #e9e4fa;
+    --text-primary: #36304f;
+    --text-secondary: #6d6687;
+    --progress-bg: #ddd6f4;
+    --calendar-completed-bg: #c8eadf;
+    --calendar-completed-text: #397c67;
+    --calendar-completed-check: #d26d99;
 }
 
 .theme-aurora .app-header {
-    background: linear-gradient(135deg, #18b7b0, #8866d9 52%, #ed6ea7);
+    background: #7868c9;
 }
 
 .theme-aurora .btn-primary {
-    background: linear-gradient(135deg, #18b7b0, #8866d9, #ed6ea7);
+    background: #d26d99;
 }
 
 .theme-peach-pop {
-    --primary-color: #f06c67;
-    --bg-gradient-start: #fff3e7;
-    --bg-gradient-end: #fff9d9;
+    --primary-color: #d87870;
+    --bg-gradient-start: #fff7f0;
+    --bg-gradient-end: #fff7f0;
     --card-bg: #ffffff;
-    --hover-bg: #fff0da;
-    --text-primary: #432c30;
-    --text-secondary: #765c55;
-    --progress-bg: #ffe0bf;
-    --calendar-completed-bg: #ffd3ad;
-    --calendar-completed-text: #bd4d55;
-    --calendar-completed-check: #d78322;
+    --hover-bg: #fbe7d9;
+    --text-primary: #4d3634;
+    --text-secondary: #806866;
+    --progress-bg: #f4d9c8;
+    --calendar-completed-bg: #f8d9a7;
+    --calendar-completed-text: #a46435;
+    --calendar-completed-check: #d87870;
 }
 
 .theme-peach-pop .app-header {
-    background: linear-gradient(135deg, #f06c67, #fb9d53 52%, #f5c64b);
+    background: #d87870;
 }
 
 .theme-peach-pop .btn-primary {
-    background: linear-gradient(135deg, #f06c67, #fb9d53, #f5c64b);
+    background: #d99b4d;
 }
 
 .theme-forest-glow {
-    --primary-color: #27865a;
-    --bg-gradient-start: #edf8e8;
-    --bg-gradient-end: #fff4ce;
+    --primary-color: #5b9872;
+    --bg-gradient-start: #f3f8f1;
+    --bg-gradient-end: #f3f8f1;
     --card-bg: #ffffff;
-    --hover-bg: #e4f4df;
-    --text-primary: #1f352b;
-    --text-secondary: #52685b;
-    --progress-bg: #d5eed8;
-    --calendar-completed-bg: #c5e7c9;
-    --calendar-completed-text: #23754d;
-    --calendar-completed-check: #b9841c;
+    --hover-bg: #e1eee2;
+    --text-primary: #33463a;
+    --text-secondary: #66786c;
+    --progress-bg: #d6e8d7;
+    --calendar-completed-bg: #cfe4d0;
+    --calendar-completed-text: #4e8260;
+    --calendar-completed-check: #c59056;
 }
 
 .theme-forest-glow .app-header {
-    background: linear-gradient(135deg, #27865a, #50b985 52%, #d6a52e);
+    background: #5b9872;
 }
 
 .theme-forest-glow .btn-primary {
-    background: linear-gradient(135deg, #27865a, #50b985, #d6a52e);
+    background: #c59056;
 }
 
 .theme-cotton-candy {
-    --primary-color: #e890b5;
-    --bg-gradient-start: #fff1f7;
-    --bg-gradient-end: #edf5ff;
+    --primary-color: #bd8dc1;
+    --bg-gradient-start: #fdf5fb;
+    --bg-gradient-end: #fdf5fb;
     --card-bg: #ffffff;
-    --hover-bg: #f7edff;
-    --text-primary: #4b3544;
-    --text-secondary: #786473;
-    --progress-bg: #f6d9ea;
-    --calendar-completed-bg: #e3d8fb;
-    --calendar-completed-text: #9a6fba;
-    --calendar-completed-check: #d66f9c;
+    --hover-bg: #f2e6f1;
+    --text-primary: #49394a;
+    --text-secondary: #766875;
+    --progress-bg: #e9d8e8;
+    --calendar-completed-bg: #cddff1;
+    --calendar-completed-text: #5d83a7;
+    --calendar-completed-check: #c97e9d;
 }
 
 .theme-cotton-candy .app-header {
-    background: linear-gradient(135deg, #e890b5, #b7a4e8 50%, #9ecff0);
+    background: #bd8dc1;
 }
 
 .theme-cotton-candy .btn-primary {
-    background: linear-gradient(135deg, #e890b5, #b7a4e8, #9ecff0);
+    background: #c97e9d;
 }
 
 .theme-macaron {
-    --primary-color: #eca887;
-    --bg-gradient-start: #fff3e9;
-    --bg-gradient-end: #f1fae9;
+    --primary-color: #d29b85;
+    --bg-gradient-start: #fff9f2;
+    --bg-gradient-end: #fff9f2;
     --card-bg: #ffffff;
-    --hover-bg: #fff7d9;
-    --text-primary: #513b36;
-    --text-secondary: #796760;
-    --progress-bg: #fce0c8;
-    --calendar-completed-bg: #d8efce;
-    --calendar-completed-text: #6e9b69;
-    --calendar-completed-check: #d3915f;
+    --hover-bg: #f6e8d9;
+    --text-primary: #503d37;
+    --text-secondary: #7c6b63;
+    --progress-bg: #f0ddcd;
+    --calendar-completed-bg: #d8e7cb;
+    --calendar-completed-text: #6d8962;
+    --calendar-completed-check: #d29b85;
 }
 
 .theme-macaron .app-header {
-    background: linear-gradient(135deg, #eca887, #f3d48c 50%, #a7d8b0);
+    background: #d29b85;
 }
 
 .theme-macaron .btn-primary {
-    background: linear-gradient(135deg, #eca887, #f3d48c, #a7d8b0);
+    background: #91ae83;
 }
 
 .theme-rose-garden {
-    --primary-color: #d98f9f;
-    --bg-gradient-start: #fff0f1;
-    --bg-gradient-end: #f2f8e9;
+    --primary-color: #b97d91;
+    --bg-gradient-start: #fdf4f5;
+    --bg-gradient-end: #fdf4f5;
     --card-bg: #ffffff;
-    --hover-bg: #faebe1;
-    --text-primary: #49393a;
-    --text-secondary: #766669;
-    --progress-bg: #f6d8dc;
-    --calendar-completed-bg: #d7e8cf;
-    --calendar-completed-text: #669064;
-    --calendar-completed-check: #cf846b;
+    --hover-bg: #f0e2e7;
+    --text-primary: #493940;
+    --text-secondary: #76666d;
+    --progress-bg: #ead6dc;
+    --calendar-completed-bg: #dce9d4;
+    --calendar-completed-text: #668060;
+    --calendar-completed-check: #c68a68;
 }
 
 .theme-rose-garden .app-header {
-    background: linear-gradient(135deg, #d98f9f, #e7af85 50%, #a9cf9c);
+    background: #b97d91;
 }
 
 .theme-rose-garden .btn-primary {
-    background: linear-gradient(135deg, #d98f9f, #e7af85, #a9cf9c);
+    background: #8da77d;
+}
+
+.theme-bloom {
+    --primary-color: #a77eab;
+    --bg-gradient-start: #faf6ef;
+    --bg-gradient-end: #faf6ef;
+    --card-bg: #ffffff;
+    --hover-bg: #eee7d9;
+    --text-primary: #493f47;
+    --text-secondary: #766c73;
+    --progress-bg: #eadfea;
+    --calendar-completed-bg: #dce8c9;
+    --calendar-completed-text: #6f8755;
+    --calendar-completed-check: #c49a52;
+}
+
+.theme-bloom .app-header {
+    background: #a77eab;
+}
+
+.theme-bloom .btn-primary {
+    background: #c49a52;
+}
+
+.theme-bluebell {
+    --primary-color: #7184ba;
+    --bg-gradient-start: #f4f6fc;
+    --bg-gradient-end: #f4f6fc;
+    --card-bg: #ffffff;
+    --hover-bg: #e4e9f5;
+    --text-primary: #384359;
+    --text-secondary: #667186;
+    --progress-bg: #dbe2f2;
+    --calendar-completed-bg: #d7e6dc;
+    --calendar-completed-text: #5e816d;
+    --calendar-completed-check: #a87d9d;
+}
+
+.theme-bluebell .app-header {
+    background: #7184ba;
+}
+
+.theme-bluebell .btn-primary {
+    background: #a87d9d;
+}
+
+.theme-cherry-cream {
+    --primary-color: #bd6979;
+    --bg-gradient-start: #fdf7f2;
+    --bg-gradient-end: #fdf7f2;
+    --card-bg: #ffffff;
+    --hover-bg: #f5e5df;
+    --text-primary: #4c383d;
+    --text-secondary: #79656a;
+    --progress-bg: #efd8d6;
+    --calendar-completed-bg: #f1d8ad;
+    --calendar-completed-text: #9d6e3d;
+    --calendar-completed-check: #bd6979;
+}
+
+.theme-cherry-cream .app-header {
+    background: #bd6979;
+}
+
+.theme-cherry-cream .btn-primary {
+    background: #b88a52;
 }
 
 /* Podstawowe style body */

@@ -903,7 +903,10 @@
                 'forest-glow': { pl: 'Forest Glow 🌿', en: 'Forest Glow 🌿', it: 'Forest Glow 🌿' },
                 'cotton-candy': { pl: 'Cotton Candy 🍬', en: 'Cotton Candy 🍬', it: 'Cotton Candy 🍬' },
                 macaron: { pl: 'Macaron 🧁', en: 'Macaron 🧁', it: 'Macaron 🧁' },
-                'rose-garden': { pl: 'Rose Garden 🌷', en: 'Rose Garden 🌷', it: 'Rose Garden 🌷' }
+                'rose-garden': { pl: 'Rose Garden 🌷', en: 'Rose Garden 🌷', it: 'Rose Garden 🌷' },
+                bloom: { pl: 'Wiosenny Rozkwit 🌼', en: 'Spring Bloom 🌼', it: 'Fioritura primaverile 🌼' },
+                bluebell: { pl: 'Dzwonek 🪻', en: 'Bluebell 🪻', it: 'Campanula 🪻' },
+                'cherry-cream': { pl: 'Wiśniowy Krem 🍒', en: 'Cherry Cream 🍒', it: 'Crema alla ciliegia 🍒' }
             };
             Array.from(themeSelect.options).forEach(option => {
                 option.textContent = pick(optionMap[option.value], language) || option.textContent;

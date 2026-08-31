@@ -1075,7 +1075,10 @@ function setTheme(themeName) {
         'theme-forest-glow',
         'theme-cotton-candy',
         'theme-macaron',
-        'theme-rose-garden'
+        'theme-rose-garden',
+        'theme-bloom',
+        'theme-bluebell',
+        'theme-cherry-cream'
     ];
     
     themeClasses.forEach(cls => body.classList.remove(cls));
@@ -2637,7 +2640,7 @@ function checkBadges() {
     if (uniqueThemes.size >= 5) {
         unlockBadge('rainbow-master');
     }
-    if (uniqueThemes.size >= 18) { // Wszystkie motywy
+    if (uniqueThemes.size >= 21) { // Wszystkie motywy
         unlockBadge('theme-explorer');
     }
     
