@@ -343,6 +343,53 @@ function hasMeaningfulAppData(data) {
     return false;
 }
 
+function normalizeChallengeState() {
+    if (!AppData.challenge || typeof AppData.challenge !== 'object') {
+        AppData.challenge = {
+            currentDay: 0,
+            totalDays: AppData.settings?.challengeLength || 75,
+            completedDays: [],
+            activityLog: [],
+            restDaysEffectiveFrom: null
+        };
+    }
+
+    if (AppData.challenge.startDate) {
+        const normalizedStart = normalizeDateKey(AppData.challenge.startDate);
+        if (normalizedStart) {
+            AppData.challenge.startDate = normalizedStart;
+        }
+    }
+
+    AppData.challenge.totalDays = Number(AppData.challenge.totalDays || AppData.settings?.challengeLength || 75) || 75;
+    AppData.challenge.completedDays = Array.isArray(AppData.challenge.completedDays)
+        ? Array.from(new Set(AppData.challenge.completedDays.map(d => normalizeDateKey(d)).filter(Boolean))).sort()
+        : [];
+    AppData.challenge.activityLog = Array.isArray(AppData.challenge.activityLog) ? AppData.challenge.activityLog : [];
+    AppData.challenge.restDaysEffectiveFrom = AppData.challenge.restDaysEffectiveFrom || AppData.challenge.startDate || null;
+
+    if (AppData.challenge.startDate && AppData.settings && AppData.settings.rulesAccepted !== true) {
+        AppData.settings.rulesAccepted = true;
+    }
+
+    if (AppData.challenge.startDate) {
+        const start = new Date(AppData.challenge.startDate + 'T12:00:00');
+        const today = new Date();
+        const startLocal = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+        const todayLocal = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+        const daysPassed = Math.max(0, Math.floor((todayLocal.getTime() - startLocal.getTime()) / (24 * 60 * 60 * 1000)));
+        const derivedCurrentDay = Math.max(1, Math.min(daysPassed + 1, AppData.challenge.totalDays || 75));
+
+        if (!Number.isFinite(AppData.challenge.currentDay) || AppData.challenge.currentDay < 1 || AppData.challenge.currentDay > AppData.challenge.totalDays) {
+            AppData.challenge.currentDay = derivedCurrentDay;
+        }
+    } else {
+        AppData.challenge.currentDay = 0;
+    }
+
+    sanitizeChallengeCompletedDays();
+}
+
 function loadData() {
     const saved = localStorage.getItem('kawaiiQuestData');
     // If main data was cleared (e.g., by older sync logic or service worker), try to restore backup
@@ -467,9 +514,7 @@ function loadData() {
         AppData.badges = {};
     }
 
-    if (AppData.challenge?.startDate && AppData.settings && AppData.settings.rulesAccepted !== true) {
-        AppData.settings.rulesAccepted = true;
-    }
+    normalizeChallengeState();
 
     if (!Array.isArray(AppData.settings?.restDays)) {
         AppData.settings.restDays = getRestDays();
@@ -498,6 +543,8 @@ function loadData() {
 }
 
 function saveData() {
+    normalizeChallengeState();
+
     // ZAWSZE ustaw timestamp PRZED zapisem
     AppData.lastModified = Date.now();
     
