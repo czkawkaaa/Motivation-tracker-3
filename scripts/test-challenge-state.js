@@ -111,6 +111,16 @@ app.loadData();
 assert.equal(app.AppData.challenge.currentDay, 3, 'challenge day should be recalculated from startDate on load');
 assert.equal(app.AppData.settings.rulesAccepted, true, 'active challenge should not require a new rules acceptance flag');
 
+// Regression: a challenge started three days ago should count as day 3 even in local timezone.
+const fixedNow = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+const startThreeDaysAgo = new Date(fixedNow.getFullYear(), fixedNow.getMonth(), fixedNow.getDate() - 2);
+app.AppData.challenge.startDate = iso(startThreeDaysAgo);
+app.AppData.challenge.currentDay = 1;
+app.AppData.challenge.totalDays = 31;
+app.AppData.challenge.completedDays = [iso(startThreeDaysAgo)];
+app.syncChallengeByDates({ updateUi: false, force: true });
+assert.equal(app.AppData.challenge.currentDay, 3, 'a challenge started three days ago should be counted as day 3');
+
 // New regression: rest-day changes should take effect only from now, not retroactively.
 const effectiveFrom = iso(new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1));
 const yesterday = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1);

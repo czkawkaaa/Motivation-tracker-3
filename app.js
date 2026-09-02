@@ -490,7 +490,7 @@ function loadData() {
     }
     sanitizeChallengeCompletedDays();
 
-    syncChallengeByDates({ updateUi: false });
+    syncChallengeByDates({ updateUi: false, force: true });
 
     calculateStreak();
     applySettings();
@@ -1930,17 +1930,19 @@ function syncChallengeByDates(options = {}) {
     // Jeśli wyzwanie jest ukończone, nie przeliczaj
     if (AppData.challenge.completionTime) return;
 
-    const start = new Date(AppData.challenge.startDate + 'T00:00:00');
+    const start = new Date(AppData.challenge.startDate + 'T12:00:00');
     const today = new Date();
+    const startLocal = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+    const todayLocal = new Date(today.getFullYear(), today.getMonth(), today.getDate());
 
     const msPerDay = 24 * 60 * 60 * 1000;
-    const daysPassed = Math.floor((Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()) - Date.UTC(start.getFullYear(), start.getMonth(), start.getDate())) / msPerDay);
+    const daysPassed = Math.floor((todayLocal.getTime() - startLocal.getTime()) / msPerDay);
 
     const total = AppData.challenge.totalDays || AppData.settings.challengeLength || 75;
     const previousCurrentDay = Number.isFinite(AppData.challenge.currentDay) ? AppData.challenge.currentDay : 0;
     const correctCurrentDay = Math.max(1, Math.min(daysPassed + 1, total));
     
-    if (correctCurrentDay !== previousCurrentDay) {
+    if (correctCurrentDay !== previousCurrentDay || options.force === true) {
         AppData.challenge.currentDay = correctCurrentDay;
         saveData();
         if (options.updateUi !== false) {
