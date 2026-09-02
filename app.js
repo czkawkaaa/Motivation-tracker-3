@@ -478,6 +478,8 @@ function loadData() {
     }
     sanitizeChallengeCompletedDays();
 
+    syncChallengeByDates({ updateUi: false });
+
     calculateStreak();
     applySettings();
     checkBadges();
@@ -1857,7 +1859,7 @@ function startChallenge() {
     }
 }
 
-function syncChallengeByDates() {
+function syncChallengeByDates(options = {}) {
     if (!AppData.challenge.startDate) return;
     
     // Jeśli wyzwanie jest ukończone, nie przeliczaj
@@ -1875,7 +1877,9 @@ function syncChallengeByDates() {
     if (correctCurrentDay !== AppData.challenge.currentDay) {
         AppData.challenge.currentDay = correctCurrentDay;
         saveData();
-        updateAllDisplays();
+        if (options.updateUi !== false) {
+            updateAllDisplays();
+        }
     }
 
     // Wywołaj completion tylko jeśli faktycznie ukończono wszystkie dni
