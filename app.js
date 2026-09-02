@@ -2456,6 +2456,13 @@ function renderCalendar() {
         const dayDiv = document.createElement('div');
         dayDiv.className = 'calendar-day';
         dayDiv.textContent = day;
+
+        const isChallengeStart = dayKey === normalizeDateKey(AppData.challenge?.startDate);
+        if (isChallengeStart) {
+            dayDiv.classList.add('challenge-start');
+            dayDiv.title = 'Start wyzwania';
+            dayDiv.setAttribute('aria-label', `${day} - start wyzwania`);
+        }
         
         // Make day clickable
         dayDiv.style.cursor = 'pointer';
