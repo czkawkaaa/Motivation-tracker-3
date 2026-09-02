@@ -1293,49 +1293,66 @@ main {
 }
 
 .calendar-day.completed::after {
-    content: none;
+    content: '✓';
+    position: absolute;
+    top: 2px;
+    right: 4px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #2d6f5e;
 }
 
 .calendar-day.completed {
-    background: var(--calendar-completed-bg);
-    color: var(--calendar-completed-text);
+    background: linear-gradient(135deg, #eafaf2, #dff3ee);
+    color: #2a5a4d;
     font-weight: 600;
-    border: 2px solid var(--calendar-completed-check);
+    border: 1px solid #8dc2b0;
 }
 
 .calendar-day.completed:hover {
-    background: var(--primary-color);
-    color: white;
-    border-color: var(--primary-color);
+    background: linear-gradient(135deg, #dff7ed, #d2efe6);
+    color: #234e43;
+    border-color: #79b9a7;
 }
 
 .calendar-day.failed {
-    background: linear-gradient(135deg, #ffebee, #ffcdd2);
-    color: #c62828;
+    background: linear-gradient(135deg, #fff1f2, #fbe7ea);
+    color: #7c3b46;
     font-weight: 600;
-    border: 2px solid #ef5350;
+    border: 1px solid #d9a7b2;
     position: relative;
 }
 
 .calendar-day.failed::after {
-    content: none;
+    content: '✕';
+    position: absolute;
+    top: 2px;
+    right: 4px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #7c3b46;
 }
 
 .calendar-day.failed:hover {
-    background: linear-gradient(135deg, #ef5350, #e53935);
-    color: white;
-    border-color: #c62828;
+    background: linear-gradient(135deg, #f9dfe3, #f6d5db);
+    color: #682f3b;
+    border-color: #c68d9b;
 }
 
 .calendar-day.rest {
-    background: linear-gradient(135deg, var(--progress-bg), rgba(255, 255, 255, 0.8));
-    border: 2px dashed var(--primary-color);
+    background: linear-gradient(135deg, #f3f6ff, #edf0fb);
+    border: 1px dashed #9aaad0;
     font-style: italic;
     position: relative;
 }
 
 .calendar-day.rest::before {
-    content: none;
+    content: '☾';
+    position: absolute;
+    top: 2px;
+    left: 4px;
+    font-size: 0.62rem;
+    color: #6e7ca6;
 }
 
 .calendar-day.empty {
@@ -1345,11 +1362,22 @@ main {
 
 /* Streak indicator in calendar */
 .calendar-day.has-streak::after {
-    content: none;
+    content: '✦';
+    position: absolute;
+    bottom: 3px;
+    left: 4px;
+    font-size: 0.58rem;
+    color: #b27a39;
 }
 
-.calendar-day.has-streak {
-    box-shadow: inset 0 -4px 0 var(--primary-color);
+.calendar-day.completed.has-streak::after {
+    content: '✓';
+    top: 2px;
+    right: 4px;
+    bottom: auto;
+    left: auto;
+    font-size: 0.75rem;
+    color: #2d6f5e;
 }
 
 /* Stats Charts */
@@ -3226,36 +3254,26 @@ footer p {
 .calendar-status-icon,
 .calendar-reflection-icon {
     position: absolute;
-    display: grid;
-    place-items: center;
-    width: 1.25rem;
-    height: 1.25rem;
-    border-radius: 4px;
-    font-size: 0.75rem;
+    font-size: 0.68rem;
     font-weight: 800;
     line-height: 1;
 }
 
 .calendar-status-icon {
-    right: 0.35rem;
-    bottom: 0.35rem;
-    border: 1px solid currentColor;
+    right: 0.32rem;
+    bottom: 0.28rem;
 }
 
 .calendar-reflection-icon {
-    left: 0.4rem;
-    top: 0.4rem;
-    width: 0.55rem;
-    height: 0.55rem;
-    border-radius: 2px;
-    background: #9a6b3d;
-    font-size: 0;
+    left: 0.32rem;
+    top: 0.28rem;
+    color: #a77941;
 }
 
-.calendar-status-icon.status-complete { color: #1f6b45; background: #d8efe2; }
-.calendar-status-icon.status-partial { color: #8a5a16; background: #f4e4bd; }
-.calendar-status-icon.status-rest { color: #365d76; background: #dbe8f0; }
-.calendar-status-icon.status-missed { color: #873b3b; background: #f1d8d8; }
+.calendar-status-icon.status-complete { color: #2e6d57; }
+.calendar-status-icon.status-partial { color: #a46a1a; }
+.calendar-status-icon.status-rest { color: #5d7088; }
+.calendar-status-icon.status-missed { color: #8a4747; }
 
 .challenge-history-list {
     display: grid;
