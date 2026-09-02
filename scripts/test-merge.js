@@ -1,3 +1,5 @@
+import assert from 'node:assert/strict';
+
 // Test smartMergeData behavior
 function smartMergeData(local, cloud, cloudLastModified = 0) {
     if (!local) return cloud || {};
@@ -24,11 +26,19 @@ function smartMergeData(local, cloud, cloudLastModified = 0) {
 
     ['steps', 'studyHours', 'mood', 'completedTasks'].forEach(k => mergeMaps(k));
 
-    const localDays = Array.isArray(local.challenge?.completedDays) ? local.challenge.completedDays : [];
-    const cloudDays = Array.isArray(cloud.challenge?.completedDays) ? cloud.challenge.completedDays : [];
-    const mergedDays = Array.from(new Set([...localDays, ...cloudDays])).sort();
-    merged.challenge = merged.challenge || {};
-    merged.challenge.completedDays = mergedDays;
+    const cloudIsNewer = cloudLastModified > (local.lastModified || 0);
+    const localCycleStartedAt = Number(local.challenge?.cycleStartedAt || 0);
+    const cloudCycleStartedAt = Number(cloud.challenge?.cycleStartedAt || 0);
+    const cloudHasNewerChallenge = cloudCycleStartedAt > localCycleStartedAt ||
+        (cloudCycleStartedAt === localCycleStartedAt && cloudIsNewer);
+    const sameChallenge = (localCycleStartedAt > 0 && localCycleStartedAt === cloudCycleStartedAt) ||
+        (!localCycleStartedAt && !cloudCycleStartedAt && local.challenge?.startDate === cloud.challenge?.startDate);
+    merged.challenge = { ...(cloudHasNewerChallenge ? cloud.challenge : local.challenge) };
+    if (sameChallenge) {
+        const localDays = Array.isArray(local.challenge?.completedDays) ? local.challenge.completedDays : [];
+        const cloudDays = Array.isArray(cloud.challenge?.completedDays) ? cloud.challenge.completedDays : [];
+        merged.challenge.completedDays = Array.from(new Set([...localDays, ...cloudDays])).sort();
+    }
 
     merged.challenge.currentDay = (local.challenge?.currentDay || 0);
     if (cloud.challenge?.currentDay && cloudLastModified > (local.lastModified || 0)) {
@@ -78,3 +88,22 @@ console.log('CLOUD\n', JSON.stringify(cloud, null, 2));
 
 const merged = smartMergeData(local, cloud, cloud.lastModified);
 console.log('\nMERGED\n', JSON.stringify(merged, null, 2));
+
+const sameCycleLocal = {
+    lastModified: 100,
+    challenge: { startDate: '2026-08-31', completedDays: ['2026-08-31'] }
+};
+const sameCycleCloud = {
+    lastModified: 200,
+    challenge: { startDate: '2026-08-31', completedDays: [] }
+};
+const sameCycleMerged = smartMergeData(sameCycleLocal, sameCycleCloud, sameCycleCloud.lastModified);
+assert.deepEqual(sameCycleMerged.challenge.completedDays, ['2026-08-31'], 'same challenge must preserve local completed days');
+
+const newCycleCloud = {
+    lastModified: 300,
+    challenge: { startDate: '2026-09-02', completedDays: [] }
+};
+const newCycleMerged = smartMergeData(sameCycleLocal, newCycleCloud, newCycleCloud.lastModified);
+assert.deepEqual(newCycleMerged.challenge.completedDays, [], 'new challenge cycle must not inherit old completed days');
+console.log('challenge merge regression tests passed');

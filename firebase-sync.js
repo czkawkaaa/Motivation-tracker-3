@@ -82,8 +82,15 @@ function smartMergeData(local, cloud, cloudLastModified = 0) {
     const cloudCycleStartedAt = Number(cloud.challenge?.cycleStartedAt || 0);
     const cloudHasNewerChallenge = cloudCycleStartedAt > localCycleStartedAt ||
         (cloudCycleStartedAt === localCycleStartedAt && cloudIsNewer);
-    // A challenge reset is a complete new lifecycle: never merge its completed days.
+    const sameChallenge = (localCycleStartedAt > 0 && localCycleStartedAt === cloudCycleStartedAt) ||
+        (!localCycleStartedAt && !cloudCycleStartedAt && local.challenge?.startDate === cloud.challenge?.startDate);
+    // A reset starts a new lifecycle; otherwise completed days are additive.
     merged.challenge = { ...(cloudHasNewerChallenge ? cloud.challenge : local.challenge) };
+    if (sameChallenge) {
+        const localDays = Array.isArray(local.challenge?.completedDays) ? local.challenge.completedDays : [];
+        const cloudDays = Array.isArray(cloud.challenge?.completedDays) ? cloud.challenge.completedDays : [];
+        merged.challenge.completedDays = Array.from(new Set([...localDays, ...cloudDays])).sort();
+    }
     merged.tasks = cloud.tasks || local.tasks;
     if (local.weeklyTasks || cloud.weeklyTasks) {
         merged.weeklyTasks = {

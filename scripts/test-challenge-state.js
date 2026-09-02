@@ -133,11 +133,12 @@ const context = {
 };
 
 vm.createContext(context);
-const app = vm.runInContext(`(function() { ${source}; return { AppData, loadData, syncChallengeByDates, isRestDayForDate, recordChallengeActivity, acceptRules }; })()`, context);
+const app = vm.runInContext(`(function() { ${source}; return { AppData, loadData, syncChallengeByDates, isRestDayForDate, recordChallengeActivity, acceptRules, normalizeDateKey }; })()`, context);
 app.loadData();
 
 assert.equal(app.AppData.challenge.currentDay, 3, 'challenge day should be recalculated from startDate on load');
 assert.equal(app.AppData.settings.rulesAccepted, true, 'active challenge should not require a new rules acceptance flag');
+assert.equal(app.normalizeDateKey('2026-08-31'), '2026-08-31', 'date-only challenge keys must not shift across timezones');
 
 app.AppData.challenge.startDate = null;
 app.AppData.challenge.currentDay = 0;

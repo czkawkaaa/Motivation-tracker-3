@@ -1042,7 +1042,13 @@ function normalizeDateKey(input) {
         const d = input;
         return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     }
-    // If string like '2025-10-15' or with time, parse and reformat
+    // Date-only keys represent local calendar days, not UTC instants.
+    if (typeof input === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(input)) {
+        const [year, month, day] = input.split('-').map(Number);
+        const localDate = new Date(year, month - 1, day);
+        if (localDate.getFullYear() !== year || localDate.getMonth() !== month - 1 || localDate.getDate() !== day) return null;
+        return input;
+    }
     const parsed = new Date(input);
     if (isNaN(parsed.getTime())) return null;
     return `${parsed.getFullYear()}-${String(parsed.getMonth() + 1).padStart(2, '0')}-${String(parsed.getDate()).padStart(2, '0')}`;
