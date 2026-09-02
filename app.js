@@ -7,7 +7,9 @@ const AppData = {
     challenge: {
         currentDay: 0,
         totalDays: 75,
-        completedDays: []
+        completedDays: [],
+        activityLog: [],
+        restDaysEffectiveFrom: null
     },
     challengeHistory: [],
     streak: 0,
@@ -465,6 +467,10 @@ function loadData() {
         AppData.badges = {};
     }
 
+    if (AppData.challenge?.startDate && AppData.settings && AppData.settings.rulesAccepted !== true) {
+        AppData.settings.rulesAccepted = true;
+    }
+
     if (!Array.isArray(AppData.settings?.restDays)) {
         AppData.settings.restDays = getRestDays();
     }
@@ -475,6 +481,12 @@ function loadData() {
 
     if (Array.isArray(AppData.challenge?.completedDays)) {
         AppData.challenge.completedDays = Array.from(new Set(AppData.challenge.completedDays.map(d => normalizeDateKey(d)).filter(Boolean))).sort();
+    }
+    if (!Array.isArray(AppData.challenge?.activityLog)) {
+        AppData.challenge.activityLog = [];
+    }
+    if (!AppData.challenge.restDaysEffectiveFrom && AppData.challenge.startDate) {
+        AppData.challenge.restDaysEffectiveFrom = AppData.challenge.startDate;
     }
     sanitizeChallengeCompletedDays();
 
@@ -529,6 +541,21 @@ function saveData() {
     }
     
     checkBadges();
+}
+
+function recordChallengeActivity(type, payload = {}) {
+    if (!AppData.challenge || typeof AppData.challenge !== 'object') return;
+    const entry = {
+        id: `activity-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
+        type,
+        dateKey: payload.dateKey || getTodayKey(),
+        timestamp: payload.timestamp || Date.now(),
+        summary: payload.summary || '',
+        ...payload
+    };
+
+    const existing = Array.isArray(AppData.challenge.activityLog) ? AppData.challenge.activityLog : [];
+    AppData.challenge.activityLog = [entry, ...existing].slice(0, 200);
 }
 
 function getTodayKey() {
@@ -1017,10 +1044,20 @@ function isRestDay() {
 }
 
 function isRestDayForDate(dateString) {
-    const date = new Date(dateString + 'T12:00:00'); // Use noon to avoid timezone issues
+    const normalizedDate = normalizeDateKey(dateString);
+    if (!normalizedDate) return false;
+
+    const date = new Date(normalizedDate + 'T12:00:00');
     const dayOfWeek = date.getDay();
     const restDays = getRestDays();
-    return restDays.length > 0 && restDays.includes(String(dayOfWeek));
+    if (restDays.length === 0) return false;
+
+    const effectiveFrom = AppData.challenge?.restDaysEffectiveFrom;
+    if (effectiveFrom && normalizedDate < effectiveFrom) {
+        return false;
+    }
+
+    return restDays.includes(String(dayOfWeek));
 }
 
 // ======================
@@ -1253,7 +1290,14 @@ function initDashboard() {
     saveTasksBtn.addEventListener('click', () => {
         playSuccessSound(); // Dźwięk sukcesu
         const editItems = document.querySelectorAll('.edit-task-item input[type="text"]');
+        const previousTasks = [...AppData.tasks];
         AppData.tasks = Array.from(editItems).map(input => input.value).filter(val => val.trim());
+        if (AppData.challenge?.startDate) {
+            recordChallengeActivity('task-edit', {
+                dateKey: getTodayKey(),
+                summary: `Zmieniono zadania: ${JSON.stringify(previousTasks)} -> ${JSON.stringify(AppData.tasks)}`
+            });
+        }
         saveData();
         renderTasks();
         taskEditSection.style.display = 'none';
@@ -1266,6 +1310,12 @@ function initDashboard() {
         const newTask = newTaskInput.value.trim();
         if (newTask) {
             AppData.tasks.push(newTask);
+            if (AppData.challenge?.startDate) {
+                recordChallengeActivity('task-add', {
+                    dateKey: getTodayKey(),
+                    summary: `Dodano zadanie: ${newTask}`
+                });
+            }
             newTaskInput.value = '';
             renderEditTasks();
         }
@@ -1442,7 +1492,14 @@ function renderEditTasks() {
         const deleteBtn = div.querySelector('.delete-task-btn');
         deleteBtn.addEventListener('click', () => {
             playClickSound(); // Dźwięk kliknięcia
+            const removedTask = AppData.tasks[index];
             AppData.tasks.splice(index, 1);
+            if (AppData.challenge?.startDate) {
+                recordChallengeActivity('task-remove', {
+                    dateKey: getTodayKey(),
+                    summary: `Usunięto zadanie: ${removedTask || 'nieznane'}`
+                });
+            }
             renderEditTasks();
         });
         
@@ -1861,6 +1918,14 @@ function startChallenge() {
 
 function syncChallengeByDates(options = {}) {
     if (!AppData.challenge.startDate) return;
+
+    if (AppData.settings && AppData.settings.rulesAccepted !== true) {
+        AppData.settings.rulesAccepted = true;
+    }
+
+    if (!Array.isArray(AppData.challenge.completedDays)) {
+        AppData.challenge.completedDays = [];
+    }
     
     // Jeśli wyzwanie jest ukończone, nie przeliczaj
     if (AppData.challenge.completionTime) return;
@@ -1872,9 +1937,10 @@ function syncChallengeByDates(options = {}) {
     const daysPassed = Math.floor((Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()) - Date.UTC(start.getFullYear(), start.getMonth(), start.getDate())) / msPerDay);
 
     const total = AppData.challenge.totalDays || AppData.settings.challengeLength || 75;
+    const previousCurrentDay = Number.isFinite(AppData.challenge.currentDay) ? AppData.challenge.currentDay : 0;
     const correctCurrentDay = Math.max(1, Math.min(daysPassed + 1, total));
     
-    if (correctCurrentDay !== AppData.challenge.currentDay) {
+    if (correctCurrentDay !== previousCurrentDay) {
         AppData.challenge.currentDay = correctCurrentDay;
         saveData();
         if (options.updateUi !== false) {
@@ -1913,13 +1979,14 @@ window.addEventListener('focus', () => {
 document.addEventListener('DOMContentLoaded', () => {
     const startBtn = document.getElementById('startChallengeBtn');
     const rulesWarning = document.getElementById('rulesWarning');
+    const challengeStarted = !!(AppData.challenge && AppData.challenge.startDate);
+    const rulesAccepted = AppData.settings && AppData.settings.rulesAccepted === true;
     
     if (startBtn) {
-        if (AppData.challenge && AppData.challenge.startDate && AppData.challenge.currentDay >= 0) {
+        if (challengeStarted) {
             startBtn.style.display = 'none';
             if (rulesWarning) rulesWarning.style.display = 'none';
-        } else if (!AppData.settings.rulesAccepted) {
-            // Hide button and show warning if rules not accepted
+        } else if (!rulesAccepted) {
             startBtn.style.display = 'none';
             if (rulesWarning) rulesWarning.style.display = 'block';
         } else {
@@ -1927,8 +1994,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (rulesWarning) rulesWarning.style.display = 'none';
         }
     }
-    // Sync immediately on app load
-    if (AppData.challenge && AppData.challenge.startDate) {
+    if (challengeStarted) {
         syncChallengeByDates();
     }
 });
@@ -3192,8 +3258,16 @@ function initSettings() {
         restDayCheckBoxes.forEach(cb => {
             cb.addEventListener('change', () => {
                 const selected = restDayCheckBoxes.filter(box => box.checked).map(box => box.value);
+                const previous = [...(AppData.settings.restDays || [])];
                 AppData.settings.restDays = normalizeRestDayList(selected);
                 AppData.settings.restDay = AppData.settings.restDays.length > 0 ? AppData.settings.restDays[0] : 'none';
+                if (AppData.challenge?.startDate) {
+                    AppData.challenge.restDaysEffectiveFrom = getTodayKey();
+                    recordChallengeActivity('rest-day-change', {
+                        dateKey: getTodayKey(),
+                        summary: `Zmiana dni odpoczynkowych: ${JSON.stringify(AppData.settings.restDays || []) || 'brak'} (wcześniej: ${JSON.stringify(previous) || 'brak'})`
+                    });
+                }
                 if (restDayNone) restDayNone.checked = selected.length === 0;
                 saveData();
                 updateAllDisplays();
@@ -3204,8 +3278,16 @@ function initSettings() {
     if (restDayNone) {
         restDayNone.addEventListener('change', () => {
             if (restDayNone.checked) {
+                const previous = [...(AppData.settings.restDays || [])];
                 AppData.settings.restDays = [];
                 AppData.settings.restDay = 'none';
+                if (AppData.challenge?.startDate) {
+                    AppData.challenge.restDaysEffectiveFrom = getTodayKey();
+                    recordChallengeActivity('rest-day-change', {
+                        dateKey: getTodayKey(),
+                        summary: `Usunięcie dni odpoczynkowych (wcześniej: ${JSON.stringify(previous) || 'brak'})`
+                    });
+                }
                 saveData();
                 updateAllDisplays();
                 syncRestDaySelection();
@@ -4074,6 +4156,14 @@ function exportDataAsHTML() {
         `;
     }).join('');
 
+    const challengeActivityLog = Array.isArray(data.challenge?.activityLog) ? data.challenge.activityLog : [];
+    const activityLogRows = challengeActivityLog.slice(0, 25).map(entry => `
+        <div style="background: #fff5f8; padding: 0.85rem 1rem; border-radius: 10px; border-left: 4px solid #ff9ac2; margin-bottom: 0.5rem;">
+            <div style="font-weight: 700; color: #ff9ac2; margin-bottom: 0.2rem;">${formatDate(entry.dateKey || entry.timestamp ? new Date(entry.timestamp || entry.dateKey).toISOString().slice(0,10) : '')}</div>
+            <div style="color: #666;">${entry.summary || entry.type || 'Aktywność'}</div>
+        </div>
+    `).join('');
+
     const progressHistorySummary = historyDates.size > 0
         ? `${tr('Historia aktywności')}: ${historyDates.size}`
         : tr('Brak historii aktywności');
@@ -4705,6 +4795,13 @@ function exportDataAsHTML() {
                 </div>
             ` : `<p style="color: #666;">${tr('Brak historii aktywności')}</p>`}
         </section>
+
+        ${challengeActivityLog.length > 0 ? `
+        <section>
+            <h2>${tr('🧩 Zmiany w trakcie wyzwania')}</h2>
+            ${activityLogRows}
+        </section>
+        ` : ''}
 
         ${settingsSummaryCards}
         
