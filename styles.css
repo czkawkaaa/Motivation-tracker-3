@@ -1233,6 +1233,110 @@ main {
     padding: 0.6rem 0.85rem;
 }
 
+.calendar-day-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    display: grid;
+    place-items: center;
+    padding: 1rem;
+    background: rgba(94, 72, 88, 0.42);
+    backdrop-filter: blur(4px);
+}
+
+.calendar-day-modal-content {
+    width: min(100%, 540px);
+    padding: 1.35rem 1.2rem 1rem;
+    border-radius: 24px;
+    background: linear-gradient(135deg, #fffafc 0%, #fff2f8 45%, #fef6ff 100%);
+    border: 2px solid rgba(255, 154, 194, 0.35);
+    box-shadow: 0 22px 50px rgba(176, 114, 154, 0.22);
+    color: #4d3a46;
+}
+
+.calendar-day-modal-content h2 {
+    margin: 0 0 0.35rem;
+    color: #ff6ca9;
+    font-size: clamp(1.4rem, 2vw, 1.8rem);
+}
+
+.calendar-day-modal-date {
+    margin-bottom: 1rem;
+    color: #8a6d7b;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}
+
+.calendar-day-modal-meta {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(160px, 1fr));
+    gap: 0.6rem 0.9rem;
+    margin-bottom: 1rem;
+    padding: 0.8rem 0.9rem;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.55);
+    border: 1px solid rgba(255, 154, 194, 0.18);
+    font-size: 0.93rem;
+}
+
+.calendar-day-modal-section {
+    margin-top: 1rem;
+}
+
+.calendar-day-modal-section h3 {
+    margin: 0 0 0.5rem;
+    color: #d96da5;
+    font-size: 1rem;
+}
+
+.calendar-day-modal-task-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 0.45rem;
+}
+
+.calendar-day-modal-task {
+    padding: 0.55rem 0.7rem;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.6);
+    border: 1px solid rgba(255, 154, 194, 0.16);
+    color: #4b3c48;
+}
+
+.calendar-day-modal-task.done {
+    background: rgba(220, 255, 236, 0.8);
+    border-color: rgba(121, 202, 156, 0.32);
+}
+
+.calendar-day-modal-task.empty {
+    color: #7d6774;
+    font-style: italic;
+}
+
+.calendar-day-modal-reflection {
+    margin: 0;
+    padding: 0.7rem 0.8rem;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.7);
+    border: 1px solid rgba(255, 154, 194, 0.15);
+    line-height: 1.55;
+    color: #4d3a46;
+}
+
+.calendar-day-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    margin-top: 1rem;
+}
+
+.calendar-day-modal-actions button {
+    width: auto;
+    padding: 0.7rem 1rem;
+}
+
 .calendar-grid {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
@@ -1293,20 +1397,20 @@ main {
 }
 
 .calendar-day.completed::after {
-    content: '✓';
+    content: '🌸';
     position: absolute;
     top: 2px;
     right: 4px;
-    font-size: 0.8rem;
+    font-size: 0.72rem;
     font-weight: 700;
     color: #2d6f5e;
 }
 
 .calendar-day.completed {
-    background: linear-gradient(135deg, #eafaf2, #dff3ee);
+    background: linear-gradient(135deg, #ebfff5, #e3f9f0);
     color: #2a5a4d;
     font-weight: 600;
-    border: 1px solid #8dc2b0;
+    border: 1px solid #9fdcc0;
 }
 
 .calendar-day.completed:hover {
@@ -1324,11 +1428,11 @@ main {
 }
 
 .calendar-day.failed::after {
-    content: '✕';
+    content: '💔';
     position: absolute;
     top: 2px;
     right: 4px;
-    font-size: 0.8rem;
+    font-size: 0.72rem;
     font-weight: 700;
     color: #7c3b46;
 }
@@ -1347,7 +1451,7 @@ main {
 }
 
 .calendar-day.rest::before {
-    content: '☾';
+    content: '💤';
     position: absolute;
     top: 2px;
     left: 4px;
@@ -1362,21 +1466,21 @@ main {
 
 /* Streak indicator in calendar */
 .calendar-day.has-streak::after {
-    content: '✦';
+    content: '✨';
     position: absolute;
     bottom: 3px;
     left: 4px;
-    font-size: 0.58rem;
+    font-size: 0.56rem;
     color: #b27a39;
 }
 
 .calendar-day.completed.has-streak::after {
-    content: '✓';
+    content: '🌸';
     top: 2px;
     right: 4px;
     bottom: auto;
     left: auto;
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     color: #2d6f5e;
 }
 

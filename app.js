@@ -2068,6 +2068,97 @@ function getActiveDate() {
     return selectedDate || getTodayKey();
 }
 
+function showCalendarDayDetailsModal(dateKey) {
+    const modal = document.createElement('div');
+    modal.className = 'calendar-day-modal';
+
+    const content = document.createElement('div');
+    content.className = 'calendar-day-modal-content';
+
+    const title = document.createElement('h2');
+    title.textContent = '🌸 Szczegóły dnia';
+
+    const dateLabel = document.createElement('div');
+    dateLabel.className = 'calendar-day-modal-date';
+    const parsedDate = new Date(dateKey + 'T12:00:00');
+    dateLabel.textContent = parsedDate.toLocaleDateString('pl-PL', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric'
+    });
+
+    const summary = getDaySummary(dateKey);
+    const streakText = isPartOfCurrentStreak(dateKey) ? '✨ Tak' : '💤 Nie';
+    const moodValue = AppData.mood?.[dateKey];
+    const moodEmoji = { 1: '😔', 2: '🙁', 3: '😐', 4: '🙂', 5: '😊' };
+    const moodText = moodValue ? `${moodEmoji[moodValue] || '🙂'} ${moodValue}/5` : '—';
+    const stepsCount = Number(AppData.steps?.[dateKey] || 0);
+    const studyHours = Number(AppData.studyHours?.[dateKey] || 0);
+    const todaysTasks = getTasksForDate(dateKey);
+    const completedTaskIndexes = Array.isArray(AppData.completedTasks?.[dateKey]) ? AppData.completedTasks[dateKey] : [];
+    const completedTaskList = todaysTasks
+        .map((task, index) => ({ task, index, done: completedTaskIndexes.includes(index) }))
+        .map(({ task, done }) => `<li class="calendar-day-modal-task ${done ? 'done' : ''}">${done ? '✅' : '◻️'} ${task}</li>`)
+        .join('');
+    const reflection = AppData.reflections?.[dateKey]?.answer;
+
+    const meta = document.createElement('div');
+    meta.className = 'calendar-day-modal-meta';
+    meta.innerHTML = `
+        <div><strong>📌 Status:</strong> ${translateAppText(summary.status)}</div>
+        <div><strong>🔥 Streak:</strong> ${streakText}</div>
+        <div><strong>👣 Kroki:</strong> ${stepsCount}</div>
+        <div><strong>📚 Nauka:</strong> ${studyHours}h</div>
+        <div><strong>😊 Nastrój:</strong> ${moodText}</div>
+        <div><strong>📝 Zadania:</strong> ${summary.completedCount}/${summary.totalTasks}</div>
+    `;
+
+    const tasksWrap = document.createElement('div');
+    tasksWrap.className = 'calendar-day-modal-section';
+    const tasksTitle = document.createElement('h3');
+    tasksTitle.textContent = '📋 Zadania dnia';
+    const tasksList = document.createElement('ul');
+    tasksList.className = 'calendar-day-modal-task-list';
+    tasksList.innerHTML = completedTaskList || '<li class="calendar-day-modal-task empty">Brak zadań w tym dniu.</li>';
+
+    const reflectionWrap = document.createElement('div');
+    reflectionWrap.className = 'calendar-day-modal-section';
+    const reflectionTitle = document.createElement('h3');
+    reflectionTitle.textContent = '💭 Notatka / refleksja';
+    const reflectionText = document.createElement('p');
+    reflectionText.className = 'calendar-day-modal-reflection';
+    reflectionText.textContent = reflection || 'Brak notatki dla tego dnia.';
+
+    const actions = document.createElement('div');
+    actions.className = 'calendar-day-modal-actions';
+    const closeButton = document.createElement('button');
+    closeButton.type = 'button';
+    closeButton.className = 'btn-secondary';
+    closeButton.textContent = 'Zamknij';
+    closeButton.addEventListener('click', () => modal.remove());
+
+    const openButton = document.createElement('button');
+    openButton.type = 'button';
+    openButton.className = 'btn-primary';
+    openButton.textContent = 'Otwórz dzień';
+    openButton.addEventListener('click', () => {
+        selectedDate = dateKey;
+        loadDataForDate(dateKey);
+        renderCalendar();
+        modal.remove();
+    });
+
+    actions.append(closeButton, openButton);
+    tasksWrap.append(tasksTitle, tasksList);
+    reflectionWrap.append(reflectionTitle, reflectionText);
+    content.append(title, dateLabel, meta, tasksWrap, reflectionWrap, actions);
+    modal.appendChild(content);
+    document.body.appendChild(modal);
+    modal.addEventListener('click', (event) => {
+        if (event.target === modal) modal.remove();
+    });
+}
+
 function showReflectionEditorModal(dateKey) {
     const reflection = AppData.reflections?.[dateKey];
     const modal = document.createElement('div');
@@ -2302,8 +2393,7 @@ function renderCalendar() {
         dayDiv.addEventListener('click', () => {
             playClickSound();
             selectedDate = dayKey;
-            
-            // Show date indicator
+
             const dateIndicator = document.getElementById('dateIndicator');
             if (dateIndicator) {
                 const dateObj = new Date(dayKey + 'T00:00:00');
@@ -2315,14 +2405,10 @@ function renderCalendar() {
                 dateIndicator.querySelector('.selected-date-text').textContent = formattedDate;
                 dateIndicator.style.display = 'flex';
             }
-            
-            // Load data for selected date
+
             loadDataForDate(dayKey);
-            
-            // Refresh calendar to update highlighting
             renderCalendar();
-            
-            showNotification(`📅 Wybrano datę: ${dayKey}`, 'success');
+            showCalendarDayDetailsModal(dayKey);
         });
         
         // Check if rest day
@@ -2360,14 +2446,14 @@ function renderCalendar() {
             const statusClass = daySummary.status === 'ukończony' ? 'complete' : daySummary.status === 'częściowy' ? 'partial' : daySummary.status === 'odpoczynek' ? 'rest' : 'missed';
             const statusIcon = document.createElement('span');
             statusIcon.className = `calendar-status-icon status-${statusClass}`;
-            statusIcon.textContent = daySummary.status === 'ukończony' ? '✓' : daySummary.status === 'częściowy' ? '◐' : daySummary.status === 'odpoczynek' ? '☾' : '−';
+            statusIcon.textContent = daySummary.status === 'ukończony' ? '🌸' : daySummary.status === 'częściowy' ? '✨' : daySummary.status === 'odpoczynek' ? '💤' : '💔';
             dayDiv.appendChild(statusIcon);
         }
 
         if (AppData.reflections?.[dayKey]?.answer) {
             const reflectionIcon = document.createElement('span');
             reflectionIcon.className = 'calendar-reflection-icon';
-            reflectionIcon.textContent = '✦';
+            reflectionIcon.textContent = '💭';
             dayDiv.appendChild(reflectionIcon);
         }
         
