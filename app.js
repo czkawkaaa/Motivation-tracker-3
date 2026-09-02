@@ -380,7 +380,8 @@ function normalizeChallengeState() {
         const daysPassed = Math.max(0, Math.floor((todayLocal.getTime() - startLocal.getTime()) / (24 * 60 * 60 * 1000)));
         const derivedCurrentDay = Math.max(1, Math.min(daysPassed + 1, AppData.challenge.totalDays || 75));
 
-        if (!Number.isFinite(AppData.challenge.currentDay) || AppData.challenge.currentDay < 1 || AppData.challenge.currentDay > AppData.challenge.totalDays) {
+        const currentDayIsValid = Number.isFinite(AppData.challenge.currentDay) && AppData.challenge.currentDay >= 1 && AppData.challenge.currentDay <= AppData.challenge.totalDays;
+        if (!currentDayIsValid || AppData.challenge.currentDay !== derivedCurrentDay) {
             AppData.challenge.currentDay = derivedCurrentDay;
         }
     } else {
@@ -1932,34 +1933,41 @@ function sanitizeChallengeCompletedDays() {
     AppData.challenge.completedDays = AppData.challenge.completedDays.filter(isChallengeDayEligible);
 }
 
+function beginChallengeSession(dateKey = getTodayKey()) {
+    if (AppData.challenge.startDate) {
+        return false;
+    }
+
+    AppData.challenge.startDate = normalizeDateKey(dateKey) || getTodayKey();
+    AppData.challenge.cycleStartedAt = Date.now();
+    AppData.challenge.totalDays = AppData.settings.challengeLength || AppData.challenge.totalDays || 75;
+    AppData.challenge.currentDay = 1;
+    AppData.challenge.completedDays = [];
+    delete AppData.challenge.completionTime;
+    delete AppData.challenge.resetScheduled;
+    saveData();
+
+    const startBtn = document.getElementById('startChallengeBtn');
+    if (startBtn) startBtn.style.display = 'none';
+
+    updateAllDisplays();
+    showNotification('🚀 Wyzwanie rozpoczęte! Dzień 1 rozpoczyna się dziś. Powodzenia!', 'success');
+    return true;
+}
+
 function startChallenge() {
     // Check if rules were accepted
     if (!AppData.settings.rulesAccepted) {
         showRulesModal();
         return;
     }
-    
-    const todayKey = getTodayKey();
+
     if (!AppData.challenge.startDate) {
-        AppData.challenge.startDate = todayKey;
-        AppData.challenge.cycleStartedAt = Date.now();
-        // Ensure totalDays is synced with settings
-        AppData.challenge.totalDays = AppData.settings.challengeLength || AppData.challenge.totalDays || 75;
-        // Start at day 1 (today is day 1 of the challenge)
-        AppData.challenge.currentDay = 1;
-        AppData.challenge.completedDays = [];
-        delete AppData.challenge.completionTime;
-        delete AppData.challenge.resetScheduled;
-        saveData();
-        
-        // Hide start button in UI
+        beginChallengeSession();
+    } else {
         const startBtn = document.getElementById('startChallengeBtn');
         if (startBtn) startBtn.style.display = 'none';
-        
-        // Update UI immediately
         updateAllDisplays();
-        
-        showNotification('🚀 Wyzwanie rozpoczęte! Dzień 1 rozpoczyna się dzisiaj. Powodzenia!', 'success');
     }
 }
 
@@ -2049,13 +2057,19 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function updateChallengeProgress() {
-    let percent = (AppData.challenge.currentDay / AppData.challenge.totalDays) * 100;
-    percent = Math.min(percent, 100);
-    // Use one decimal for display, but keep float for CSS sizing
-    const display = percent.toFixed(1);
-    document.getElementById('challengeProgressBar').style.width = display + '%';
-    document.getElementById('challengePercent').textContent = display + '%';
-    document.getElementById('challengeDays').textContent = `${AppData.challenge.currentDay}/${AppData.challenge.totalDays} dni`;
+    const completed = Array.isArray(AppData.challenge?.completedDays) ? AppData.challenge.completedDays.length : 0;
+    const total = AppData.challenge.totalDays || AppData.settings.challengeLength || 75;
+    const displayValue = Math.min(Math.max(completed, 0), total);
+    const percent = (displayValue / total) * 100;
+    const display = Math.min(percent, 100).toFixed(1);
+
+    const progressBar = document.getElementById('challengeProgressBar');
+    const progressPercent = document.getElementById('challengePercent');
+    const challengeDays = document.getElementById('challengeDays');
+
+    if (progressBar) progressBar.style.width = display + '%';
+    if (progressPercent) progressPercent.textContent = display + '%';
+    if (challengeDays) challengeDays.textContent = `${displayValue}/${total} dni`;
 }
 
 function updateStreakDisplay() {
@@ -5943,17 +5957,21 @@ function initRules() {
     if (btnAcceptRulesView) {
         btnAcceptRulesView.addEventListener('click', () => {
             AppData.settings.rulesAccepted = true;
+
+            if (!AppData.challenge.startDate) {
+                beginChallengeSession();
+            }
+
             checkBadges();
             saveData();
             renderRulesView();
-            
-            // Show start button and hide warning
+
             const startBtn = document.getElementById('startChallengeBtn');
             const warning = document.getElementById('rulesWarning');
-            if (startBtn) startBtn.style.display = 'block';
-            if (warning) warning.remove();
-            
-            showNotification('✅ Zasady zaakceptowane! Możesz teraz rozpocząć wyzwanie!', 'success');
+            if (startBtn) startBtn.style.display = 'none';
+            if (warning) warning && warning.remove();
+
+            showNotification('✅ Zasady zaakceptowane i wyzwanie rozpoczęte! Liczenie dni zaczyna się od tej chwili.', 'success');
         });
     }
     
@@ -5987,21 +6005,26 @@ function showRulesModal() {
 
 function acceptRules() {
     AppData.settings.rulesAccepted = true;
+
+    if (!AppData.challenge.startDate) {
+        beginChallengeSession();
+    }
+
     checkBadges();
     saveData();
-    
+
     const modal = document.getElementById('rulesModal');
     if (modal) {
         modal.style.display = 'none';
     }
-    
-    // Show start button and hide warning after accepting rules
+
+    // Hide start button because the challenge starts from acceptance time.
     const startBtn = document.getElementById('startChallengeBtn');
     const warning = document.getElementById('rulesWarning');
-    if (startBtn) startBtn.style.display = 'block';
+    if (startBtn) startBtn.style.display = 'none';
     if (warning) warning.style.display = 'none';
-    
-    showNotification('✅ Zasady zaakceptowane! Możesz teraz rozpocząć wyzwanie klikając przycisk na stronie głównej!', 'success');
+
+    showNotification('✅ Zasady zaakceptowane i wyzwanie rozpoczęte! Liczenie dni zaczyna się od tej chwili.', 'success');
 }
 
 function renderRulesView() {

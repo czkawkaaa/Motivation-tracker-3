@@ -39,10 +39,38 @@ const storageData = JSON.stringify({
   weeklyWorkouts: { enabled: false, monday: [], tuesday: [], wednesday: [], thursday: [], friday: [], saturday: [], sunday: [] }
 });
 
+function makeNode() {
+  return {
+    style: {},
+    textContent: '',
+    innerHTML: '',
+    value: '',
+    checked: false,
+    classList: { add() {}, remove() {}, toggle() {} },
+    appendChild() {},
+    removeChild() {},
+    setAttribute() {},
+    addEventListener() {},
+    closest() {
+      return { classList: { add() {}, remove() {}, toggle() {} } };
+    },
+    querySelector(selector) {
+      if (selector === '.task-checkbox') {
+        const box = makeNode();
+        box.checked = false;
+        box.closest = () => ({ classList: { add() {}, remove() {}, toggle() {} } });
+        return box;
+      }
+      return null;
+    }
+  };
+}
+
 const context = {
   console,
   setInterval() {},
   clearInterval() {},
+  setTimeout(fn) { if (typeof fn === 'function') fn(); return 0; },
   alert() {},
   localStorage: {
     getItem(key) {
@@ -55,25 +83,25 @@ const context = {
     }
   },
   document: {
-    body: { classList: { remove() {}, add() {} }, style: {} },
+    body: makeNode(),
     head: { appendChild() {} },
     documentElement: { style: { setProperty() {} } },
     addEventListener() {},
     createElement() {
-      return {
-        style: {},
-        classList: { add() {}, remove() {}, toggle() {} },
-        textContent: '',
-        appendChild() {},
-        setAttribute() {},
-        querySelector() { return { textContent: '' }; },
-        innerHTML: '',
-        value: ''
-      };
+      return makeNode();
     },
-    getElementById() { return null; },
-    querySelectorAll() { return []; },
-    querySelector() { return null; }
+    getElementById() {
+      return makeNode();
+    },
+    querySelectorAll() {
+      return [];
+    },
+    querySelector(selector) {
+      if (selector === '.task-actions') {
+        return makeNode();
+      }
+      return null;
+    }
   },
   window: {
     AppI18N: {
@@ -105,11 +133,19 @@ const context = {
 };
 
 vm.createContext(context);
-const app = vm.runInContext(`(function() { ${source}; return { AppData, loadData, syncChallengeByDates, isRestDayForDate, recordChallengeActivity }; })()`, context);
+const app = vm.runInContext(`(function() { ${source}; return { AppData, loadData, syncChallengeByDates, isRestDayForDate, recordChallengeActivity, acceptRules }; })()`, context);
 app.loadData();
 
 assert.equal(app.AppData.challenge.currentDay, 3, 'challenge day should be recalculated from startDate on load');
 assert.equal(app.AppData.settings.rulesAccepted, true, 'active challenge should not require a new rules acceptance flag');
+
+app.AppData.challenge.startDate = null;
+app.AppData.challenge.currentDay = 0;
+app.AppData.challenge.completedDays = [];
+app.AppData.settings.rulesAccepted = false;
+app.acceptRules();
+assert.equal(app.AppData.challenge.startDate, iso(new Date()), 'accepting rules should start the challenge from today');
+assert.equal(app.AppData.challenge.currentDay, 1, 'new challenge should begin at day 1 when rules are accepted');
 
 // Regression: a challenge started three days ago should count as day 3 even in local timezone.
 const fixedNow = new Date(today.getFullYear(), today.getMonth(), today.getDate());
