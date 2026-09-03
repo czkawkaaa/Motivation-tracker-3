@@ -38,6 +38,7 @@ const storageData = JSON.stringify({
   workoutFocus: {},
   weeklyWorkouts: { enabled: false, monday: [], tuesday: [], wednesday: [], thursday: [], friday: [], saturday: [], sunday: [] }
 });
+const elements = new Map();
 
 function makeNode() {
   return {
@@ -90,8 +91,9 @@ const context = {
     createElement() {
       return makeNode();
     },
-    getElementById() {
-      return makeNode();
+    getElementById(id) {
+      if (!elements.has(id)) elements.set(id, makeNode());
+      return elements.get(id);
     },
     querySelectorAll() {
       return [];
@@ -133,8 +135,15 @@ const context = {
 };
 
 vm.createContext(context);
-const app = vm.runInContext(`(function() { ${source}; return { AppData, loadData, syncChallengeByDates, isRestDayForDate, recordChallengeActivity, acceptRules, normalizeDateKey }; })()`, context);
+const app = vm.runInContext(`(function() { ${source}; return { AppData, loadData, syncChallengeByDates, isRestDayForDate, recordChallengeActivity, acceptRules, normalizeDateKey, updateChallengeProgress }; })()`, context);
 app.loadData();
+
+app.AppData.challenge.currentDay = 3;
+app.AppData.challenge.totalDays = 31;
+app.AppData.challenge.completedDays = [];
+app.updateChallengeProgress();
+assert.equal(elements.get('challengeDays').textContent, '3/31 dni', 'progress should show the current challenge day');
+assert.equal(elements.get('challengePercent').textContent, '9.7%', 'progress percentage should use the current challenge day');
 
 assert.equal(app.AppData.challenge.currentDay, 3, 'challenge day should be recalculated from startDate on load');
 assert.equal(app.AppData.settings.rulesAccepted, true, 'active challenge should not require a new rules acceptance flag');

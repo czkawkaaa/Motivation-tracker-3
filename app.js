@@ -2063,9 +2063,9 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function updateChallengeProgress() {
-    const completed = Array.isArray(AppData.challenge?.completedDays) ? AppData.challenge.completedDays.length : 0;
     const total = AppData.challenge.totalDays || AppData.settings.challengeLength || 75;
-    const displayValue = Math.min(Math.max(completed, 0), total);
+    const currentDay = Number(AppData.challenge?.currentDay) || 0;
+    const displayValue = Math.min(Math.max(currentDay, 0), total);
     const percent = (displayValue / total) * 100;
     const display = Math.min(percent, 100).toFixed(1);
 
