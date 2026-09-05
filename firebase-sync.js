@@ -319,12 +319,16 @@ async function syncNow() {
     }
     updateSyncStatus('syncing', 'Synchronizacja...', '🔄');
     try {
-        await loadDataFromFirestore();
+        const loaded = await loadDataFromFirestore();
+        if (loaded === false) {
+            throw new Error(window.firebaseLastError || 'Nie udało się odczytać danych z chmury');
+        }
         await saveDataToFirestore();
         updateSyncStatus('connected', 'Zsynchronizowano', '✅');
     } catch (error) {
-        window.firebaseLastError = error.message;
+        window.firebaseLastError = window.firebaseLastError || `SYNC: ${error.code || 'unknown'} - ${error.message}`;
         updateSyncStatus('error', 'Błąd synchronizacji', '❌');
+        throw error;
     }
 }
 
@@ -352,9 +356,10 @@ async function forcePull() {
             if (typeof showNotification === 'function') showNotification('⚠️ Nie znaleziono danych w chmurze', 'warning');
         }
     } catch (error) {
-        window.firebaseLastError = error.message;
+        window.firebaseLastError = `READ: ${error.code || 'unknown'} - ${error.message}`;
         updateSyncStatus('error', 'Błąd pobierania', '❌');
         if (typeof showNotification === 'function') showNotification('❌ Błąd pobierania: ' + error.message, 'error');
+        throw error;
     }
 }
 
@@ -369,9 +374,10 @@ async function forcePush() {
         updateSyncStatus('connected', 'Dane wysłane!', '✅');
         if (typeof showNotification === 'function') showNotification('✅ Dane wysłane do chmury!', 'success');
     } catch (error) {
-        window.firebaseLastError = error.message;
+        window.firebaseLastError = `WRITE: ${error.code || 'unknown'} - ${error.message}`;
         updateSyncStatus('error', 'Błąd wysyłania', '❌');
         if (typeof showNotification === 'function') showNotification('❌ Błąd wysyłania: ' + error.message, 'error');
+        throw error;
     }
 }
 

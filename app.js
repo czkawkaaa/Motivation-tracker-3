@@ -3952,10 +3952,15 @@ function initSyncUI() {
 
     if (btnSyncNow) btnSyncNow.addEventListener('click', async () => {
         if (typeof window.syncNow === 'function') {
-            await window.syncNow();
-            if (AppData && AppData.lastModified) updateLastSync(AppData.lastModified);
-            updateSyncStatus();
-            showNotification && showNotification('🔄 Synchronizacja zakończona', 'success');
+            try {
+                await window.syncNow();
+                if (AppData && AppData.lastModified) updateLastSync(AppData.lastModified);
+                updateSyncStatus();
+                showNotification && showNotification('🔄 Synchronizacja zakończona', 'success');
+            } catch (error) {
+                updateSyncStatus();
+                showNotification && showNotification('❌ Synchronizacja nieudana: ' + error.message, 'error');
+            }
         } else {
             showNotification && showNotification('⚠️ Funkcja sync nie jest dostępna', 'warning');
         }
@@ -3963,19 +3968,27 @@ function initSyncUI() {
 
     if (btnForcePull) btnForcePull.addEventListener('click', async () => {
         if (typeof window.forcePull === 'function') {
-            await window.forcePull();
-            if (AppData && AppData.lastModified) updateLastSync(AppData.lastModified);
-            updateSyncStatus();
-            showNotification && showNotification('⬇️ Pobieranie z chmury zakończone', 'success');
+            try {
+                await window.forcePull();
+                if (AppData && AppData.lastModified) updateLastSync(AppData.lastModified);
+                updateSyncStatus();
+                showNotification && showNotification('⬇️ Pobieranie z chmury zakończone', 'success');
+            } catch (error) {
+                updateSyncStatus();
+            }
         }
     });
 
     if (btnForcePush) btnForcePush.addEventListener('click', async () => {
         if (typeof window.forcePush === 'function') {
-            await window.forcePush();
-            if (AppData && AppData.lastModified) updateLastSync(AppData.lastModified);
-            updateSyncStatus();
-            showNotification && showNotification('⬆️ Wypchnięto lokalne dane', 'success');
+            try {
+                await window.forcePush();
+                if (AppData && AppData.lastModified) updateLastSync(AppData.lastModified);
+                updateSyncStatus();
+                showNotification && showNotification('⬆️ Wypchnięto lokalne dane', 'success');
+            } catch (error) {
+                updateSyncStatus();
+            }
         }
     });
 }
