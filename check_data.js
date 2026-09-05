@@ -1,6 +1,4 @@
 // Symulacja sprawdzenia danych
-const fs = require('fs');
-
 // Sprawdźmy strukturę danych
 console.log('Checking app.js for data structure...');
 
