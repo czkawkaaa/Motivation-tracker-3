@@ -411,6 +411,7 @@ async function saveDataToFirestore() {
         if (error.code === 'permission-denied' && typeof showNotification === 'function') {
             showNotification('🔒 Brak uprawnień zapisu Firestore!', 'error');
         }
+        throw error;
     }
 }
 
@@ -483,7 +484,12 @@ function scheduleSaveToFirestore(delay = 800) {
         _savePendingResolve = resolve;
         _saveTimer = setTimeout(async () => {
             _saveTimer = null;
-            try { await saveDataToFirestore(); } catch (e) {}
+            try {
+                await saveDataToFirestore();
+            } catch (error) {
+                updateSyncStatus('error', 'Błąd zapisu do chmury', '❌');
+                throw error;
+            }
             if (typeof resolve === 'function') resolve();
             _savePendingResolve = null;
         }, delay);
