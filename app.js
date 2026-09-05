@@ -535,6 +535,7 @@ function loadData() {
         AppData.challenge.restDaysEffectiveFrom = AppData.challenge.startDate;
     }
     sanitizeChallengeCompletedDays();
+    recoverMissingCompletedDays();
 
     syncChallengeByDates({ updateUi: false, force: true });
 
@@ -1937,6 +1938,37 @@ function sanitizeChallengeCompletedDays() {
     if (!Array.isArray(AppData.challenge?.completedDays)) return;
 
     AppData.challenge.completedDays = AppData.challenge.completedDays.filter(isChallengeDayEligible);
+}
+
+// Odzyskuje dni omyłkowo usunięte z completedDays (np. przez wcześniejszy błąd
+// stref czasowych lub scalanie z chmurą), na podstawie zachowanych completedTasks.
+function recoverMissingCompletedDays() {
+    if (!AppData.challenge?.startDate || AppData.challenge.completionTime) return;
+
+    const totalDays = AppData.challenge.totalDays || AppData.settings?.challengeLength || 75;
+    const startDate = new Date(AppData.challenge.startDate + 'T00:00:00');
+    const today = new Date(getTodayKey() + 'T00:00:00');
+    const completedSet = new Set(Array.isArray(AppData.challenge.completedDays) ? AppData.challenge.completedDays : []);
+    let recovered = 0;
+
+    for (let offset = 0; offset < totalDays; offset++) {
+        const d = new Date(startDate);
+        d.setDate(d.getDate() + offset);
+        if (d > today) break;
+
+        const dayKey = normalizeDateKey(d);
+        if (!dayKey || completedSet.has(dayKey) || isRestDayForDate(dayKey)) continue;
+
+        if (getDaySummary(dayKey).status === 'ukończony') {
+            completedSet.add(dayKey);
+            recovered++;
+        }
+    }
+
+    if (recovered > 0) {
+        AppData.challenge.completedDays = Array.from(completedSet).sort();
+        console.log(`🩹 Odzyskano ${recovered} dzień/dni ukończone na podstawie zapisanych zadań.`);
+    }
 }
 
 function beginChallengeSession(dateKey = getTodayKey()) {
