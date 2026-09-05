@@ -4406,8 +4406,11 @@ function exportDataAsHTML() {
         return count >= data.tasks.length;
     }).length;
     
-    const completedDays = data.challenge.completedDays.length;
-    const completionRate = ((completedDays / data.challenge.totalDays) * 100).toFixed(1);
+    const challengeTotalDays = Number(data.challenge.totalDays || data.settings?.challengeLength || 75) || 75;
+    const elapsedChallengeDays = data.challenge.startDate
+        ? Math.max(1, Math.min(Number(data.challenge.currentDay) || 1, challengeTotalDays))
+        : 0;
+    const completionRate = ((elapsedChallengeDays / challengeTotalDays) * 100).toFixed(1);
     const currentStreak = data.streak || 0;
     const longestStreak = data.longestStreak || data.streak || 0;
     
@@ -4425,7 +4428,7 @@ function exportDataAsHTML() {
         : 0;
     const latestHistoryDate = Array.from(historyDates).sort().reverse()[0] || null;
     const heroCards = [
-        { value: completedDays, label: tr('Dni ukończone') },
+        { value: elapsedChallengeDays, label: tr('Dni, które minęły') },
         { value: `${completionRate}%`, label: tr('Postęp wyzwania') },
         { value: `${currentStreak} 🔥`, label: tr('Aktualna passa') },
         { value: `${totalSteps.toLocaleString(locale)}`, label: tr('Łącznie kroków') },
@@ -4811,8 +4814,8 @@ function exportDataAsHTML() {
             <h2>${tr('📊 Podsumowanie')}</h2>
             <div class="stats-grid">
                 <div class="stat-card">
-                    <div class="stat-value">${completedDays}</div>
-                    <div class="stat-label">${tr('Dni ukończone')}</div>
+                    <div class="stat-value">${elapsedChallengeDays}</div>
+                    <div class="stat-label">${tr('Dni, które minęły')}</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-value">${completionRate}%</div>
