@@ -3920,7 +3920,6 @@ function initSettings() {
             AppData.badges = {};
             saveData();
             updateAllDisplays();
-            renderChallengeHistory();
             if (typeof window.flushPendingFirestoreSave === 'function') {
                 await window.flushPendingFirestoreSave();
             }
@@ -4108,7 +4107,6 @@ function initSettings() {
     
     // Render rules in settings
     renderRulesSettings();
-    renderChallengeHistory();
 
     // Workouts init
     initWorkouts();
@@ -4139,44 +4137,6 @@ function renderDayTasks(day) {
         });
         
         tasksList.appendChild(taskItem);
-    });
-}
-
-function renderChallengeHistory() {
-    const list = document.getElementById('challengeHistoryList');
-    if (!list) return;
-
-    list.replaceChildren();
-    const history = Array.isArray(AppData.challengeHistory) ? AppData.challengeHistory : [];
-    if (history.length === 0) {
-        const empty = document.createElement('p');
-        empty.textContent = translateAppText('Nie masz jeszcze zapisanych wcześniejszych wyzwań.');
-        list.appendChild(empty);
-        return;
-    }
-
-    history.forEach((challenge) => {
-        const item = document.createElement('article');
-        item.className = 'challenge-history-item';
-        const title = document.createElement('h3');
-        title.textContent = challenge.name || translateAppText('Wyzwanie');
-        const dates = document.createElement('p');
-        dates.textContent = `${challenge.startDate} - ${challenge.endDate}`;
-        const stats = document.createElement('p');
-        const reflectionCount = Object.keys(challenge.reflections || {}).length;
-        stats.textContent = `${(challenge.completedDays || []).length}/${challenge.totalDays || 75} ${translateAppText('dni')} · ${translateAppText('Najlepszy streak')}: ${challenge.bestStreak || 0} · ${translateAppText('Refleksje')}: ${reflectionCount}`;
-        const deleteButton = document.createElement('button');
-        deleteButton.type = 'button';
-        deleteButton.className = 'btn-danger challenge-history-delete';
-        deleteButton.textContent = translateAppText('Usuń z archiwum');
-        deleteButton.addEventListener('click', () => {
-            if (!confirm(translateAppText('Usunąć to wyzwanie z archiwum?'))) return;
-            AppData.challengeHistory = AppData.challengeHistory.filter(entry => entry.id !== challenge.id);
-            saveData();
-            renderChallengeHistory();
-        });
-        item.append(title, dates, stats, deleteButton);
-        list.appendChild(item);
     });
 }
 

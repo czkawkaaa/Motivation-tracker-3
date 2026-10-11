@@ -3795,38 +3795,6 @@ footer p {
 .calendar-status-icon.status-rest { color: #5d7088; }
 .calendar-status-icon.status-missed { color: #8a4747; }
 
-.challenge-history-list {
-    display: grid;
-    gap: 0.75rem;
-}
-
-.challenge-history-list > p {
-    color: var(--text-secondary);
-}
-
-.challenge-history-item {
-    padding: 0.9rem;
-    border-left: 4px solid var(--primary-color);
-    background: var(--hover-bg);
-}
-
-.challenge-history-item h3,
-.challenge-history-item p {
-    margin: 0;
-}
-
-.challenge-history-item p {
-    color: var(--text-secondary);
-    font-size: 0.9rem;
-}
-
-.challenge-history-delete {
-    width: auto;
-    margin-top: 0.75rem;
-    padding: 0.45rem 0.7rem;
-    font-size: 0.85rem;
-}
-
 .selected-date-text {
     flex: 1;
     font-size: 1.1rem;
