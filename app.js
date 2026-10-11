@@ -12,6 +12,8 @@ const AppData = {
         restDaysEffectiveFrom: null
     },
     challengeHistory: [],
+    rewards: [],
+    rewardsGoal: '',
     streak: 0,
     longestStreak: 0,
     steps: {},
@@ -240,6 +242,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initThemeSystem();
     initDashboard();
     initCalendar();
+    initRewards();
     initStats();
     initGallery();
     initBadges();
@@ -328,6 +331,8 @@ function hasMeaningfulAppData(data) {
     }
     if (Array.isArray(source.tasks) && source.tasks.length > 0) return true;
     if (Array.isArray(source.gallery) && source.gallery.length > 0) return true;
+    if (Array.isArray(source.rewards) && source.rewards.length > 0) return true;
+    if (typeof source.rewardsGoal === 'string' && source.rewardsGoal.trim()) return true;
 
     if (source.challenge && (Array.isArray(source.challenge.completedDays) ? source.challenge.completedDays.length > 0 : Boolean(source.challenge.currentDay || source.challenge.totalDays))) {
         return true;
@@ -1181,6 +1186,7 @@ function switchView(viewName) {
         
         // Update specific view when switched
         if (viewName === 'calendar') renderCalendar();
+        if (viewName === 'rewards') renderRewards();
         if (viewName === 'stats') updateStats();
         if (viewName === 'rules') renderRulesView();
         if (viewName === 'settings') renderRulesSettings();
@@ -1883,6 +1889,7 @@ function updateAllDisplays() {
     // Odśwież też inne elementy UI
     if (typeof renderTasks === 'function') renderTasks();
     if (typeof renderCalendar === 'function') renderCalendar();
+    if (typeof renderRewards === 'function') renderRewards();
     if (typeof updateStats === 'function') updateStats();
     if (typeof renderGallery === 'function') renderGallery();
     if (typeof updateBadgesDisplay === 'function') updateBadgesDisplay();
@@ -2147,12 +2154,14 @@ let selectedDate = null; // Stores the currently selected date for editing
 function initCalendar() {
     document.getElementById('prevMonth').addEventListener('click', () => {
         playClickSound(); // Dźwięk kliknięcia
+        currentCalendarDate.setDate(1);
         currentCalendarDate.setMonth(currentCalendarDate.getMonth() - 1);
         renderCalendar();
     });
     
     document.getElementById('nextMonth').addEventListener('click', () => {
         playClickSound(); // Dźwięk kliknięcia
+        currentCalendarDate.setDate(1);
         currentCalendarDate.setMonth(currentCalendarDate.getMonth() + 1);
         renderCalendar();
     });
@@ -2197,10 +2206,6 @@ function showCalendarDayDetailsModal(dateKey) {
     const studyHours = Number(AppData.studyHours?.[dateKey] || 0);
     const todaysTasks = getTasksForDate(dateKey);
     const completedTaskIndexes = Array.isArray(AppData.completedTasks?.[dateKey]) ? AppData.completedTasks[dateKey] : [];
-    const completedTaskList = todaysTasks
-        .map((task, index) => ({ task, index, done: completedTaskIndexes.includes(index) }))
-        .map(({ task, done }) => `<li class="calendar-day-modal-task ${done ? 'done' : ''}">${done ? '✅' : '◻️'} ${task}</li>`)
-        .join('');
     const reflection = AppData.reflections?.[dateKey]?.answer;
 
     const meta = document.createElement('div');
@@ -2220,7 +2225,20 @@ function showCalendarDayDetailsModal(dateKey) {
     tasksTitle.textContent = '📋 Zadania dnia';
     const tasksList = document.createElement('ul');
     tasksList.className = 'calendar-day-modal-task-list';
-    tasksList.innerHTML = completedTaskList || '<li class="calendar-day-modal-task empty">Brak zadań w tym dniu.</li>';
+    if (todaysTasks.length > 0) {
+        todaysTasks.forEach((task, index) => {
+            const item = document.createElement('li');
+            const done = completedTaskIndexes.includes(index);
+            item.className = `calendar-day-modal-task ${done ? 'done' : ''}`;
+            item.textContent = `${done ? '✅' : '◻️'} ${task}`;
+            tasksList.appendChild(item);
+        });
+    } else {
+        const emptyItem = document.createElement('li');
+        emptyItem.className = 'calendar-day-modal-task empty';
+        emptyItem.textContent = 'Brak zadań w tym dniu.';
+        tasksList.appendChild(emptyItem);
+    }
 
     const reflectionWrap = document.createElement('div');
     reflectionWrap.className = 'calendar-day-modal-section';
@@ -2567,6 +2585,286 @@ function renderCalendar() {
         
         calendarGrid.appendChild(dayDiv);
     }
+}
+
+// ======================
+// REWARDS
+// ======================
+let editingRewardId = null;
+let pendingRewardId = null;
+
+function getLocalDateKey(date = new Date()) {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
+function normalizeRewards() {
+    if (!Array.isArray(AppData.rewards)) AppData.rewards = [];
+    AppData.rewardsGoal = typeof AppData.rewardsGoal === 'string' ? AppData.rewardsGoal.trim() : '';
+    AppData.rewards = AppData.rewards
+        .filter(item => item && typeof item === 'object')
+        .map((item, index) => ({
+            id: String(item.id || `reward-${Date.now()}-${index}`),
+            title: typeof item.title === 'string' ? item.title : '',
+            reward: typeof item.reward === 'string' ? item.reward : '',
+            completedAt: typeof item.completedAt === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(item.completedAt)
+                ? item.completedAt
+                : null
+        }))
+        .filter(item => item.title.trim() && item.reward.trim());
+}
+
+function renderRewards() {
+    const list = document.getElementById('rewardsList');
+    if (!list) return;
+
+    normalizeRewards();
+    const completedCount = AppData.rewards.filter(item => item.completedAt).length;
+    const totalCount = AppData.rewards.length;
+    const summary = document.getElementById('rewardsSummary');
+    const percentLabel = document.getElementById('rewardsPercent');
+    const progressFill = document.getElementById('rewardsProgressFill');
+    const progressTrack = document.getElementById('rewardsProgressTrack');
+    const mainGoalDisplay = document.getElementById('rewardMainGoalDisplay');
+    const mainGoalEditButton = document.getElementById('editRewardMainGoalBtn');
+    const percent = totalCount ? Math.round((completedCount / totalCount) * 100) : 0;
+
+    if (summary) summary.textContent = `${completedCount} / ${totalCount} ${translateAppText('celów osiągniętych')}`;
+    if (percentLabel) percentLabel.textContent = `${percent}%`;
+    if (progressFill) progressFill.style.width = `${percent}%`;
+    if (progressTrack) progressTrack.setAttribute('aria-valuenow', String(percent));
+    if (mainGoalDisplay) {
+        const hasMainGoal = Boolean(AppData.rewardsGoal);
+        mainGoalDisplay.textContent = AppData.rewardsGoal || translateAppText('Ustaw swój główny cel');
+        mainGoalDisplay.classList.toggle('is-placeholder', !hasMainGoal);
+    }
+    if (mainGoalEditButton) {
+        mainGoalEditButton.textContent = translateAppText(AppData.rewardsGoal ? 'Zmień główny cel' : 'Ustaw główny cel');
+    }
+
+    list.replaceChildren();
+    if (totalCount === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'rewards-empty';
+        const icon = document.createElement('span');
+        icon.className = 'rewards-empty-icon';
+        icon.textContent = '✦';
+        const title = document.createElement('h3');
+        title.textContent = translateAppText('Twoja lista nagród czeka na pierwszy cel');
+        const description = document.createElement('p');
+        description.textContent = translateAppText('Zapisz kamień milowy i nagrodę, na którą naprawdę masz ochotę.');
+        empty.append(icon, title, description);
+        list.appendChild(empty);
+        return;
+    }
+
+    AppData.rewards.forEach(item => {
+        const row = document.createElement('article');
+        row.className = `reward-item${item.completedAt ? ' is-complete' : ''}`;
+
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.className = 'reward-complete-toggle';
+        checkbox.checked = Boolean(item.completedAt);
+        checkbox.setAttribute('aria-label', `${translateAppText('Oznacz cel jako osiągnięty')}: ${item.title}`);
+        const updateCompletion = () => {
+            if (checkbox.checked) {
+                openRewardDateDialog(item);
+                return;
+            }
+            if (item.completedAt) {
+                item.completedAt = null;
+                saveData();
+            }
+            renderRewards();
+        };
+        checkbox.addEventListener('change', updateCompletion);
+
+        const body = document.createElement('div');
+        body.className = 'reward-item-body';
+        body.tabIndex = 0;
+        body.setAttribute('role', 'button');
+        body.setAttribute('aria-pressed', String(Boolean(item.completedAt)));
+        body.setAttribute('aria-label', `${translateAppText('Przełącz ukończenie celu')}: ${item.title}`);
+        const toggleCompletion = () => {
+            checkbox.checked = !checkbox.checked;
+            updateCompletion();
+        };
+        body.addEventListener('click', toggleCompletion);
+        body.addEventListener('keydown', event => {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                toggleCompletion();
+            }
+        });
+        const heading = document.createElement('h3');
+        heading.className = 'reward-item-title';
+        heading.textContent = item.title;
+        const rewardText = document.createElement('p');
+        rewardText.className = 'reward-item-prize';
+        rewardText.textContent = `${translateAppText('Nagroda')}: ${item.reward}`;
+        body.append(heading, rewardText);
+
+        if (item.completedAt) {
+            const completedDate = document.createElement('time');
+            completedDate.className = 'reward-item-date';
+            completedDate.dateTime = item.completedAt;
+            completedDate.textContent = `${translateAppText('Osiągnięto')}: ${new Date(`${item.completedAt}T12:00:00`).toLocaleDateString()}`;
+            body.appendChild(completedDate);
+        }
+
+        const actions = document.createElement('div');
+        actions.className = 'reward-item-actions';
+        const editButton = document.createElement('button');
+        editButton.type = 'button';
+        editButton.className = 'reward-action-btn';
+        editButton.textContent = translateAppText('Edytuj');
+        editButton.setAttribute('aria-label', `${translateAppText('Edytuj cel')}: ${item.title}`);
+        editButton.addEventListener('click', () => openRewardForm(item));
+        const deleteButton = document.createElement('button');
+        deleteButton.type = 'button';
+        deleteButton.className = 'reward-action-btn reward-delete-btn';
+        deleteButton.textContent = translateAppText('Usuń');
+        deleteButton.setAttribute('aria-label', `${translateAppText('Usuń cel')}: ${item.title}`);
+        deleteButton.addEventListener('click', () => {
+            if (!window.confirm(translateAppText('Usunąć ten cel i przypisaną do niego nagrodę?'))) return;
+            AppData.rewards = AppData.rewards.filter(reward => reward.id !== item.id);
+            saveData();
+            renderRewards();
+        });
+        actions.append(editButton, deleteButton);
+        row.append(checkbox, body, actions);
+        list.appendChild(row);
+    });
+}
+
+function openRewardForm(item = null) {
+    const formWrap = document.getElementById('rewardFormWrap');
+    const titleInput = document.getElementById('rewardGoalInput');
+    const rewardInput = document.getElementById('rewardPrizeInput');
+    const formHeading = document.getElementById('rewardFormHeading');
+    const submitButton = document.getElementById('rewardFormSubmit');
+    if (!formWrap || !titleInput || !rewardInput) return;
+
+    editingRewardId = item?.id || null;
+    titleInput.value = item?.title || '';
+    rewardInput.value = item?.reward || '';
+    if (formHeading) formHeading.textContent = translateAppText(item ? 'Edytuj cel i nagrodę' : 'Nowy cel i nagroda');
+    if (submitButton) submitButton.textContent = translateAppText(item ? 'Zapisz zmiany' : 'Dodaj do listy');
+    formWrap.hidden = false;
+    titleInput.focus();
+}
+
+function closeRewardForm() {
+    const formWrap = document.getElementById('rewardFormWrap');
+    const form = document.getElementById('rewardForm');
+    if (form) form.reset();
+    if (formWrap) formWrap.hidden = true;
+    editingRewardId = null;
+}
+
+function openRewardDateDialog(item) {
+    const dialog = document.getElementById('rewardDateDialog');
+    const dateInput = document.getElementById('rewardCompletedDate');
+    const prompt = document.getElementById('rewardDatePrompt');
+    if (!dialog || !dateInput || typeof dialog.showModal !== 'function') return;
+
+    pendingRewardId = item.id;
+    dateInput.value = getLocalDateKey();
+    dateInput.max = getLocalDateKey();
+    if (prompt) prompt.textContent = `${translateAppText('Kiedy udało Ci się osiągnąć cel')}: ${item.title}?`;
+    dialog.showModal();
+}
+
+function initRewards() {
+    normalizeRewards();
+    const addButton = document.getElementById('addRewardBtn');
+    const form = document.getElementById('rewardForm');
+    const cancelButton = document.getElementById('rewardFormCancel');
+    const dialog = document.getElementById('rewardDateDialog');
+    const dateForm = document.getElementById('rewardDateForm');
+    const dateInput = document.getElementById('rewardCompletedDate');
+    const dateCancel = document.getElementById('rewardDateCancel');
+    const mainGoalButton = document.getElementById('editRewardMainGoalBtn');
+    const mainGoalForm = document.getElementById('rewardMainGoalForm');
+    const mainGoalInput = document.getElementById('rewardMainGoalInput');
+    const mainGoalCancel = document.getElementById('rewardMainGoalCancel');
+
+    if (mainGoalButton && mainGoalForm && mainGoalInput) {
+        mainGoalButton.addEventListener('click', () => {
+            mainGoalInput.value = AppData.rewardsGoal || '';
+            mainGoalForm.hidden = false;
+            mainGoalInput.focus();
+        });
+    }
+    if (mainGoalForm && mainGoalInput) {
+        mainGoalForm.addEventListener('submit', event => {
+            event.preventDefault();
+            AppData.rewardsGoal = mainGoalInput.value.trim();
+            saveData();
+            mainGoalForm.hidden = true;
+            renderRewards();
+        });
+    }
+    if (mainGoalCancel && mainGoalForm) {
+        mainGoalCancel.addEventListener('click', () => {
+            mainGoalForm.reset();
+            mainGoalForm.hidden = true;
+        });
+    }
+
+    if (addButton) {
+        addButton.addEventListener('click', () => {
+            const formWrap = document.getElementById('rewardFormWrap');
+            if (formWrap && !formWrap.hidden && !editingRewardId) closeRewardForm();
+            else openRewardForm();
+        });
+    }
+    if (form) {
+        form.addEventListener('submit', event => {
+            event.preventDefault();
+            const title = document.getElementById('rewardGoalInput').value.trim();
+            const prize = document.getElementById('rewardPrizeInput').value.trim();
+            if (!title || !prize) return;
+
+            const existing = AppData.rewards.find(item => item.id === editingRewardId);
+            if (existing) {
+                existing.title = title;
+                existing.reward = prize;
+            } else {
+                AppData.rewards.push({
+                    id: `reward-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
+                    title,
+                    reward: prize,
+                    completedAt: null
+                });
+            }
+            saveData();
+            closeRewardForm();
+            renderRewards();
+        });
+    }
+    if (cancelButton) cancelButton.addEventListener('click', closeRewardForm);
+    if (dateCancel && dialog) dateCancel.addEventListener('click', () => dialog.close());
+    if (dialog) {
+        dialog.addEventListener('close', () => {
+            pendingRewardId = null;
+            renderRewards();
+        });
+    }
+    if (dateForm) {
+        dateForm.addEventListener('submit', event => {
+            event.preventDefault();
+            const date = dateInput?.value || '';
+            if (!pendingRewardId || !/^\d{4}-\d{2}-\d{2}$/.test(date) || date > getLocalDateKey()) return;
+            const item = AppData.rewards.find(reward => reward.id === pendingRewardId);
+            if (!item) return;
+            item.completedAt = date;
+            saveData();
+            dialog.close();
+            renderRewards();
+        });
+    }
+    renderRewards();
 }
 
 // ======================
@@ -3328,10 +3626,12 @@ function initSettings() {
         challengeNameInput.addEventListener('input', (e) => {
             const nextName = (e.target.value || '').trim();
             AppData.settings.challengeName = nextName || 'Kawaii Quest';
-            e.target.value = AppData.settings.challengeName;
             saveData();
             applyChallengeNameToUI();
             updateAllDisplays();
+        });
+        challengeNameInput.addEventListener('blur', () => {
+            challengeNameInput.value = getChallengeDisplayName();
         });
     }
 
@@ -3657,6 +3957,8 @@ function initSettings() {
                             runLog: {},
                             workoutFocus: {},
                             gallery: [],
+                            rewards: [],
+                            rewardsGoal: '',
                             badges: {},
                             tasks: AppData.tasks,
                             weeklyTasks: AppData.weeklyTasks,
@@ -4267,6 +4569,15 @@ function exportDataAsHTML() {
         : text;
     const locale = language === 'en' ? 'en-GB' : language === 'it' ? 'it-IT' : 'pl-PL';
     const now = new Date().toLocaleDateString(locale);
+    const reportRewards = (Array.isArray(data.rewards) ? data.rewards : [])
+        .filter(item => item && typeof item.title === 'string' && typeof item.reward === 'string');
+    const escapeReportHtml = (value) => String(value ?? '').replace(/[&<>"']/g, character => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+    })[character]);
     const formatNumber = (value) => Number(value || 0).toLocaleString(locale);
     const formatDate = (value) => value ? new Date(value).toLocaleDateString(locale) : '—';
     const formatDateTime = (value) => value ? new Date(value).toLocaleString(locale) : '—';
@@ -4878,6 +5189,35 @@ function exportDataAsHTML() {
             <div class="badge-grid">
                 ${generateBadgesHTML(data.badges)}
             </div>
+        </section>
+
+        <section>
+            <h2>${tr('🎁 Cele i nagrody')}</h2>
+            <p>${tr('Główny cel')}: <strong>${escapeReportHtml(data.rewardsGoal || '—')}</strong></p>
+            ${reportRewards.length > 0 ? `
+                <div style="overflow-x: auto;">
+                    <table class="report-table">
+                        <thead>
+                            <tr>
+                                <th style="text-align: left;">${tr('Cel')}</th>
+                                <th style="text-align: left;">${tr('Nagroda')}</th>
+                                <th style="text-align: left;">${tr('Status')}</th>
+                                <th style="text-align: left;">${tr('Data osiągnięcia')}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${reportRewards.map(item => `
+                                <tr>
+                                    <td>${escapeReportHtml(item.title)}</td>
+                                    <td>${escapeReportHtml(item.reward)}</td>
+                                    <td>${item.completedAt ? tr('Osiągnięto') : tr('W toku')}</td>
+                                    <td><em>${item.completedAt ? formatDate(`${item.completedAt}T12:00:00`) : '—'}</em></td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            ` : `<p>${tr('Nie dodano jeszcze celów i nagród.')}</p>`}
         </section>
         
         <section>

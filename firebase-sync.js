@@ -78,6 +78,10 @@ function smartMergeData(local, cloud, cloudLastModified = 0) {
         merged.challengeHistory = Array.from(byId.values());
     }
     const cloudIsNewer = cloudLastModified > (local.lastModified || 0);
+    merged.rewards = (cloudIsNewer ? cloud.rewards : local.rewards) || [];
+    merged.rewardsGoal = cloudIsNewer
+        ? (cloud.rewardsGoal ?? local.rewardsGoal ?? '')
+        : (local.rewardsGoal ?? cloud.rewardsGoal ?? '');
     const localCycleStartedAt = Number(local.challenge?.cycleStartedAt || 0);
     const cloudCycleStartedAt = Number(cloud.challenge?.cycleStartedAt || 0);
     const cloudHasNewerChallenge = cloudCycleStartedAt > localCycleStartedAt ||

@@ -147,6 +147,7 @@
         <nav class="main-nav">
             <a href="#" class="nav-link active" data-view="dashboard">🏠 Główna</a>
             <a href="#" class="nav-link" data-view="calendar">📅 Kalendarz</a>
+            <a href="#" class="nav-link" data-view="rewards">🎁 Nagrody</a>
             <a href="#" class="nav-link" data-view="stats">📊 Statystyki</a>
             <a href="#" class="nav-link" data-view="workouts">💪 Workouty</a>
             <a href="#" class="nav-link" data-view="rules">📜 Zasady</a>
@@ -156,9 +157,22 @@
         </nav>
     </header>
     
-    <main>
-        <div class="view active" id="view-dashboard">
-            <div id="dateIndicator" class="date-indicator" style="display: none;">
+    </main>
+
+    <dialog id="rewardDateDialog" class="rewards-date-dialog" aria-labelledby="rewardDateTitle">
+        <form id="rewardDateForm" class="rewards-date-form">
+            <h2 id="rewardDateTitle">Zapisz osiągnięcie</h2>
+            <p id="rewardDatePrompt">Kiedy udało Ci się osiągnąć cel?</p>
+            <label for="rewardCompletedDate">Data osiągnięcia</label>
+            <input id="rewardCompletedDate" name="completedAt" type="date" required>
+            <div class="reward-form-actions">
+                <button class="btn-primary" type="submit">Zapisz datę</button>
+                <button class="btn-secondary" id="rewardDateCancel" type="button">Anuluj</button>
+            </div>
+        </form>
+    </dialog>
+
+    <script src="i18n.js"></script>
                 <div class="date-indicator-content">
                     <span class="date-indicator-icon">📅</span>
                     <span class="selected-date-text">Wyświetlane dane dla: [Data]</span>
@@ -473,6 +487,66 @@
                     </div>
                 </section>
             </div>
+        </div>
+
+        <div class="view" id="view-rewards">
+            <section class="rewards-shell" aria-labelledby="rewardsTitle">
+                <section class="rewards-main-goal" aria-label="Główny cel">
+                    <div>
+                        <p class="eyebrow">Główny cel</p>
+                        <h1 id="rewardMainGoalDisplay" class="is-placeholder">Ustaw swój główny cel</h1>
+                    </div>
+                    <button class="btn-secondary reward-main-goal-edit" id="editRewardMainGoalBtn" type="button">Ustaw główny cel</button>
+                </section>
+
+                <form id="rewardMainGoalForm" class="reward-main-goal-form" hidden>
+                    <label for="rewardMainGoalInput">Jaki jest Twój główny cel?</label>
+                    <input id="rewardMainGoalInput" name="mainGoal" type="text" placeholder="Np. schudnąć, zbudować masę, nauczyć się języka">
+                    <div class="reward-form-actions">
+                        <button class="btn-primary" type="submit">Zapisz cel główny</button>
+                        <button class="btn-secondary" id="rewardMainGoalCancel" type="button">Anuluj</button>
+                    </div>
+                </form>
+
+                <header class="rewards-heading">
+                    <div>
+                        <p class="eyebrow">Twoja droga, Twoje nagrody</p>
+                        <h2 id="rewardsTitle">🎁 Nagrody</h2>
+                        <p class="rewards-intro">Podziel swój cel na małe kroki i zaplanuj, czym nagrodzisz każdy z nich.</p>
+                    </div>
+                    <button class="btn-primary rewards-add-btn" id="addRewardBtn" type="button">＋ Dodaj cel</button>
+                </header>
+
+                <section class="rewards-progress" aria-label="Postęp nagród">
+                    <div class="rewards-progress-meta">
+                        <span id="rewardsSummary" aria-live="polite">0 / 0 celów osiągniętych</span>
+                        <strong id="rewardsPercent">0%</strong>
+                    </div>
+                    <div id="rewardsProgressTrack" class="rewards-progress-track" role="progressbar" aria-label="Ukończone cele" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+                        <div id="rewardsProgressFill" class="rewards-progress-fill"></div>
+                    </div>
+                </section>
+
+                <section id="rewardFormWrap" class="reward-form-panel" hidden>
+                    <h3 id="rewardFormHeading">Nowy cel i nagroda</h3>
+                    <form id="rewardForm" class="reward-form">
+                        <label>
+                            Cel lub kamień milowy
+                            <input id="rewardGoalInput" name="goal" type="text" placeholder="Np. -1 kg, 10 dni, pierwszy bieg" required>
+                        </label>
+                        <label>
+                            Nagroda za osiągnięcie
+                            <input id="rewardPrizeInput" name="prize" type="text" placeholder="Np. nowa książka, dzień relaksu" required>
+                        </label>
+                        <div class="reward-form-actions">
+                            <button class="btn-primary" id="rewardFormSubmit" type="submit">Dodaj do listy</button>
+                            <button class="btn-secondary" id="rewardFormCancel" type="button">Anuluj</button>
+                        </div>
+                    </form>
+                </section>
+
+                <div id="rewardsList" class="rewards-list" aria-live="polite"></div>
+            </section>
         </div>
 
         <div class="view" id="view-workouts">

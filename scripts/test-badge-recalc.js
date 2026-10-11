@@ -3,6 +3,16 @@ import vm from 'node:vm';
 import assert from 'node:assert/strict';
 
 const source = fs.readFileSync(new URL('../app.js', import.meta.url), 'utf8');
+const RealDate = Date;
+const fakeNow = new RealDate(2026, 7, 31, 12, 0, 0);
+class FakeDate extends RealDate {
+  constructor(...args) {
+    if (args.length === 0) super(fakeNow.getTime());
+    else super(...args);
+  }
+  static now() { return fakeNow.getTime(); }
+}
+
 const storage = {
   data: JSON.stringify({
     challenge: {
@@ -48,6 +58,7 @@ const storage = {
 
 const context = {
   console,
+  Date: FakeDate,
   setInterval() {},
   clearInterval() {},
   alert() {},
@@ -112,8 +123,8 @@ vm.createContext(context);
 const app = vm.runInContext(`(function() { ${source}; return { AppData, loadData, checkBadges, getAllBadgeIds, getBadgeStats }; })()`, context);
 
 assert.ok(app.AppData, 'AppData should exist');
-assert.equal(app.getAllBadgeIds().length, 53, 'the full badge catalog should contain 53 badge IDs');
-assert.equal(app.getBadgeStats({ badges: {} }).totalBadges, 53, 'report total should use the full badge catalog, not only initialized badges');
+assert.equal(app.getAllBadgeIds().length, 55, 'the full badge catalog should contain 55 badge IDs');
+assert.equal(app.getBadgeStats({ badges: {} }).totalBadges, 55, 'report total should use the full badge catalog, not only initialized badges');
 app.loadData();
 assert.equal(app.AppData.streak, 1, 'streak should be recalculated after loading saved data');
 assert.equal(app.AppData.badges['first-steps']?.unlocked, true, 'first-steps should unlock after loading saved data');

@@ -49,6 +49,8 @@ function makeNode() {
     checked: false,
     classList: { add() {}, remove() {}, toggle() {} },
     appendChild() {},
+    append() {},
+    replaceChildren() {},
     removeChild() {},
     setAttribute() {},
     addEventListener() {},

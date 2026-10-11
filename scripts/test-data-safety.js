@@ -4,15 +4,20 @@ import { isMeaningfulData, normalizeAppData, createDefaultAppData } from './data
 function run() {
   const empty = {};
   assert.equal(isMeaningfulData(empty), false, 'Puste dane powinny być uznane jako puste');
+  assert.equal(isMeaningfulData({ rewards: [{ id: 'one', title: 'Cel', reward: 'Nagroda' }] }), true, 'Sama lista nagród powinna być uznana za sensowne dane');
+  assert.equal(isMeaningfulData({ rewardsGoal: 'Nauczyć się języka' }), true, 'Sam główny cel powinien być uznany za sensowne dane');
 
   const defaultData = createDefaultAppData();
   assert.equal(isMeaningfulData(defaultData), true, 'Domyślne dane powinny być uznane jako sensowne');
   assert.ok(Array.isArray(defaultData.tasks), 'Domyślne zadania powinny być tablicą');
+  assert.deepEqual(defaultData.rewards, [], 'Domyślne dane powinny zawierać pustą listę nagród');
+  assert.equal(defaultData.rewardsGoal, '', 'Domyślne dane powinny zawierać puste pole głównego celu');
 
   const data = normalizeAppData({
     challenge: { completedDays: ['2025-01-01', '2025-01-01'], currentDay: 2 },
     steps: { '2025-01-01': 5000 },
     completedTasks: { '2025-01-01': [0, 1] },
+    rewards: [{ id: 'one', title: 'Cel', reward: 'Nagroda', completedAt: '2025-01-01' }],
     settings: { theme: 'pink' }
   });
 
@@ -32,6 +37,7 @@ function run() {
   assert.equal(data.challenge.completedDays.length, 1, 'Powinno usunąć duplikaty dat');
   assert.equal(typeof data.lastModified, 'number', 'Powinien dodać timestamp');
   assert.equal(data.settings.theme, 'pink', 'Powinien zachować ustawienia');
+  assert.deepEqual(data.rewards, [{ id: 'one', title: 'Cel', reward: 'Nagroda', completedAt: '2025-01-01' }], 'Powinien zachować cele i daty nagród');
 
   console.log('✅ Testy danych przeszły pomyślnie');
 }

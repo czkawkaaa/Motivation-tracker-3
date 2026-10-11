@@ -47,6 +47,10 @@ function smartMergeData(local, cloud, cloudLastModified = 0) {
     merged.challenge.totalDays = cloud.challenge?.totalDays || local.challenge?.totalDays || merged.challenge.totalDays || 75;
 
     merged.tasks = cloud.tasks || local.tasks;
+    merged.rewards = cloudLastModified > (local.lastModified || 0) ? (cloud.rewards || []) : (local.rewards || []);
+    merged.rewardsGoal = cloudLastModified > (local.lastModified || 0)
+        ? (cloud.rewardsGoal ?? local.rewardsGoal ?? '')
+        : (local.rewardsGoal ?? cloud.rewardsGoal ?? '');
 
     merged.badges = { ...(local.badges || {}), ...(cloud.badges || {}) };
     merged.gallery = Array.isArray(local.gallery) || Array.isArray(cloud.gallery)
@@ -68,6 +72,8 @@ const local = {
     completedTasks: { '2025-10-14': [0,1], '2025-10-15': [0] },
     challenge: { currentDay: 10, completedDays: ['2025-10-14'] },
     tasks: ["a","b","c"],
+    rewards: [{ id: 'local', title: 'Local goal', reward: 'Local prize' }],
+    rewardsGoal: 'Local main goal',
     badges: { b1: { unlocked: true } },
     settings: { stepsGoal: 20000 }
 };
@@ -79,6 +85,8 @@ const cloud = {
     completedTasks: { '2025-10-15': [0,2], '2025-10-16': [1] },
     challenge: { currentDay: 11, completedDays: ['2025-10-15'] },
     tasks: ["a","b","c","d"],
+    rewards: [{ id: 'cloud', title: 'Cloud goal', reward: 'Cloud prize' }],
+    rewardsGoal: 'Cloud main goal',
     badges: { b2: { unlocked: true } },
     settings: { stepsGoal: 25000 }
 };
@@ -88,6 +96,10 @@ console.log('CLOUD\n', JSON.stringify(cloud, null, 2));
 
 const merged = smartMergeData(local, cloud, cloud.lastModified);
 console.log('\nMERGED\n', JSON.stringify(merged, null, 2));
+assert.deepEqual(merged.rewards, cloud.rewards, 'newer cloud rewards should replace the local rewards list');
+assert.equal(merged.rewardsGoal, cloud.rewardsGoal, 'newer cloud main goal should replace the local main goal');
+assert.deepEqual(smartMergeData(cloud, local, local.lastModified).rewards, cloud.rewards, 'newer local rewards should be preserved');
+assert.equal(smartMergeData(cloud, local, local.lastModified).rewardsGoal, cloud.rewardsGoal, 'newer local main goal should be preserved');
 
 const sameCycleLocal = {
     lastModified: 100,

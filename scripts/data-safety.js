@@ -6,6 +6,8 @@ function createDefaultAppData() {
       completedDays: []
     },
     challengeHistory: [],
+    rewards: [],
+    rewardsGoal: '',
     streak: 0,
     longestStreak: 0,
     steps: {},
@@ -83,7 +85,9 @@ function isMeaningfulData(data) {
   const hasSteps = Boolean(data.steps && Object.keys(data.steps).length > 0);
   const hasTasks = Boolean(Array.isArray(data.tasks) && data.tasks.length > 0);
   const hasCompleted = Boolean(data.completedTasks && Object.keys(data.completedTasks).length > 0);
-  return hasSettings || hasChallenge || hasSteps || hasTasks || hasCompleted;
+  const hasRewards = Boolean(Array.isArray(data.rewards) && data.rewards.length > 0);
+  const hasRewardsGoal = Boolean(typeof data.rewardsGoal === 'string' && data.rewardsGoal.trim());
+  return hasSettings || hasChallenge || hasSteps || hasTasks || hasCompleted || hasRewards || hasRewardsGoal;
 }
 
 function normalizeAppData(data) {

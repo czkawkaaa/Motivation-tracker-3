@@ -34,6 +34,8 @@ function getElement(id) {
       checked: false,
       classList: { add() {}, remove() {}, toggle() {} },
       appendChild() {},
+      append() {},
+      replaceChildren() {},
       removeChild() {},
       setAttribute() {},
       addEventListener() {},
@@ -49,7 +51,7 @@ function makeNode() {
   return {
     style: {}, textContent: '', innerHTML: '', value: '', checked: false,
     classList: { add() {}, remove() {}, toggle() {} },
-    appendChild() {}, removeChild() {}, remove() {}, setAttribute() {}, addEventListener() {},
+    appendChild() {}, append() {}, replaceChildren() {}, removeChild() {}, remove() {}, setAttribute() {}, addEventListener() {},
     closest() { return { classList: { add() {}, remove() {}, toggle() {} } }; },
     querySelector(selector) {
       if (selector === '.task-checkbox') {
@@ -154,7 +156,7 @@ function simulateDay(dateOffset, completedTaskIndices, expectedCompletedCount, e
   app.updateChallengeProgress();
 
   assert.equal(app.AppData.challenge.completedDays.length, expectedCompletedCount, `completedDays length should be ${expectedCompletedCount} after day offset ${dateOffset}`);
-  assert.equal(getElement('challengeDays').textContent, `${expectedCompletedCount}/31 dni`, `progress label should show ${expectedCompletedCount}/31 on day offset ${dateOffset}`);
+  assert.equal(getElement('challengeDays').textContent, `${expectedCurrentDay}/31 dni`, `progress label should show elapsed calendar days on day offset ${dateOffset}`);
 }
 
 // Day 0 (31.08): complete all tasks.
@@ -168,7 +170,7 @@ fakeNow = new RealDate(2026, 8, 3, 9, 0, 0);
 app.loadData();
 app.updateChallengeProgress();
 assert.equal(app.AppData.challenge.completedDays.length, 2, 'progress from earlier fully completed days must survive further reloads');
-assert.equal(getElement('challengeDays').textContent, '2/31 dni', 'reported bug scenario: progress must not reset to 0/31 after a few days');
+assert.equal(getElement('challengeDays').textContent, '4/31 dni', 'progress should track elapsed calendar days after a partial day');
 assert.equal(app.AppData.challenge.currentDay, 4, 'currentDay should track calendar days regardless of missed day');
 
 console.log('challenge end-to-end regression test passed');
