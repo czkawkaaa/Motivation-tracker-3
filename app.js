@@ -721,16 +721,24 @@ function countWords(text) {
 function checkDailyLogin() {
     const today = getTodayKey();
     const lastLoginDate = localStorage.getItem('kawaiiQuestLastLogin');
-    
-    if (lastLoginDate !== today) {
-        // Nowy dzień! Pokaż powitanie
+    const currentView = document.querySelector('.view.active')?.id;
+
+    if (lastLoginDate === today) {
+        return;
+    }
+
+    // Nie blokuj użytkownika na innych widokach, np. w kalendarzu.
+    if (currentView && currentView !== 'view-dashboard') {
         localStorage.setItem('kawaiiQuestLastLogin', today);
-        showDailyCheckinModal();
-        
-        // Sprawdź czy streak jest zagrożony
-        if (AppData.streak > 0 && AppData.streak % 7 === 0) {
-            setTimeout(() => showStreakMilestoneNotification(), 800);
-        }
+        return;
+    }
+
+    localStorage.setItem('kawaiiQuestLastLogin', today);
+    showDailyCheckinModal();
+
+    // Sprawdź czy streak jest zagrożony
+    if (AppData.streak > 0 && AppData.streak % 7 === 0) {
+        setTimeout(() => showStreakMilestoneNotification(), 800);
     }
 }
 
@@ -757,6 +765,7 @@ function showDailyCheckinModal() {
     modal.className = 'daily-checkin-modal';
     modal.innerHTML = `
         <div class="daily-checkin-content">
+            <button type="button" class="daily-checkin-close" aria-label="Zamknij" id="dailyCheckinCloseBtn">✕</button>
             <div class="daily-checkin-emoji">🌸</div>
             <h2>${translateAppText('Witaj ponownie!')}</h2>
             <p class="daily-message">"${randomMotivation}"</p>
@@ -795,6 +804,15 @@ function showDailyCheckinModal() {
     `;
     
     document.body.appendChild(modal);
+    modal.addEventListener('click', (event) => {
+        if (event.target === modal) {
+            modal.remove();
+        }
+    });
+    const closeBtn = document.getElementById('dailyCheckinCloseBtn');
+    if (closeBtn) {
+        closeBtn.addEventListener('click', () => modal.remove());
+    }
     
     // Add styles
     if (!document.querySelector('style[data-daily-modal]')) {
@@ -821,14 +839,30 @@ function showDailyCheckinModal() {
             }
             
             .daily-checkin-content {
+                position: relative;
                 background: linear-gradient(135deg, #ff9ac2, #ffc1e0);
                 color: white;
                 border-radius: 25px;
-                padding: 2.5rem;
+                padding: 2rem 1.75rem 1.5rem;
                 text-align: center;
-                max-width: 400px;
+                max-width: 420px;
+                width: min(100%, 420px);
                 box-shadow: 0 20px 60px rgba(255, 154, 194, 0.3);
                 animation: slideUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            }
+
+            .daily-checkin-close {
+                position: absolute;
+                top: 0.85rem;
+                right: 0.85rem;
+                width: 2rem;
+                height: 2rem;
+                border: 0;
+                border-radius: 50%;
+                background: rgba(255, 255, 255, 0.25);
+                color: white;
+                font-size: 1rem;
+                cursor: pointer;
             }
             
             @keyframes slideUp {
@@ -848,15 +882,15 @@ function showDailyCheckinModal() {
             }
             
             .daily-checkin-content h2 {
-                font-size: 2rem;
-                margin: 0 0 1rem 0;
+                font-size: 1.6rem;
+                margin: 0 0 0.8rem 0;
                 font-weight: 800;
             }
             
             .daily-message {
-                font-size: 1.1rem;
+                font-size: 1rem;
                 font-weight: 600;
-                margin: 0 0 1.5rem 0;
+                margin: 0 0 1.25rem 0;
                 opacity: 0.95;
                 line-height: 1.4;
             }
@@ -929,9 +963,9 @@ function showDailyCheckinModal() {
                 background: white;
                 color: #ff9ac2;
                 border: none;
-                padding: 1rem 2rem;
+                padding: 0.85rem 1.5rem;
                 border-radius: 14px;
-                font-size: 1rem;
+                font-size: 0.96rem;
                 font-weight: 700;
                 cursor: pointer;
                 transition: all 0.3s ease;

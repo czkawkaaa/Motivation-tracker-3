@@ -7,5 +7,18 @@
   },
   "dependencies": {
     "dotenv": "^16.0.0"
-  }
+  },
+  "description": "**Motywacyjna aplikacja stworzona przez Wiktorię Radomską**",
+  "main": "app.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/czkawkaaa/Motivation-tracker-3.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/czkawkaaa/Motivation-tracker-3/issues"
+  },
+  "homepage": "https://github.com/czkawkaaa/Motivation-tracker-3#readme"
 }

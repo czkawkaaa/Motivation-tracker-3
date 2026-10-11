@@ -1493,39 +1493,54 @@ main {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 1rem;
-    margin-bottom: 1.5rem;
-    padding: 1rem 1.25rem;
-    border-radius: 16px;
-    background: var(--hover-bg);
+    gap: 0.75rem;
+    margin-bottom: 1.1rem;
+    padding: 0.65rem 0.8rem;
+    border-radius: 14px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.6), var(--hover-bg));
+    border: 1px solid rgba(255, 154, 194, 0.22);
+    box-shadow: 0 8px 20px rgba(255, 154, 194, 0.08);
+}
+
+.calendar-today-reflection > div {
+    flex: 1;
+    min-width: 0;
 }
 
 .calendar-today-reflection h2 {
-    margin: 0 0 0.35rem;
+    margin: 0 0 0.2rem;
     color: var(--primary-color);
-    font-size: 1.1rem;
+    font-size: 0.9rem;
+    letter-spacing: 0.02em;
 }
 
 .calendar-today-question,
 .calendar-today-answer {
     margin: 0;
     color: var(--text-primary);
-    line-height: 1.5;
+    line-height: 1.35;
 }
 
 .calendar-today-question {
-    font-weight: 600;
+    font-size: 0.85rem;
+    font-weight: 700;
 }
 
 .calendar-today-answer {
-    margin-top: 0.35rem;
+    margin-top: 0.18rem;
     color: var(--text-secondary);
     white-space: pre-wrap;
+    font-size: 0.78rem;
 }
 
 .calendar-today-reflection button {
     flex: 0 0 auto;
     width: auto;
+    min-width: 136px;
+    padding: 0.55rem 0.8rem;
+    font-size: 0.78rem;
+    border-radius: 10px;
+    line-height: 1.2;
 }
 
 .calendar-header {
@@ -1563,13 +1578,13 @@ main {
 }
 
 .calendar-reflection-btn {
-    width: 2.5rem;
-    height: 2.5rem;
+    width: 2rem;
+    height: 2rem;
     border: 0;
     border-radius: 50%;
     background: var(--card-bg);
     color: var(--primary-color);
-    font-size: 1.25rem;
+    font-size: 0.9rem;
     cursor: pointer;
     box-shadow: var(--shadow);
 }
@@ -1582,6 +1597,7 @@ main {
 
     .calendar-today-reflection button {
         align-self: flex-start;
+        min-width: 0;
     }
 }
 
