@@ -4319,39 +4319,47 @@ const AudioContext = window.AudioContext || window.webkitAudioContext;
 let audioContext = null;
 
 function initAudioContext() {
+    if (typeof AudioContext !== 'function') return null;
     if (!audioContext) {
-        audioContext = new AudioContext();
+        try {
+            audioContext = new AudioContext();
+        } catch (error) {
+            return null;
+        }
     }
     return audioContext;
 }
 
 function playClickSound() {
     if (!AppData.settings.soundEnabled) return;
-    
-    const ctx = initAudioContext();
-    const oscillator = ctx.createOscillator();
-    const gainNode = ctx.createGain();
-    
-    oscillator.connect(gainNode);
-    gainNode.connect(ctx.destination);
-    
-    // Ustawienia dźwięku
-    oscillator.frequency.value = 800;
-    oscillator.type = 'sine';
-    
-    // Głośność
-    const volume = AppData.settings.volume / 100;
-    gainNode.gain.setValueAtTime(volume * 0.3, ctx.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
-    
-    oscillator.start(ctx.currentTime);
-    oscillator.stop(ctx.currentTime + 0.1);
+
+    try {
+        const ctx = initAudioContext();
+        if (!ctx) return;
+        const oscillator = ctx.createOscillator();
+        const gainNode = ctx.createGain();
+
+        oscillator.connect(gainNode);
+        gainNode.connect(ctx.destination);
+        oscillator.frequency.value = 800;
+        oscillator.type = 'sine';
+
+        const volume = AppData.settings.volume / 100;
+        gainNode.gain.setValueAtTime(volume * 0.3, ctx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
+
+        oscillator.start(ctx.currentTime);
+        oscillator.stop(ctx.currentTime + 0.1);
+    } catch (error) {
+        audioContext = null;
+    }
 }
 
 function playSuccessSound() {
     if (!AppData.settings.soundEnabled) return;
     
     const ctx = initAudioContext();
+    if (!ctx) return;
     const volume = AppData.settings.volume / 100;
     
     // Odtwórz 3 nuty (akord sukcesu)
@@ -4380,6 +4388,7 @@ function playCheckboxSound() {
     if (!AppData.settings.soundEnabled) return;
     
     const ctx = initAudioContext();
+    if (!ctx) return;
     const oscillator = ctx.createOscillator();
     const gainNode = ctx.createGain();
     
@@ -4401,6 +4410,7 @@ function playHoverSound() {
     if (!AppData.settings.soundEnabled) return;
     
     const ctx = initAudioContext();
+    if (!ctx) return;
     const oscillator = ctx.createOscillator();
     const gainNode = ctx.createGain();
     
