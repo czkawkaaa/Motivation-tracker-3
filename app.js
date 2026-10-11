@@ -3992,7 +3992,8 @@ function initSettings() {
                             challenge: {
                                 currentDay: 0,
                                 totalDays: AppData.settings.challengeLength || 75,
-                                completedDays: []
+                                completedDays: [],
+                                cycleStartedAt: Date.now()
                             },
                             streak: 0,
                             longestStreak: 0,
@@ -4596,6 +4597,10 @@ function exportDataAsHTML() {
         '"': '&quot;',
         "'": '&#39;'
     })[character]);
+    const reportStyles = typeof getComputedStyle === 'function' ? getComputedStyle(document.body) : null;
+    const reportPrimaryColor = reportStyles?.getPropertyValue('--primary-color').trim() || '#ff9ac2';
+    const reportBackgroundStart = reportStyles?.getPropertyValue('--bg-gradient-start').trim() || '#fff7ff';
+    const reportBackgroundEnd = reportStyles?.getPropertyValue('--bg-gradient-end').trim() || '#fff0f7';
     const formatNumber = (value) => Number(value || 0).toLocaleString(locale);
     const formatDate = (value) => value ? new Date(value).toLocaleDateString(locale) : '—';
     const formatDateTime = (value) => value ? new Date(value).toLocaleString(locale) : '—';
@@ -4694,8 +4699,8 @@ function exportDataAsHTML() {
 
     const challengeActivityLog = Array.isArray(data.challenge?.activityLog) ? data.challenge.activityLog : [];
     const activityLogRows = challengeActivityLog.slice(0, 25).map(entry => `
-        <div style="background: #fff5f8; padding: 0.85rem 1rem; border-radius: 10px; border-left: 4px solid #ff9ac2; margin-bottom: 0.5rem;">
-            <div style="font-weight: 700; color: #ff9ac2; margin-bottom: 0.2rem;">${formatDate(entry.dateKey || entry.timestamp ? new Date(entry.timestamp || entry.dateKey).toISOString().slice(0,10) : '')}</div>
+        <div style="background: color-mix(in srgb, var(--report-primary) 8%, white); padding: 0.85rem 1rem; border-radius: 10px; border-left: 4px solid var(--report-primary); margin-bottom: 0.5rem;">
+            <div style="font-weight: 700; color: var(--report-primary); margin-bottom: 0.2rem;">${formatDate(entry.dateKey || entry.timestamp ? new Date(entry.timestamp || entry.dateKey).toISOString().slice(0,10) : '')}</div>
             <div style="color: #666;">${entry.summary || entry.type || 'Aktywność'}</div>
         </div>
     `).join('');
@@ -4792,10 +4797,16 @@ function exportDataAsHTML() {
             padding: 0;
             box-sizing: border-box;
         }
+
+        :root {
+            --report-primary: ${reportPrimaryColor};
+            --report-background-start: ${reportBackgroundStart};
+            --report-background-end: ${reportBackgroundEnd};
+        }
         
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #ffeef8 0%, #fff5f8 100%);
+            background: linear-gradient(135deg, var(--report-background-start), var(--report-background-end));
             padding: 2rem;
             color: #333;
         }
@@ -4813,12 +4824,12 @@ function exportDataAsHTML() {
             text-align: center;
             margin-bottom: 3rem;
             padding-bottom: 2rem;
-            border-bottom: 3px solid #ff9ac2;
+            border-bottom: 3px solid var(--report-primary);
         }
         
         h1 {
             font-size: 3rem;
-            color: #ff9ac2;
+            color: var(--report-primary);
             margin-bottom: 0.5rem;
         }
         
@@ -4828,12 +4839,12 @@ function exportDataAsHTML() {
         }
 
         .report-hero {
-            background: linear-gradient(135deg, #ff9ac2, #ffc1e0);
+            background: linear-gradient(135deg, var(--report-primary), color-mix(in srgb, var(--report-primary) 55%, white));
             color: white;
             border-radius: 18px;
             padding: 1.5rem;
             margin: 1.5rem 0 2rem 0;
-            box-shadow: 0 12px 24px rgba(255, 154, 194, 0.22);
+            box-shadow: 0 12px 24px color-mix(in srgb, var(--report-primary) 22%, transparent);
         }
 
         .report-hero-top {
@@ -4895,12 +4906,12 @@ function exportDataAsHTML() {
         }
         
         .stat-card {
-            background: linear-gradient(135deg, #ff9ac2, #ffc1e0);
+            background: linear-gradient(135deg, var(--report-primary), color-mix(in srgb, var(--report-primary) 55%, white));
             color: white;
             padding: 1.5rem;
             border-radius: 15px;
             text-align: center;
-            box-shadow: 0 4px 10px rgba(255, 154, 194, 0.3);
+            box-shadow: 0 4px 10px color-mix(in srgb, var(--report-primary) 30%, transparent);
         }
         
         .stat-value {
@@ -4920,10 +4931,10 @@ function exportDataAsHTML() {
         
         h2 {
             font-size: 1.8rem;
-            color: #ff9ac2;
+            color: var(--report-primary);
             margin-bottom: 1.5rem;
             padding-bottom: 0.5rem;
-            border-bottom: 2px solid #ffe0ef;
+            border-bottom: 2px solid color-mix(in srgb, var(--report-primary) 30%, white);
         }
         
         .badge-grid {
@@ -4941,8 +4952,8 @@ function exportDataAsHTML() {
         }
         
         .badge-item.unlocked {
-            background: linear-gradient(135deg, #fff5f8, #ffffff);
-            border-color: #ff9ac2;
+            background: linear-gradient(135deg, color-mix(in srgb, var(--report-primary) 8%, white), #ffffff);
+            border-color: var(--report-primary);
         }
         
         .badge-icon {
@@ -4965,7 +4976,7 @@ function exportDataAsHTML() {
             padding: 1rem;
             border-radius: 10px;
             margin-bottom: 0.5rem;
-            border-left: 4px solid #ff9ac2;
+            border-left: 4px solid var(--report-primary);
         }
         
         .mood-stats {
@@ -5020,18 +5031,18 @@ function exportDataAsHTML() {
         .report-table th,
         .report-table td {
             padding: 0.8rem;
-            border-bottom: 1px solid #f1d8e3;
+            border-bottom: 1px solid color-mix(in srgb, var(--report-primary) 18%, white);
             vertical-align: top;
         }
 
         .report-table th {
-            background: #fff5f8;
+            background: color-mix(in srgb, var(--report-primary) 8%, white);
             font-weight: 700;
         }
 
         .report-note {
-            background: #fff8fb;
-            border-left: 4px solid #ff9ac2;
+            background: color-mix(in srgb, var(--report-primary) 5%, white);
+            border-left: 4px solid var(--report-primary);
             color: #6a4c59;
             padding: 1rem 1.2rem;
             border-radius: 12px;
@@ -5042,7 +5053,7 @@ function exportDataAsHTML() {
             text-align: center;
             margin-top: 3rem;
             padding-top: 2rem;
-            border-top: 2px solid #ffe0ef;
+            border-top: 2px solid color-mix(in srgb, var(--report-primary) 30%, white);
             color: #666;
         }
         
@@ -5256,8 +5267,8 @@ function exportDataAsHTML() {
                         const tasks = data.weeklyTasks[day] || [];
                         if (tasks.length === 0) return '';
                         return `
-                            <div style="background: #f8f9fa; padding: 1rem; border-radius: 8px; border-left: 4px solid #ff9ac2;">
-                                <h4 style="margin: 0 0 0.5rem 0; color: #ff9ac2;">${dayNames[index]}</h4>
+                            <div style="background: #f8f9fa; padding: 1rem; border-radius: 8px; border-left: 4px solid var(--report-primary);">
+                                <h4 style="margin: 0 0 0.5rem 0; color: var(--report-primary);">${dayNames[index]}</h4>
                                 <ul style="list-style: none; padding-left: 0; margin: 0;">
                                     ${tasks.map(task => `<li style="padding: 0.3rem 0;">✓ ${task}</li>`).join('')}
                                 </ul>
@@ -5283,8 +5294,8 @@ function exportDataAsHTML() {
             </div>
 
             <div style="display: grid; gap: 1rem;">
-                <div style="background: #fff5f8; padding: 1rem; border-radius: 12px; border-left: 4px solid #ff9ac2;">
-                    <h3 style="margin: 0 0 0.75rem 0; color: #ff9ac2;">${tr('Kategorie workoutów')}</h3>
+                <div style="background: color-mix(in srgb, var(--report-primary) 8%, white); padding: 1rem; border-radius: 12px; border-left: 4px solid var(--report-primary);">
+                    <h3 style="margin: 0 0 0.75rem 0; color: var(--report-primary);">${tr('Kategorie workoutów')}</h3>
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 0.75rem;">
                         <div><strong>${tr('Bieganie')}:</strong> ${workoutCategoryCounts.running}</div>
                         <div><strong>${tr('Siłownia')}:</strong> ${workoutCategoryCounts.gym}</div>
@@ -5295,8 +5306,8 @@ function exportDataAsHTML() {
                     </div>
                 </div>
 
-                <div style="background: #f8f9fa; padding: 1rem; border-radius: 12px; border-left: 4px solid #ff9ac2;">
-                    <h3 style="margin: 0 0 0.75rem 0; color: #ff9ac2;">${tr('Biegi')}</h3>
+                <div style="background: #f8f9fa; padding: 1rem; border-radius: 12px; border-left: 4px solid var(--report-primary);">
+                    <h3 style="margin: 0 0 0.75rem 0; color: var(--report-primary);">${tr('Biegi')}</h3>
                     ${runEntries.length > 0 ? `
                         <div style="display: grid; gap: 0.5rem;">
                             ${runEntries.map(([dateKey, run]) => `
@@ -5310,8 +5321,8 @@ function exportDataAsHTML() {
                     ` : `<p style="margin: 0; color: #666;">${tr('Brak zapisanych biegów')}</p>`}
                 </div>
 
-                <div style="background: #f8f9fa; padding: 1rem; border-radius: 12px; border-left: 4px solid #ff9ac2;">
-                    <h3 style="margin: 0 0 0.75rem 0; color: #ff9ac2;">${tr('Partie ciała')}</h3>
+                <div style="background: #f8f9fa; padding: 1rem; border-radius: 12px; border-left: 4px solid var(--report-primary);">
+                    <h3 style="margin: 0 0 0.75rem 0; color: var(--report-primary);">${tr('Partie ciała')}</h3>
                     ${Object.keys(focusCounts).length > 0 ? `
                         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 0.5rem;">
                             ${Object.entries(focusCounts).map(([part, count]) => `<div><strong>${part}:</strong> ${count}</div>`).join('')}
@@ -5319,8 +5330,8 @@ function exportDataAsHTML() {
                     ` : `<p style="margin: 0; color: #666;">${tr('Brak zapisanych partii ciała')}</p>`}
                 </div>
 
-                <div style="background: #f8f9fa; padding: 1rem; border-radius: 12px; border-left: 4px solid #ff9ac2;">
-                    <h3 style="margin: 0 0 0.75rem 0; color: #ff9ac2;">${tr('Twoje treningi')}</h3>
+                <div style="background: #f8f9fa; padding: 1rem; border-radius: 12px; border-left: 4px solid var(--report-primary);">
+                    <h3 style="margin: 0 0 0.75rem 0; color: var(--report-primary);">${tr('Twoje treningi')}</h3>
                     ${(data.settings.workouts && data.settings.workouts.length > 0) || (data.settings.customWorkouts && data.settings.customWorkouts.length > 0) ? `
                         <div style="display: grid; gap: 0.5rem;">
                             ${(data.settings.workouts || []).map(w => `
@@ -5404,8 +5415,8 @@ function exportDataAsHTML() {
             <h2>${tr('📜 Zasady wyzwania')}</h2>
             <div style="display: grid; gap: 1rem;">
                 ${data.settings.rules.map(rule => `
-                    <div style="background: #f8f9fa; padding: 1.5rem; border-radius: 12px; border-left: 4px solid #ff9ac2;">
-                        <h3 style="margin: 0 0 0.5rem 0; color: #ff9ac2;">${rule.title}</h3>
+                    <div style="background: #f8f9fa; padding: 1.5rem; border-radius: 12px; border-left: 4px solid var(--report-primary);">
+                        <h3 style="margin: 0 0 0.5rem 0; color: var(--report-primary);">${rule.title}</h3>
                         <p style="margin: 0; color: #666;">${rule.content}</p>
                     </div>
                 `).join('')}

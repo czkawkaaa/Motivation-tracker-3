@@ -1,116 +1,104 @@
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import vm from 'node:vm';
 
-// Test smartMergeData behavior
-function smartMergeData(local, cloud, cloudLastModified = 0) {
-    if (!local) return cloud || {};
-    if (!cloud) return local;
+const source = fs.readFileSync(new URL('../firebase-sync.js', import.meta.url), 'utf8');
+const functionStart = source.indexOf('function smartMergeData(');
+const functionEnd = source.indexOf('\nfunction applySnapshotFromSource', functionStart);
+assert.notEqual(functionStart, -1, 'production smartMergeData should be present');
+assert.notEqual(functionEnd, -1, 'smartMergeData should end before snapshot application');
 
-    const merged = { ...local };
-
-    function mergeMaps(key) {
-        merged[key] = merged[key] || {};
-        const localMap = local[key] || {};
-        const cloudMap = cloud[key] || {};
-        const allKeys = Array.from(new Set([...Object.keys(localMap), ...Object.keys(cloudMap)]));
-        allKeys.forEach(k => {
-            const lv = localMap[k];
-            const cv = cloudMap[k];
-            if (lv === undefined) merged[key][k] = cv;
-            else if (cv === undefined) merged[key][k] = lv;
-            else {
-                if ((local.lastModified || 0) > (cloudLastModified || 0)) merged[key][k] = lv;
-                else merged[key][k] = cv;
-            }
-        });
-    }
-
-    ['steps', 'studyHours', 'mood', 'completedTasks'].forEach(k => mergeMaps(k));
-
-    const cloudIsNewer = cloudLastModified > (local.lastModified || 0);
-    const localCycleStartedAt = Number(local.challenge?.cycleStartedAt || 0);
-    const cloudCycleStartedAt = Number(cloud.challenge?.cycleStartedAt || 0);
-    const cloudHasNewerChallenge = cloudCycleStartedAt > localCycleStartedAt ||
-        (cloudCycleStartedAt === localCycleStartedAt && cloudIsNewer);
-    const sameChallenge = (localCycleStartedAt > 0 && localCycleStartedAt === cloudCycleStartedAt) ||
-        (!localCycleStartedAt && !cloudCycleStartedAt && local.challenge?.startDate === cloud.challenge?.startDate);
-    merged.challenge = { ...(cloudHasNewerChallenge ? cloud.challenge : local.challenge) };
-    if (sameChallenge) {
-        const localDays = Array.isArray(local.challenge?.completedDays) ? local.challenge.completedDays : [];
-        const cloudDays = Array.isArray(cloud.challenge?.completedDays) ? cloud.challenge.completedDays : [];
-        merged.challenge.completedDays = Array.from(new Set([...localDays, ...cloudDays])).sort();
-    }
-
-    merged.challenge.currentDay = (local.challenge?.currentDay || 0);
-    if (cloud.challenge?.currentDay && cloudLastModified > (local.lastModified || 0)) {
-        merged.challenge.currentDay = cloud.challenge.currentDay;
-    }
-    merged.challenge.totalDays = cloud.challenge?.totalDays || local.challenge?.totalDays || merged.challenge.totalDays || 75;
-
-    merged.tasks = cloud.tasks || local.tasks;
-    merged.rewards = cloudLastModified > (local.lastModified || 0) ? (cloud.rewards || []) : (local.rewards || []);
-    merged.rewardsGoal = cloudLastModified > (local.lastModified || 0)
-        ? (cloud.rewardsGoal ?? local.rewardsGoal ?? '')
-        : (local.rewardsGoal ?? cloud.rewardsGoal ?? '');
-
-    merged.badges = { ...(local.badges || {}), ...(cloud.badges || {}) };
-    merged.gallery = Array.isArray(local.gallery) || Array.isArray(cloud.gallery)
-        ? Array.from(new Set([...(local.gallery || []), ...(cloud.gallery || [])]))
-        : (cloud.gallery || local.gallery);
-
-    merged.settings = { ...(local.settings || {}), ...(cloud.settings || {}) };
-
-    merged.streak = cloud.streak ?? local.streak;
-    merged.lastModified = Math.max(local.lastModified || 0, cloud.lastModified || 0, Date.now());
-
-    return merged;
-}
+const context = vm.createContext({ Date });
+const smartMergeData = vm.runInContext(
+    `${source.slice(functionStart, functionEnd)}; smartMergeData;`,
+    context
+);
 
 const local = {
-    lastModified: 1697450000000,
-    steps: { '2025-10-14': 5000, '2025-10-15': 3000 },
-    studyHours: { '2025-10-14': 1.5 },
-    completedTasks: { '2025-10-14': [0,1], '2025-10-15': [0] },
-    challenge: { currentDay: 10, completedDays: ['2025-10-14'] },
-    tasks: ["a","b","c"],
+    lastModified: 100,
+    steps: {},
+    studyHours: {},
+    mood: {},
+    completedTasks: {},
+    completedWorkouts: {},
+    reflections: {},
+    runLog: {},
+    workoutFocus: {},
+    activityTimes: [],
+    gallery: [],
+    challenge: { currentDay: 1, totalDays: 30, cycleStartedAt: 200, completedDays: [] },
+    tasks: ['a', 'b', 'c'],
     rewards: [{ id: 'local', title: 'Local goal', reward: 'Local prize' }],
     rewardsGoal: 'Local main goal',
-    badges: { b1: { unlocked: true } },
+    badges: {},
+    streak: 0,
+    longestStreak: 0,
     settings: { stepsGoal: 20000 }
 };
 
-const cloud = {
-    lastModified: 1697455000000,
-    steps: { '2025-10-15': 4000, '2025-10-16': 2000 },
-    studyHours: { '2025-10-15': 0.5 },
-    completedTasks: { '2025-10-15': [0,2], '2025-10-16': [1] },
-    challenge: { currentDay: 11, completedDays: ['2025-10-15'] },
-    tasks: ["a","b","c","d"],
+const staleCloud = {
+    lastModified: 300,
+    steps: { '2026-08-29': 12000 },
+    studyHours: { '2026-08-29': 4 },
+    mood: { '2026-08-29': 1 },
+    completedTasks: { '2026-08-29': [0, 1, 2] },
+    completedWorkouts: { '2026-08-29': ['old-workout'] },
+    reflections: { '2026-08-29': 'old reflection' },
+    runLog: { '2026-08-29': { distance: 10 } },
+    workoutFocus: { '2026-08-29': ['arms'] },
+    activityTimes: [7, 18],
+    gallery: ['old photo'],
+    challenge: { currentDay: 10, totalDays: 75, cycleStartedAt: 100, completedDays: ['2026-08-29'] },
+    tasks: ['a', 'b', 'c'],
     rewards: [{ id: 'cloud', title: 'Cloud goal', reward: 'Cloud prize' }],
     rewardsGoal: 'Cloud main goal',
-    badges: { b2: { unlocked: true } },
+    badges: { 'first-steps': { unlocked: true } },
+    streak: 7,
+    longestStreak: 10,
     settings: { stepsGoal: 25000 }
 };
 
-console.log('LOCAL\n', JSON.stringify(local, null, 2));
-console.log('CLOUD\n', JSON.stringify(cloud, null, 2));
-
-const merged = smartMergeData(local, cloud, cloud.lastModified);
-console.log('\nMERGED\n', JSON.stringify(merged, null, 2));
-assert.deepEqual(merged.rewards, cloud.rewards, 'newer cloud rewards should replace the local rewards list');
-assert.equal(merged.rewardsGoal, cloud.rewardsGoal, 'newer cloud main goal should replace the local main goal');
-assert.deepEqual(smartMergeData(cloud, local, local.lastModified).rewards, cloud.rewards, 'newer local rewards should be preserved');
-assert.equal(smartMergeData(cloud, local, local.lastModified).rewardsGoal, cloud.rewardsGoal, 'newer local main goal should be preserved');
+const resetMerged = smartMergeData(local, staleCloud, staleCloud.lastModified);
+assert.equal(resetMerged.challenge.cycleStartedAt, 200, 'the newest challenge lifecycle should win over a newer stale snapshot');
+assert.equal(resetMerged.challenge.currentDay, 1, 'the old challenge progress day must not return after reset');
+assert.equal(resetMerged.challenge.totalDays, 30, 'the old challenge length must not override the new cycle');
+for (const key of [
+    'steps', 'studyHours', 'mood', 'completedTasks', 'completedWorkouts',
+    'reflections', 'runLog', 'workoutFocus'
+]) {
+    assert.equal(JSON.stringify(resetMerged[key]), JSON.stringify(local[key]), `${key} from an older challenge must not return after reset`);
+}
+assert.deepEqual(resetMerged.activityTimes, [], 'old activity-time history must not return after reset');
+assert.deepEqual(resetMerged.gallery, [], 'old photos must not return after reset');
+assert.equal(Object.keys(resetMerged.badges).length, 0, 'unlocked badges from an older challenge must not return after reset');
+assert.equal(resetMerged.streak, 0, 'the old streak must not return after reset');
+assert.equal(resetMerged.longestStreak, 0, 'the old longest streak must not return after reset');
 
 const sameCycleLocal = {
     lastModified: 100,
-    challenge: { startDate: '2026-08-31', completedDays: ['2026-08-31'] }
+    challenge: { startDate: '2026-08-31', completedDays: ['2026-08-31'] },
+    steps: { '2026-08-31': 5000 },
+    badges: { 'first-steps': { unlocked: true } },
+    gallery: ['local photo'],
+    streak: 1
 };
 const sameCycleCloud = {
     lastModified: 200,
-    challenge: { startDate: '2026-08-31', completedDays: [] }
+    challenge: { startDate: '2026-08-31', completedDays: [] },
+    steps: { '2026-09-01': 6000 },
+    badges: {},
+    gallery: ['cloud photo'],
+    streak: 2
 };
 const sameCycleMerged = smartMergeData(sameCycleLocal, sameCycleCloud, sameCycleCloud.lastModified);
-assert.deepEqual(sameCycleMerged.challenge.completedDays, ['2026-08-31'], 'same challenge must preserve local completed days');
+assert.deepEqual([...sameCycleMerged.challenge.completedDays], ['2026-08-31'], 'same challenge must preserve completed days');
+assert.equal(JSON.stringify(sameCycleMerged.steps), JSON.stringify({
+    '2026-08-31': 5000,
+    '2026-09-01': 6000
+}), 'same challenge must continue merging daily stats');
+assert.equal(Object.keys(sameCycleMerged.badges).length, 0, 'same-cycle badge state should still follow the newer snapshot');
+assert.equal(sameCycleMerged.streak, 2, 'same-cycle streak should still use the larger value');
+assert.deepEqual([...sameCycleMerged.gallery].sort(), ['cloud photo', 'local photo'], 'same-cycle photos should still merge');
 
 const newCycleCloud = {
     lastModified: 300,

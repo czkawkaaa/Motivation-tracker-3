@@ -36,6 +36,15 @@ function smartMergeData(local, cloud, cloudLastModified = 0) {
     if (!local) return cloud || {};
     if (!cloud) return local;
     const merged = { ...local };
+    const cloudIsNewer = cloudLastModified > (local.lastModified || 0);
+    const localCycleStartedAt = Number(local.challenge?.cycleStartedAt || 0);
+    const cloudCycleStartedAt = Number(cloud.challenge?.cycleStartedAt || 0);
+    const cloudHasNewerChallenge = cloudCycleStartedAt > localCycleStartedAt ||
+        (cloudCycleStartedAt === localCycleStartedAt && cloudIsNewer);
+    const sameChallenge = (localCycleStartedAt > 0 && localCycleStartedAt === cloudCycleStartedAt) ||
+        (!localCycleStartedAt && !cloudCycleStartedAt && local.challenge?.startDate === cloud.challenge?.startDate);
+    const cycleData = cloudHasNewerChallenge ? cloud : local;
+
     function mergeMaps(key) {
         merged[key] = merged[key] || {};
         const localMap = local[key] || {};
@@ -52,10 +61,10 @@ function smartMergeData(local, cloud, cloudLastModified = 0) {
             }
         });
     }
-    ['steps', 'studyHours', 'mood', 'completedTasks', 'reflections'].forEach(k => mergeMaps(k));
+    if (sameChallenge) {
+        ['steps', 'studyHours', 'mood', 'completedTasks', 'reflections'].forEach(k => mergeMaps(k));
 
-    // completedWorkouts to mapa dat -> tablica id treningów, więc łączymy unią zamiast nadpisywać
-    {
+        // completedWorkouts to mapa dat -> tablica id treningów, więc łączymy unią zamiast nadpisywać
         const localMap = local.completedWorkouts || {};
         const cloudMap = cloud.completedWorkouts || {};
         const allKeys = Array.from(new Set([...Object.keys(localMap), ...Object.keys(cloudMap)]));
@@ -65,6 +74,12 @@ function smartMergeData(local, cloud, cloudLastModified = 0) {
             const cv = Array.isArray(cloudMap[k]) ? cloudMap[k] : [];
             merged.completedWorkouts[k] = Array.from(new Set([...lv, ...cv]));
         });
+    } else {
+        ['steps', 'studyHours', 'mood', 'completedTasks', 'completedWorkouts', 'reflections', 'runLog', 'workoutFocus']
+            .forEach(key => {
+                merged[key] = cycleData[key] && typeof cycleData[key] === 'object' ? cycleData[key] : {};
+            });
+        merged.activityTimes = Array.isArray(cycleData.activityTimes) ? cycleData.activityTimes : [];
     }
 
     // challengeHistory to lista zarchiwizowanych wyzwań - łączymy po unikalnym id
@@ -77,17 +92,10 @@ function smartMergeData(local, cloud, cloudLastModified = 0) {
         });
         merged.challengeHistory = Array.from(byId.values());
     }
-    const cloudIsNewer = cloudLastModified > (local.lastModified || 0);
     merged.rewards = (cloudIsNewer ? cloud.rewards : local.rewards) || [];
     merged.rewardsGoal = cloudIsNewer
         ? (cloud.rewardsGoal ?? local.rewardsGoal ?? '')
         : (local.rewardsGoal ?? cloud.rewardsGoal ?? '');
-    const localCycleStartedAt = Number(local.challenge?.cycleStartedAt || 0);
-    const cloudCycleStartedAt = Number(cloud.challenge?.cycleStartedAt || 0);
-    const cloudHasNewerChallenge = cloudCycleStartedAt > localCycleStartedAt ||
-        (cloudCycleStartedAt === localCycleStartedAt && cloudIsNewer);
-    const sameChallenge = (localCycleStartedAt > 0 && localCycleStartedAt === cloudCycleStartedAt) ||
-        (!localCycleStartedAt && !cloudCycleStartedAt && local.challenge?.startDate === cloud.challenge?.startDate);
     // A reset starts a new lifecycle; otherwise completed days are additive.
     merged.challenge = { ...(cloudHasNewerChallenge ? cloud.challenge : local.challenge) };
     if (sameChallenge) {
@@ -108,10 +116,8 @@ function smartMergeData(local, cloud, cloudLastModified = 0) {
             sunday: [...new Set([...(local.weeklyTasks?.sunday || []), ...(cloud.weeklyTasks?.sunday || [])])]
         };
     }
-    // Badge resets must win over stale unlocked badges from another device.
-    merged.badges = { ...(cloudIsNewer ? cloud.badges : local.badges) };
     // Deduplikacja zdjęć - Set nie działa dla długich stringów base64, używamy odcisku palca
-    if (Array.isArray(local.gallery) || Array.isArray(cloud.gallery)) {
+    if (sameChallenge && (Array.isArray(local.gallery) || Array.isArray(cloud.gallery))) {
         const allPhotos = [...(local.gallery || []), ...(cloud.gallery || [])];
         const seen = new Set();
         merged.gallery = allPhotos.filter(photo => {
@@ -120,13 +126,19 @@ function smartMergeData(local, cloud, cloudLastModified = 0) {
             seen.add(key);
             return true;
         });
-    } else {
+    } else if (sameChallenge) {
         merged.gallery = cloud.gallery || local.gallery;
+    } else {
+        merged.gallery = Array.isArray(cycleData.gallery) ? cycleData.gallery : [];
     }
+    // Progress and badges belong to a challenge cycle; never restore them from an older cycle.
+    merged.badges = { ...(sameChallenge ? (cloudIsNewer ? cloud.badges : local.badges) : cycleData.badges) };
     if (cloudLastModified > (local.lastModified || 0)) merged.settings = { ...(local.settings || {}), ...(cloud.settings || {}) };
     else merged.settings = { ...(cloud.settings || {}), ...(local.settings || {}) };
-    merged.streak = Math.max(cloud.streak || 0, local.streak || 0);
-    merged.longestStreak = Math.max(cloud.longestStreak || 0, local.longestStreak || 0);
+    merged.streak = sameChallenge ? Math.max(cloud.streak || 0, local.streak || 0) : (cycleData.streak || 0);
+    merged.longestStreak = sameChallenge
+        ? Math.max(cloud.longestStreak || 0, local.longestStreak || 0)
+        : (cycleData.longestStreak || 0);
     merged.lastModified = Math.max(local.lastModified || 0, cloud.lastModified || 0, Date.now());
     return merged;
 }

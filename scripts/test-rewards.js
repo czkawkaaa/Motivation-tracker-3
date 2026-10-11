@@ -5,6 +5,11 @@ import vm from 'node:vm';
 const source = fs.readFileSync(new URL('../app.js', import.meta.url), 'utf8');
 const createdElements = [];
 const storage = new Map();
+const reportThemeProperties = {
+  '--primary-color': '#4fc3f7',
+  '--bg-gradient-start': '#f0fbff',
+  '--bg-gradient-end': '#e3f7ff'
+};
 let exportedHtml = '';
 
 class FakeBlob {
@@ -84,6 +89,9 @@ const context = {
     addEventListener() {}
   },
   Blob: FakeBlob,
+  getComputedStyle() {
+    return { getPropertyValue(name) { return reportThemeProperties[name] || ''; } };
+  },
   URL: { createObjectURL() { return 'blob:report-test'; }, revokeObjectURL() {} },
   navigator: { serviceWorker: { register() { return Promise.resolve({}); }, addEventListener() {} } }
 };
@@ -148,5 +156,8 @@ assert.ok(exportedHtml.includes('&lt;img src=x onerror=&quot;alert(1)&quot;&gt;'
 assert.ok(exportedHtml.includes('A &amp; B'), 'report should escape custom reward text');
 assert.ok(exportedHtml.includes('Cel &lt;główny&gt;'), 'report should include and escape the main goal');
 assert.ok(exportedHtml.includes('15.09.2026'), 'report should include the formatted achievement date');
+assert.ok(exportedHtml.includes('--report-primary: #4fc3f7;'), 'report accents should use the active theme color');
+assert.ok(exportedHtml.includes('--report-background-start: #f0fbff;'), 'report background should use the active theme');
+assert.ok(!exportedHtml.includes('#ff9ac2'), 'report should not keep the default pink styling when another theme is active');
 
 console.log('rewards feature tests passed');
