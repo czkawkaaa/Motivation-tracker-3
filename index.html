@@ -378,11 +378,19 @@
 
         <div class="view" id="view-calendar">
             <div class="calendar-container">
+                <section class="calendar-today-reflection" aria-labelledby="calendarTodayReflectionTitle">
+                    <div>
+                        <h2 id="calendarTodayReflectionTitle">💭 Pytanie na dziś</h2>
+                        <p class="calendar-today-question" id="calendarTodayQuestion"></p>
+                        <p class="calendar-today-answer" id="calendarTodayAnswer"></p>
+                    </div>
+                    <button class="btn-secondary" id="calendarTodayReflectionBtn" type="button">✏️ Edytuj notatkę</button>
+                </section>
                 <div class="calendar-header">
                     <button class="calendar-nav-btn" id="prevMonth">◀</button>
                     <h2 class="calendar-title" id="calendarTitle">Styczeń 2025</h2>
                     <div class="calendar-header-actions">
-                        <button class="calendar-reflection-btn" id="calendarReflectionBtn" type="button" title="Dodaj refleksję" aria-label="Dodaj refleksję">✦</button>
+                        <button class="calendar-reflection-btn" id="calendarReflectionBtn" type="button" title="Edytuj notatkę dla wybranego dnia" aria-label="Edytuj notatkę dla wybranego dnia">✦</button>
                         <button class="calendar-nav-btn" id="nextMonth">▶</button>
                     </div>
                 </div>

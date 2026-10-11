@@ -2170,6 +2170,11 @@ function initCalendar() {
     if (reflectionButton) {
         reflectionButton.addEventListener('click', () => showReflectionEditorModal(getActiveDate()));
     }
+
+    const todayReflectionButton = document.getElementById('calendarTodayReflectionBtn');
+    if (todayReflectionButton) {
+        todayReflectionButton.addEventListener('click', () => showReflectionEditorModal(getTodayKey()));
+    }
     
     renderCalendar();
 }
@@ -2430,6 +2435,17 @@ function returnToToday() {
 }
 
 function renderCalendar() {
+    const today = getTodayKey();
+    const todayReflection = AppData.reflections?.[today];
+    const todayQuestion = document.getElementById('calendarTodayQuestion');
+    const todayAnswer = document.getElementById('calendarTodayAnswer');
+    if (todayQuestion) {
+        todayQuestion.textContent = todayReflection?.question || getReflectionQuestion(today);
+    }
+    if (todayAnswer) {
+        todayAnswer.textContent = todayReflection?.answer || 'Nie zapisano jeszcze notatki na dziś.';
+    }
+
     const year = currentCalendarDate.getFullYear();
     const month = currentCalendarDate.getMonth();
     
@@ -2461,8 +2477,6 @@ function renderCalendar() {
     }
     
     // Days
-    const today = getTodayKey();
-    
     // Calculate which days are part of current streak (from today backwards)
     const streakDays = new Set();
     
