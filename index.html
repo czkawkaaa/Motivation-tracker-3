@@ -156,23 +156,10 @@
             <a href="#" class="nav-link" data-view="settings">⚙️ Ustawienia</a>
         </nav>
     </header>
-    
-    </main>
 
-    <dialog id="rewardDateDialog" class="rewards-date-dialog" aria-labelledby="rewardDateTitle">
-        <form id="rewardDateForm" class="rewards-date-form">
-            <h2 id="rewardDateTitle">Zapisz osiągnięcie</h2>
-            <p id="rewardDatePrompt">Kiedy udało Ci się osiągnąć cel?</p>
-            <label for="rewardCompletedDate">Data osiągnięcia</label>
-            <input id="rewardCompletedDate" name="completedAt" type="date" required>
-            <div class="reward-form-actions">
-                <button class="btn-primary" type="submit">Zapisz datę</button>
-                <button class="btn-secondary" id="rewardDateCancel" type="button">Anuluj</button>
-            </div>
-        </form>
-    </dialog>
-
-    <script src="i18n.js"></script>
+    <main>
+        <div class="view active" id="view-dashboard">
+            <div id="dateIndicator" class="date-indicator" style="display: none;">
                 <div class="date-indicator-content">
                     <span class="date-indicator-icon">📅</span>
                     <span class="selected-date-text">Wyświetlane dane dla: [Data]</span>
@@ -1377,6 +1364,19 @@
             </div>
         </div>
     </main>
+
+    <dialog id="rewardDateDialog" class="rewards-date-dialog" aria-labelledby="rewardDateTitle">
+        <form id="rewardDateForm" class="rewards-date-form">
+            <h2 id="rewardDateTitle">Zapisz osiągnięcie</h2>
+            <p id="rewardDatePrompt">Kiedy udało Ci się osiągnąć cel?</p>
+            <label for="rewardCompletedDate">Data osiągnięcia</label>
+            <input id="rewardCompletedDate" name="completedAt" type="date" required>
+            <div class="reward-form-actions">
+                <button class="btn-primary" type="submit">Zapisz datę</button>
+                <button class="btn-secondary" id="rewardDateCancel" type="button">Anuluj</button>
+            </div>
+        </form>
+    </dialog>
     
     <div id="confettiContainer" class="confetti-container"></div>
     

@@ -3,6 +3,18 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 
 const source = fs.readFileSync(new URL('../app.js', import.meta.url), 'utf8');
+const html = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+
+assert.equal((html.match(/<main>/g) || []).length, 1, 'page should have one main container');
+assert.equal((html.match(/<\/main>/g) || []).length, 1, 'main container should close exactly once');
+const mainStart = html.indexOf('<main>');
+const mainEnd = html.indexOf('</main>');
+assert.ok(html.indexOf('<div class="view active" id="view-dashboard">') > mainStart, 'dashboard should be inside main');
+assert.ok(html.indexOf('id="view-settings"') < mainEnd, 'settings should be inside main');
+assert.equal((html.match(/id="dateIndicator"/g) || []).length, 1, 'dashboard date indicator should exist exactly once');
+assert.equal((html.match(/class="date-indicator-content"/g) || []).length, 1, 'date indicator content should have one wrapper');
+assert.ok(html.indexOf('</main>') < html.indexOf('<dialog id="rewardDateDialog"'), 'reward dialog should follow main');
+assert.equal((html.match(/<script src="i18n\.js"/g) || []).length, 1, 'i18n should load only once');
 
 function makeElement(view = null) {
   const classes = new Set();
