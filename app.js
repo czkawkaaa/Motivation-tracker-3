@@ -838,6 +838,8 @@ function showDailyCheckinModal() {
                 display: flex;
                 align-items: center;
                 justify-content: center;
+                padding: 1rem;
+                overflow-y: auto;
                 z-index: 10000;
                 animation: fadeIn 0.3s ease;
             }
@@ -856,14 +858,25 @@ function showDailyCheckinModal() {
                 text-align: center;
                 max-width: 420px;
                 width: min(100%, 420px);
+                max-height: calc(100vh - 2rem);
+                max-height: calc(100dvh - 2rem);
+                overflow-y: auto;
+                overscroll-behavior: contain;
                 box-shadow: 0 20px 60px color-mix(in srgb, var(--primary-color) 30%, transparent);
                 animation: slideUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            }
+
+            @media (max-width: 480px) {
+                .daily-checkin-content {
+                    padding: 1.5rem 1rem 1rem;
+                }
             }
 
             .daily-checkin-close {
                 position: absolute;
                 top: 0.85rem;
                 right: 0.85rem;
+                z-index: 1;
                 width: 2rem;
                 height: 2rem;
                 border: 0;
