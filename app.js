@@ -1,5 +1,15 @@
 // 🌸 Kawaii Quest - Complete JavaScript Application
 
+function escapeHtml(value) {
+    return String(value).replace(/[&<>"']/g, character => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+    })[character]);
+}
+
 // ======================
 // DATA STORAGE
 // ======================
@@ -690,13 +700,12 @@ function isPartOfCurrentStreak(dayKey) {
 
     const today = new Date(getTodayKey() + 'T12:00:00');
     let currentDate = new Date(completedDays[0] + 'T12:00:00');
-    if (Math.floor((today - currentDate) / (24 * 60 * 60 * 1000)) > 1) return false;
+    if (!isStreakGapAllowed(currentDate, today)) return false;
 
     if (completedDays[0] === dayKey) return true;
     for (let index = 1; index < completedDays.length; index++) {
         const previousDate = new Date(completedDays[index] + 'T12:00:00');
-        const difference = Math.floor((currentDate - previousDate) / (24 * 60 * 60 * 1000));
-        if (difference === 1 || (difference === 2 && isRestDayForDate(normalizeDateKey(new Date(currentDate.getTime() - 24 * 60 * 60 * 1000))))) {
+        if (isStreakGapAllowed(previousDate, currentDate)) {
             if (completedDays[index] === dayKey) return true;
             currentDate = previousDate;
             continue;
@@ -786,7 +795,7 @@ function showDailyCheckinModal() {
             </div>
             
             <div class="daily-tips">
-                <p style="margin: 0; font-size: 0.9rem; color: #666;">
+                <p style="margin: 0; font-size: 0.9rem; color: var(--text-secondary);">
                     💡 ${getRandomTip()}
                 </p>
             </div>
@@ -840,14 +849,14 @@ function showDailyCheckinModal() {
             
             .daily-checkin-content {
                 position: relative;
-                background: linear-gradient(135deg, #ff9ac2, #ffc1e0);
-                color: white;
+                background: linear-gradient(135deg, var(--primary-color), var(--bg-gradient-end));
+                color: var(--text-primary);
                 border-radius: 25px;
                 padding: 2rem 1.75rem 1.5rem;
                 text-align: center;
                 max-width: 420px;
                 width: min(100%, 420px);
-                box-shadow: 0 20px 60px rgba(255, 154, 194, 0.3);
+                box-shadow: 0 20px 60px color-mix(in srgb, var(--primary-color) 30%, transparent);
                 animation: slideUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
             }
 
@@ -859,8 +868,8 @@ function showDailyCheckinModal() {
                 height: 2rem;
                 border: 0;
                 border-radius: 50%;
-                background: rgba(255, 255, 255, 0.25);
-                color: white;
+                background: color-mix(in srgb, var(--card-bg) 45%, transparent);
+                color: var(--text-primary);
                 font-size: 1rem;
                 cursor: pointer;
             }
@@ -900,7 +909,7 @@ function showDailyCheckinModal() {
                 grid-template-columns: repeat(3, 1fr);
                 gap: 1rem;
                 margin: 1.5rem 0;
-                background: rgba(255, 255, 255, 0.15);
+                background: color-mix(in srgb, var(--card-bg) 35%, transparent);
                 padding: 1.2rem;
                 border-radius: 15px;
             }
@@ -925,7 +934,7 @@ function showDailyCheckinModal() {
             }
             
             .daily-tips {
-                background: rgba(255, 255, 255, 0.15);
+                background: color-mix(in srgb, var(--card-bg) 35%, transparent);
                 padding: 1rem;
                 border-radius: 12px;
                 margin: 1.5rem 0;
@@ -950,6 +959,9 @@ function showDailyCheckinModal() {
                 border-radius: 10px;
                 padding: 0.75rem;
                 font: inherit;
+                background: var(--card-bg);
+                color: var(--text-primary);
+                outline-color: var(--primary-color);
             }
 
             .daily-reflection-count {
@@ -960,8 +972,8 @@ function showDailyCheckinModal() {
             }
             
             .daily-checkin-btn {
-                background: white;
-                color: #ff9ac2;
+                background: var(--primary-color);
+                color: var(--text-primary);
                 border: none;
                 padding: 0.85rem 1.5rem;
                 border-radius: 14px;
@@ -1152,6 +1164,34 @@ function isRestDayForDate(dateString) {
     }
 
     return restDays.includes(String(dayOfWeek));
+}
+
+function isStreakGapAllowed(fromDate, toDate) {
+    const start = fromDate instanceof Date ? new Date(fromDate.getTime()) : new Date(String(fromDate) + 'T12:00:00');
+    const end = toDate instanceof Date ? new Date(toDate.getTime()) : new Date(String(toDate) + 'T12:00:00');
+
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+        return false;
+    }
+
+    if (end <= start) {
+        return true;
+    }
+
+    const diffDays = Math.floor((end - start) / (1000 * 60 * 60 * 24));
+    if (diffDays <= 1) {
+        return true;
+    }
+
+    for (let offset = 1; offset < diffDays; offset++) {
+        const candidate = new Date(start);
+        candidate.setDate(candidate.getDate() + offset);
+        if (!isRestDayForDate(normalizeDateKey(candidate))) {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 // ======================
@@ -1539,7 +1579,7 @@ function renderTasks() {
         
         label.innerHTML = `
             <input type="checkbox" class="task-checkbox" data-index="${index}" ${isCompleted ? 'checked' : ''}>
-            <span class="task-text">${task}</span>
+            <span class="task-text">${escapeHtml(task)}</span>
         `;
         
         if (isCompleted) {
@@ -1580,7 +1620,7 @@ function renderEditTasks() {
         const div = document.createElement('div');
         div.className = 'edit-task-item';
         div.innerHTML = `
-            <input type="text" value="${task}">
+            <input type="text" value="${escapeHtml(task)}">
             <button class="delete-task-btn" data-index="${index}">🗑️</button>
         `;
         
@@ -1855,40 +1895,23 @@ function calculateStreak() {
     const sorted = [...AppData.challenge.completedDays].sort().reverse();
     const todayKey = getTodayKey();
     const today = new Date(todayKey + 'T12:00:00');
-
-    let currentDate = new Date(sorted[0] + 'T12:00:00');
     const latestCompletedDate = new Date(sorted[0] + 'T12:00:00');
 
-    const daysSinceLastCompleted = Math.floor((today - latestCompletedDate) / (1000 * 60 * 60 * 24));
-
-    if (daysSinceLastCompleted > 1) {
+    if (!isStreakGapAllowed(latestCompletedDate, today)) {
         AppData.streak = 0;
         return;
     }
 
+    let currentDate = latestCompletedDate;
     let streak = 1;
 
     for (let i = 1; i < sorted.length; i++) {
         const prevDate = new Date(sorted[i] + 'T12:00:00');
-        const diff = Math.floor((currentDate - prevDate) / (1000 * 60 * 60 * 24));
-
-        if (diff === 1) {
+        if (isStreakGapAllowed(prevDate, currentDate)) {
             streak++;
             currentDate = prevDate;
             continue;
         }
-
-        if (diff === 2) {
-            const skippedDate = new Date(currentDate);
-            skippedDate.setDate(skippedDate.getDate() - 1);
-            const skippedKey = normalizeDateKey(skippedDate);
-            if (skippedKey && isRestDayForDate(skippedKey)) {
-                streak++;
-                currentDate = prevDate;
-                continue;
-            }
-        }
-
         break;
     }
 
@@ -2519,29 +2542,15 @@ function renderCalendar() {
         const todayDate = new Date(today + 'T12:00:00');
         const latestCompletedDate = new Date(sortedDaysDesc[0] + 'T12:00:00');
 
-        const daysSinceLastCompleted = Math.floor((todayDate - latestCompletedDate) / (1000 * 60 * 60 * 24));
-
-        if (daysSinceLastCompleted <= 1) {
+        if (isStreakGapAllowed(latestCompletedDate, todayDate)) {
             streakDays.add(sortedDaysDesc[0]);
             let currentDate = latestCompletedDate;
 
             for (let i = 1; i < sortedDaysDesc.length; i++) {
                 const prevDate = new Date(sortedDaysDesc[i] + 'T12:00:00');
-                const diff = Math.floor((currentDate - prevDate) / (1000 * 60 * 60 * 24));
-
-                if (diff === 1) {
+                if (isStreakGapAllowed(prevDate, currentDate)) {
                     streakDays.add(sortedDaysDesc[i]);
                     currentDate = prevDate;
-                } else if (diff === 2) {
-                    const skippedDate = new Date(currentDate);
-                    skippedDate.setDate(skippedDate.getDate() - 1);
-                    const skippedKey = normalizeDateKey(skippedDate);
-                    if (skippedKey && isRestDayForDate(skippedKey)) {
-                        streakDays.add(sortedDaysDesc[i]);
-                        currentDate = prevDate;
-                    } else {
-                        break;
-                    }
                 } else {
                     break;
                 }
@@ -3089,7 +3098,7 @@ function renderGallery() {
         const item = document.createElement('div');
         item.className = 'gallery-item';
         item.innerHTML = `
-            <img src="${photo}" alt="Gallery photo ${index + 1}">
+            <img src="${escapeHtml(photo)}" alt="Gallery photo ${index + 1}">
             <button class="delete-photo-btn" data-index="${index}">🗑️</button>
         `;
         
@@ -3126,7 +3135,7 @@ function openLightbox(photo, index) {
         <div class="lightbox-content">
             <button class="lightbox-close">✕</button>
             <button class="lightbox-prev">◀</button>
-            <img src="${photo}" alt="Full size photo">
+            <img src="${escapeHtml(photo)}" alt="Full size photo">
             <button class="lightbox-next">▶</button>
             <div class="lightbox-counter">${index + 1} / ${AppData.gallery.length}</div>
         </div>
@@ -4172,7 +4181,7 @@ function renderDayTasks(day) {
         const taskItem = document.createElement('div');
         taskItem.className = 'day-task-item';
         taskItem.innerHTML = `
-            <span class="day-task-text">${task}</span>
+            <span class="day-task-text">${escapeHtml(task)}</span>
             <button class="btn-remove-day-task" data-day="${day}" data-index="${index}">🗑️</button>
         `;
         
@@ -4692,7 +4701,7 @@ function exportDataAsHTML() {
                 <td>${tasks}</td>
                 <td>${workouts}</td>
                 <td>${run ? `${Number(run.distance || 0).toFixed(1)} km / ${Number(run.duration || 0)} min` : '—'}</td>
-                <td>${focusParts.length > 0 ? focusParts.join(', ') : '—'}</td>
+                <td>${escapeReportHtml(focusParts.length > 0 ? focusParts.join(', ') : '—')}</td>
             </tr>
         `;
     }).join('');
@@ -4701,7 +4710,7 @@ function exportDataAsHTML() {
     const activityLogRows = challengeActivityLog.slice(0, 25).map(entry => `
         <div style="background: color-mix(in srgb, var(--report-primary) 8%, white); padding: 0.85rem 1rem; border-radius: 10px; border-left: 4px solid var(--report-primary); margin-bottom: 0.5rem;">
             <div style="font-weight: 700; color: var(--report-primary); margin-bottom: 0.2rem;">${formatDate(entry.dateKey || entry.timestamp ? new Date(entry.timestamp || entry.dateKey).toISOString().slice(0,10) : '')}</div>
-            <div style="color: #666;">${entry.summary || entry.type || 'Aktywność'}</div>
+            <div style="color: #666;">${escapeReportHtml(entry.summary || entry.type || 'Aktywność')}</div>
         </div>
     `).join('');
 
@@ -4714,8 +4723,8 @@ function exportDataAsHTML() {
             <h2>${tr('Ustawienia aplikacji')}</h2>
             <div class="stats-grid">
                 <div class="stat-card"><div class="stat-value">${tr(data.settings.language || 'pl').toUpperCase()}</div><div class="stat-label">${tr('Język')}</div></div>
-                <div class="stat-card"><div class="stat-value">${tr(data.settings.theme || 'pink')}</div><div class="stat-label">${tr('Motyw')}</div></div>
-                <div class="stat-card"><div class="stat-value">${tr(data.settings.font || 'default')}</div><div class="stat-label">${tr('Czcionka')}</div></div>
+                <div class="stat-card"><div class="stat-value">${escapeReportHtml(tr(data.settings.theme || 'pink'))}</div><div class="stat-label">${tr('Motyw')}</div></div>
+                <div class="stat-card"><div class="stat-value">${escapeReportHtml(tr(data.settings.font || 'default'))}</div><div class="stat-label">${tr('Czcionka')}</div></div>
                 <div class="stat-card"><div class="stat-value">${data.settings.challengeLength || 75}</div><div class="stat-label">${tr('Długość wyzwania')}</div></div>
                 <div class="stat-card"><div class="stat-value">${data.settings.stepsGoal?.toLocaleString(locale) || '—'}</div><div class="stat-label">${tr('Cel kroków')}</div></div>
                 <div class="stat-card"><div class="stat-value">${data.settings.studyGoal || 0}h</div><div class="stat-label">${tr('Cel nauki')}</div></div>
@@ -4790,7 +4799,7 @@ function exportDataAsHTML() {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${challengeName} - ${tr('Raport Postępów')}</title>
+    <title>${escapeReportHtml(challengeName)} - ${tr('Raport Postępów')}</title>
     <style>
         * {
             margin: 0;
@@ -5138,7 +5147,7 @@ function exportDataAsHTML() {
 <body>
     <div class="container">
         <header>
-            <h1>🌸 ${challengeName} 🌸</h1>
+            <h1>🌸 ${escapeReportHtml(challengeName)} 🌸</h1>
             <p class="date">${tr('Raport wygenerowany:')} ${now}</p>
         </header>
 
@@ -5270,7 +5279,7 @@ function exportDataAsHTML() {
                             <div style="background: #f8f9fa; padding: 1rem; border-radius: 8px; border-left: 4px solid var(--report-primary);">
                                 <h4 style="margin: 0 0 0.5rem 0; color: var(--report-primary);">${dayNames[index]}</h4>
                                 <ul style="list-style: none; padding-left: 0; margin: 0;">
-                                    ${tasks.map(task => `<li style="padding: 0.3rem 0;">✓ ${task}</li>`).join('')}
+                                    ${tasks.map(task => `<li style="padding: 0.3rem 0;">✓ ${escapeHtml(task)}</li>`).join('')}
                                 </ul>
                             </div>
                         `;
@@ -5278,7 +5287,7 @@ function exportDataAsHTML() {
                 </div>
             ` : `
                 <ul class="task-list">
-                    ${data.tasks.map(task => `<li class="task-item">${window.AppI18N && typeof window.AppI18N.translateTaskText === 'function' ? window.AppI18N.translateTaskText(task, language) : task}</li>`).join('')}
+                    ${data.tasks.map(task => `<li class="task-item">${escapeHtml(window.AppI18N && typeof window.AppI18N.translateTaskText === 'function' ? window.AppI18N.translateTaskText(task, language) : task)}</li>`).join('')}
                 </ul>
             `}
         </section>
@@ -5341,7 +5350,7 @@ function exportDataAsHTML() {
                             `).join('')}
                             ${(data.settings.customWorkouts || []).map(w => `
                                 <div style="background: white; padding: 0.75rem; border-radius: 8px; border: 1px solid #eee;">
-                                    ${w.name || tr('Własne ćwiczenie')}
+                                    ${escapeReportHtml(w.name || tr('Własne ćwiczenie'))}
                                 </div>
                             `).join('')}
                         </div>
@@ -5402,7 +5411,7 @@ function exportDataAsHTML() {
             <div class="gallery-grid">
                 ${data.gallery.slice(0, 12).map(photo => `
                     <div class="gallery-item">
-                        <img src="${typeof photo === 'string' ? photo : photo.url || photo}" alt="${tr('Zdjęcie z galerii')}" style="display: block; width: 100%; height: 100%; object-fit: cover; border-radius: 12px;">
+                        <img src="${escapeHtml(typeof photo === 'string' ? photo : photo.url || photo)}" alt="${tr('Zdjęcie z galerii')}" style="display: block; width: 100%; height: 100%; object-fit: cover; border-radius: 12px;">
                     </div>
                 `).join('')}
             </div>
@@ -5416,8 +5425,8 @@ function exportDataAsHTML() {
             <div style="display: grid; gap: 1rem;">
                 ${data.settings.rules.map(rule => `
                     <div style="background: #f8f9fa; padding: 1.5rem; border-radius: 12px; border-left: 4px solid var(--report-primary);">
-                        <h3 style="margin: 0 0 0.5rem 0; color: var(--report-primary);">${rule.title}</h3>
-                        <p style="margin: 0; color: #666;">${rule.content}</p>
+                        <h3 style="margin: 0 0 0.5rem 0; color: var(--report-primary);">${escapeHtml(rule.title)}</h3>
+                        <p style="margin: 0; color: #666;">${escapeHtml(rule.content)}</p>
                     </div>
                 `).join('')}
             </div>
@@ -5959,10 +5968,10 @@ function updateCustomWorkoutsDisplay() {
             </div>
             <div style="flex: 1; min-width: 0;">
                 <span class="workout-chip">Własne</span>
-                <p style="font-size: 0.95em; color: var(--text-color); margin: 0.35rem 0 0.35rem 0; font-weight: 700;">${workout.name}</p>
+                <p style="font-size: 0.95em; color: var(--text-color); margin: 0.35rem 0 0.35rem 0; font-weight: 700;">${escapeHtml(workout.name)}</p>
                 <p style="font-size: 0.85em; color: var(--text-secondary); margin: 0;">Dodano: ${new Date(workout.addedDate).toLocaleDateString('pl-PL')}</p>
             </div>
-            <button onclick="removeCustomWorkout('${workout.id}')" style="padding: 0.55rem 0.9rem; background: #f44336; color: white; border: none; border-radius: 10px; cursor: pointer; white-space: nowrap; font-weight: 600;">🗑️ Usuń</button>
+            <button onclick="removeCustomWorkout(${escapeHtml(JSON.stringify(workout.id))})" style="padding: 0.55rem 0.9rem; background: #f44336; color: white; border: none; border-radius: 10px; cursor: pointer; white-space: nowrap; font-weight: 600;">🗑️ Usuń</button>
         </article>
     `).join('');
 }
@@ -6000,18 +6009,18 @@ function updateWorkoutsDisplay() {
         ? `<p style="color: #999; font-size: 0.9em;">${translateAppText('Brak dodanych workoutów')}</p>`
         : AppData.settings.workouts.map(workout => `
             <article class="workout-card" style="display: flex; gap: 1rem; margin-bottom: 1rem; padding: 1rem; background: var(--card-bg); border-radius: 14px; align-items: center; box-shadow: 0 14px 26px rgba(15, 23, 42, 0.08);">
-                <div style="position: relative; cursor: pointer; flex-shrink: 0;" onclick="playWorkoutVideo('${workout.videoId}')">
-                    <img src="https://img.youtube.com/vi/${workout.videoId}/mqdefault.jpg" alt="Thumbnail" style="width: 120px; height: 90px; border-radius: 10px; object-fit: cover; display: block;">
+                <div style="position: relative; cursor: pointer; flex-shrink: 0;" onclick="playWorkoutVideo(${escapeHtml(JSON.stringify(workout.videoId))})">
+                    <img src="https://img.youtube.com/vi/${escapeHtml(workout.videoId)}/mqdefault.jpg" alt="Thumbnail" style="width: 120px; height: 90px; border-radius: 10px; object-fit: cover; display: block;">
                     <div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.28); border-radius: 10px; transition: background 0.2s;">
                         <span style="font-size: 2rem;">▶️</span>
                     </div>
                 </div>
                 <div style="flex: 1; min-width: 0;">
                     <span class="workout-chip">${getWorkoutCategoryLabel(workout.category || 'video')}</span>
-                    <p style="font-size: 0.95em; color: var(--text-color); margin: 0.35rem 0 0.35rem 0; font-weight: 700; cursor: pointer;" onclick="playWorkoutVideo('${workout.videoId}')">Kliknij aby zagrać</p>
+                    <p style="font-size: 0.95em; color: var(--text-color); margin: 0.35rem 0 0.35rem 0; font-weight: 700; cursor: pointer;" onclick="playWorkoutVideo(${escapeHtml(JSON.stringify(workout.videoId))})">Kliknij aby zagrać</p>
                     <p style="font-size: 0.85em; color: var(--text-secondary); margin: 0;">Dodano: ${new Date(workout.addedDate).toLocaleDateString('pl-PL')}</p>
                 </div>
-                <button onclick="removeWorkout('${workout.videoId}')" style="padding: 0.55rem 0.9rem; background: #f44336; color: white; border: none; border-radius: 10px; cursor: pointer; white-space: nowrap; font-weight: 600;">🗑️ Usuń</button>
+                <button onclick="removeWorkout(${escapeHtml(JSON.stringify(workout.videoId))})" style="padding: 0.55rem 0.9rem; background: #f44336; color: white; border: none; border-radius: 10px; cursor: pointer; white-space: nowrap; font-weight: 600;">🗑️ Usuń</button>
             </article>
         `).join('');
     
@@ -6064,10 +6073,10 @@ function updateWorkoutsDisplay() {
                 viewHtmlParts.push(`
             <article class="workout-card ${isCompleted ? 'workout-card--done' : ''}" style="display: grid; grid-template-columns: auto 120px 1fr auto; gap: 0.9rem; align-items: center; margin-bottom: 1rem; padding: 1rem; background: ${isCompleted ? 'linear-gradient(145deg, rgba(243,244,246,0.95), rgba(255,255,255,0.98))' : 'linear-gradient(145deg, rgba(255,255,255,0.96), var(--card-bg))'}; border-radius: 18px; box-shadow: 0 14px 26px rgba(15, 23, 42, 0.08); border: 1px solid rgba(255,255,255,0.9); opacity: ${isCompleted ? '0.82' : '1'};">
                 <label style="display: flex; align-items: center; justify-content: center; cursor: pointer;">
-                    <input type="checkbox" ${isCompleted ? 'checked' : ''} onchange="toggleWorkoutComplete('${workout.videoId}')" style="width: 24px; height: 24px; cursor: pointer; accent-color: var(--primary-color);">
+                    <input type="checkbox" ${isCompleted ? 'checked' : ''} onchange="toggleWorkoutComplete(${escapeHtml(JSON.stringify(workout.videoId))})" style="width: 24px; height: 24px; cursor: pointer; accent-color: var(--primary-color);">
                 </label>
-                <div style="position: relative; cursor: pointer; flex-shrink: 0;" onclick="playWorkoutVideo('${workout.videoId}')">
-                    <img src="https://img.youtube.com/vi/${workout.videoId}/mqdefault.jpg" alt="Thumbnail" style="width: 120px; height: 90px; border-radius: 12px; object-fit: cover; display: block;">
+                <div style="position: relative; cursor: pointer; flex-shrink: 0;" onclick="playWorkoutVideo(${escapeHtml(JSON.stringify(workout.videoId))})">
+                    <img src="https://img.youtube.com/vi/${escapeHtml(workout.videoId)}/mqdefault.jpg" alt="Thumbnail" style="width: 120px; height: 90px; border-radius: 12px; object-fit: cover; display: block;">
                     <div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.28); border-radius: 12px; transition: background 0.2s;">
                         <span style="font-size: 1.8rem;">▶️</span>
                     </div>
@@ -6077,10 +6086,10 @@ function updateWorkoutsDisplay() {
                         <span class="workout-chip">${getWorkoutCategoryLabel(workout.category || 'video')}</span>
                         <span class="workout-chip" style="background: ${isCompleted ? 'rgba(34,197,94,0.12)' : 'rgba(59,130,246,0.14)'}; color: ${isCompleted ? '#166534' : 'var(--text-primary)'}; text-transform: none; letter-spacing: normal;">${isCompleted ? '✅ Ukończone dziś' : '⏳ Do zrobienia'}</span>
                     </div>
-                    <p style="font-size: 0.95em; color: var(--text-color); margin: 0 0 0.25rem 0; font-weight: 700; cursor: pointer; ${isCompleted ? 'text-decoration: line-through;' : ''}" onclick="playWorkoutVideo('${workout.videoId}')">${translateAppText('Kliknij, aby odtworzyć film')}</p>
+                    <p style="font-size: 0.95em; color: var(--text-color); margin: 0 0 0.25rem 0; font-weight: 700; cursor: pointer; ${isCompleted ? 'text-decoration: line-through;' : ''}" onclick="playWorkoutVideo(${escapeHtml(JSON.stringify(workout.videoId))})">${translateAppText('Kliknij, aby odtworzyć film')}</p>
                     <p style="font-size: 0.85em; color: var(--text-secondary); margin: 0;">${translateAppText('Dodano:')} ${new Date(workout.addedDate).toLocaleDateString('pl-PL')}</p>
                 </div>
-                <button onclick="playWorkoutVideo('${workout.videoId}')" style="padding: 0.45rem 0.75rem; background: linear-gradient(145deg, var(--primary-color), #2563eb); color: white; border: none; border-radius: 10px; cursor: pointer; white-space: nowrap; font-weight: 700;">▶ ${translateAppText('Otwórz')}</button>
+                <button onclick="playWorkoutVideo(${escapeHtml(JSON.stringify(workout.videoId))})" style="padding: 0.45rem 0.75rem; background: linear-gradient(145deg, var(--primary-color), #2563eb); color: white; border: none; border-radius: 10px; cursor: pointer; white-space: nowrap; font-weight: 700;">▶ ${translateAppText('Otwórz')}</button>
             </article>
         `);
             } else if (workout.id && workout.name) {
@@ -6089,7 +6098,7 @@ function updateWorkoutsDisplay() {
                 viewHtmlParts.push(`
             <article class="workout-card ${isCompleted ? 'workout-card--done' : ''}" style="display: grid; grid-template-columns: auto 120px 1fr auto; gap: 0.9rem; align-items: center; margin-bottom: 1rem; padding: 1rem; background: ${isCompleted ? 'linear-gradient(145deg, rgba(243,244,246,0.95), rgba(255,255,255,0.98))' : 'linear-gradient(145deg, rgba(255,255,255,0.96), var(--card-bg))'}; border-radius: 18px; box-shadow: 0 14px 26px rgba(15, 23, 42, 0.08); border: 1px solid rgba(255,255,255,0.9); opacity: ${isCompleted ? '0.82' : '1'};">
                 <label style="display: flex; align-items: center; justify-content: center; cursor: pointer;">
-                    <input type="checkbox" ${isCompleted ? 'checked' : ''} onchange="toggleWorkoutComplete('${workout.id}')" style="width: 24px; height: 24px; cursor: pointer; accent-color: var(--primary-color);">
+                    <input type="checkbox" ${isCompleted ? 'checked' : ''} onchange="toggleWorkoutComplete(${escapeHtml(JSON.stringify(workout.id))})" style="width: 24px; height: 24px; cursor: pointer; accent-color: var(--primary-color);">
                 </label>
                 <div style="width: 120px; height: 90px; background: linear-gradient(145deg, var(--primary-color), #111827); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 2rem; flex-shrink: 0;">
                     💪
@@ -6099,10 +6108,10 @@ function updateWorkoutsDisplay() {
                         <span class="workout-chip">${translateAppText('Własne')}</span>
                         <span class="workout-chip" style="background: ${isCompleted ? 'rgba(34,197,94,0.12)' : 'rgba(59,130,246,0.14)'}; color: ${isCompleted ? '#166534' : 'var(--text-primary)'}; text-transform: none; letter-spacing: normal;">${isCompleted ? '✅ ' + translateAppText('Ukończone dziś') : '⏳ ' + translateAppText('Do zrobienia')}</span>
                     </div>
-                    <p style="font-size: 0.95em; color: var(--text-color); margin: 0 0 0.25rem 0; font-weight: 700; ${isCompleted ? 'text-decoration: line-through;' : ''}">${workout.name}</p>
+                    <p style="font-size: 0.95em; color: var(--text-color); margin: 0 0 0.25rem 0; font-weight: 700; ${isCompleted ? 'text-decoration: line-through;' : ''}">${escapeHtml(workout.name)}</p>
                     <p style="font-size: 0.85em; color: var(--text-secondary); margin: 0;">${translateAppText('Własne ćwiczenie (tygodniowe)')}</p>
                 </div>
-                <button onclick="toggleWorkoutComplete('${workout.id}')" style="padding: 0.45rem 0.75rem; background: ${isCompleted ? 'linear-gradient(145deg, #22c55e, #15803d)' : 'linear-gradient(145deg, var(--primary-color), #2563eb)'}; color: white; border: none; border-radius: 10px; cursor: pointer; white-space: nowrap; font-weight: 700;">${isCompleted ? '✔ ' + translateAppText('Gotowe') : translateAppText('Zrób dziś')}</button>
+                <button onclick="toggleWorkoutComplete(${escapeHtml(JSON.stringify(workout.id))})" style="padding: 0.45rem 0.75rem; background: ${isCompleted ? 'linear-gradient(145deg, #22c55e, #15803d)' : 'linear-gradient(145deg, var(--primary-color), #2563eb)'}; color: white; border: none; border-radius: 10px; cursor: pointer; white-space: nowrap; font-weight: 700;">${isCompleted ? '✔ ' + translateAppText('Gotowe') : translateAppText('Zrób dziś')}</button>
             </article>
         `);
             }
@@ -6121,7 +6130,7 @@ function updateWorkoutsDisplay() {
                 viewHtmlParts.push(`
             <article class="workout-card ${isCompleted ? 'workout-card--done' : ''}" style="display: grid; grid-template-columns: auto 120px 1fr auto; gap: 0.9rem; align-items: center; margin-bottom: 1rem; padding: 1rem; background: ${isCompleted ? 'linear-gradient(145deg, rgba(243,244,246,0.95), rgba(255,255,255,0.98))' : 'linear-gradient(145deg, rgba(255,255,255,0.96), var(--card-bg))'}; border-radius: 18px; box-shadow: 0 14px 26px rgba(15, 23, 42, 0.08); border: 1px solid rgba(255,255,255,0.9); opacity: ${isCompleted ? '0.82' : '1'};">
                 <label style="display: flex; align-items: center; justify-content: center; cursor: pointer;">
-                    <input type="checkbox" ${isCompleted ? 'checked' : ''} onchange="toggleWorkoutComplete('${workout.id}')" style="width: 24px; height: 24px; cursor: pointer; accent-color: var(--primary-color);">
+                    <input type="checkbox" ${isCompleted ? 'checked' : ''} onchange="toggleWorkoutComplete(${escapeHtml(JSON.stringify(workout.id))})" style="width: 24px; height: 24px; cursor: pointer; accent-color: var(--primary-color);">
                 </label>
                 <div style="width: 120px; height: 90px; background: linear-gradient(145deg, var(--primary-color), #111827); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 2rem; flex-shrink: 0;">
                     💪
@@ -6131,10 +6140,10 @@ function updateWorkoutsDisplay() {
                         <span class="workout-chip">${translateAppText('Własne')}</span>
                         <span class="workout-chip" style="background: ${isCompleted ? 'rgba(34,197,94,0.12)' : 'rgba(59,130,246,0.14)'}; color: ${isCompleted ? '#166534' : 'var(--text-primary)'}; text-transform: none; letter-spacing: normal;">${isCompleted ? '✅ ' + translateAppText('Ukończone dziś') : '⏳ ' + translateAppText('Do zrobienia')}</span>
                     </div>
-                    <p style="font-size: 0.95em; color: var(--text-color); margin: 0 0 0.25rem 0; font-weight: 700; ${isCompleted ? 'text-decoration: line-through;' : ''}">${workout.name}</p>
+                    <p style="font-size: 0.95em; color: var(--text-color); margin: 0 0 0.25rem 0; font-weight: 700; ${isCompleted ? 'text-decoration: line-through;' : ''}">${escapeHtml(workout.name)}</p>
                     <p style="font-size: 0.85em; color: var(--text-secondary); margin: 0;">${translateAppText('Własne ćwiczenie')}</p>
                 </div>
-                <button onclick="toggleWorkoutComplete('${workout.id}')" style="padding: 0.45rem 0.75rem; background: ${isCompleted ? 'linear-gradient(145deg, #22c55e, #15803d)' : 'linear-gradient(145deg, var(--primary-color), #2563eb)'}; color: white; border: none; border-radius: 10px; cursor: pointer; white-space: nowrap; font-weight: 700;">${isCompleted ? '✔ ' + translateAppText('Gotowe') : translateAppText('Zrób dziś')}</button>
+                <button onclick="toggleWorkoutComplete(${escapeHtml(JSON.stringify(workout.id))})" style="padding: 0.45rem 0.75rem; background: ${isCompleted ? 'linear-gradient(145deg, #22c55e, #15803d)' : 'linear-gradient(145deg, var(--primary-color), #2563eb)'}; color: white; border: none; border-radius: 10px; cursor: pointer; white-space: nowrap; font-weight: 700;">${isCompleted ? '✔ ' + translateAppText('Gotowe') : translateAppText('Zrób dziś')}</button>
             </article>
         `);
             });
@@ -6325,17 +6334,17 @@ function renderDayWorkouts(day) {
             // YouTube workout
             const workoutId = workout.videoId;
             item.innerHTML = `
-                <img src="https://img.youtube.com/vi/${workout.videoId}/default.jpg" alt="Thumbnail" style="width: 60px; height: 45px; border-radius: 4px; object-fit: cover;">
+                <img src="https://img.youtube.com/vi/${escapeHtml(workout.videoId)}/default.jpg" alt="Thumbnail" style="width: 60px; height: 45px; border-radius: 4px; object-fit: cover;">
                 <span class="day-task-text" style="flex: 1;">▶️ YouTube video</span>
-                <button class="btn-remove-day-task" onclick="removeDayWorkout('${day}', '${workoutId}')">🗑️</button>
+                <button class="btn-remove-day-task" onclick="removeDayWorkout('${day}', ${escapeHtml(JSON.stringify(workoutId))})">🗑️</button>
             `;
         } else if (workout.id && workout.name) {
             // Custom workout
             const workoutId = workout.id;
             item.innerHTML = `
                 <div style="width: 60px; height: 45px; background: var(--primary-color); border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">💪</div>
-                <span class="day-task-text" style="flex: 1;">${workout.name}</span>
-                <button class="btn-remove-day-task" onclick="removeDayWorkout('${day}', '${workoutId}')">🗑️</button>
+                <span class="day-task-text" style="flex: 1;">${escapeHtml(workout.name)}</span>
+                <button class="btn-remove-day-task" onclick="removeDayWorkout('${day}', ${escapeHtml(JSON.stringify(workoutId))})">🗑️</button>
             `;
         }
         
@@ -6423,8 +6432,8 @@ function showRulesModal() {
     AppData.settings.rules.forEach(rule => {
         html += `
             <div class="rule-item" style="background: var(--hover-bg); padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
-                <h3 style="margin: 0 0 0.5rem 0; color: var(--primary-color);">${rule.title}</h3>
-                <p style="margin: 0; line-height: 1.6;">${rule.content}</p>
+                <h3 style="margin: 0 0 0.5rem 0; color: var(--primary-color);">${escapeHtml(rule.title)}</h3>
+                <p style="margin: 0; line-height: 1.6;">${escapeHtml(rule.content)}</p>
             </div>
         `;
     });
@@ -6467,8 +6476,8 @@ function renderRulesView() {
     AppData.settings.rules.forEach((rule, index) => {
         html += `
             <div class="rule-card" style="background: var(--card-bg); padding: 1.5rem; border-radius: 12px; margin-bottom: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-                <h3 style="margin: 0 0 0.8rem 0; color: var(--primary-color); font-size: 1.2rem;">${rule.title}</h3>
-                <p style="margin: 0; line-height: 1.8; font-size: 1rem; color: var(--text-primary);">${rule.content}</p>
+                <h3 style="margin: 0 0 0.8rem 0; color: var(--primary-color); font-size: 1.2rem;">${escapeHtml(rule.title)}</h3>
+                <p style="margin: 0; line-height: 1.8; font-size: 1rem; color: var(--text-primary);">${escapeHtml(rule.content)}</p>
             </div>
         `;
     });
@@ -6503,11 +6512,11 @@ function renderRulesSettings() {
         html += `
             <div class="rule-card" style="background: var(--hover-bg); padding: 1.5rem; border-radius: 12px; margin-bottom: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
                 <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
-                    <h3 style="margin: 0; color: var(--primary-color); font-size: 1.2rem;">${rule.title}</h3>
+                    <h3 style="margin: 0; color: var(--primary-color); font-size: 1.2rem;">${escapeHtml(rule.title)}</h3>
                     <button class="btn-edit-rule" onclick="editRuleSetting(${index})" style="background: transparent; border: none; cursor: pointer; font-size: 1.2rem; padding: 0.25rem 0.5rem;">✏️</button>
                 </div>
-                <p id="ruleSettingContent-${index}" style="margin: 0; line-height: 1.8; font-size: 1rem;">${rule.content}</p>
-                <textarea id="ruleSettingEdit-${index}" style="display: none; width: 100%; min-height: 80px; padding: 0.8rem; border: 2px solid var(--primary-color); border-radius: 8px; font-family: inherit; font-size: 1rem; background: var(--card-bg); color: var(--text-primary); resize: vertical;">${rule.content}</textarea>
+                <p id="ruleSettingContent-${index}" style="margin: 0; line-height: 1.8; font-size: 1rem;">${escapeHtml(rule.content)}</p>
+                <textarea id="ruleSettingEdit-${index}" style="display: none; width: 100%; min-height: 80px; padding: 0.8rem; border: 2px solid var(--primary-color); border-radius: 8px; font-family: inherit; font-size: 1rem; background: var(--card-bg); color: var(--text-primary); resize: vertical;">${escapeHtml(rule.content)}</textarea>
                 <div id="ruleSettingButtons-${index}" style="display: none; margin-top: 1rem; gap: 0.5rem; flex-direction: row;">
                     <button onclick="saveRuleSetting(${index})" style="padding: 0.5rem 1rem; background: var(--primary-color); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 0.9rem;">💾 Zapisz</button>
                     <button onclick="cancelEditRuleSetting(${index})" style="padding: 0.5rem 1rem; background: #999; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 0.9rem;">❌ Anuluj</button>
