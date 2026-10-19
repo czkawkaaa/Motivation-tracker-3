@@ -1314,11 +1314,24 @@ function setTheme(themeName) {
         'theme-rose-garden',
         'theme-bloom',
         'theme-bluebell',
-        'theme-cherry-cream'
+        'theme-cherry-cream',
+        'theme-misty-greens',
+        'theme-subdued-succulent',
+        'theme-turkish-delight',
+        'theme-bold-ballerinas',
+        'theme-foggy-fairytale',
+        'theme-neon-doll',
+        'theme-autumn-muse'
     ];
     
     themeClasses.forEach(cls => body.classList.remove(cls));
     body.classList.add(`theme-${themeName}`);
+
+    const themeColorMeta = document.querySelector('meta[name="theme-color"]');
+    if (themeColorMeta && typeof getComputedStyle === 'function') {
+        const primaryColor = getComputedStyle(body).getPropertyValue('--primary-color').trim();
+        if (primaryColor) themeColorMeta.setAttribute('content', primaryColor);
+    }
 }
 
 // ======================
@@ -1905,7 +1918,16 @@ function calculateStreak() {
         return;
     }
 
-    const sorted = [...AppData.challenge.completedDays].sort().reverse();
+    const countRestDays = AppData.settings.countRestDays;
+    const sorted = [...new Set(AppData.challenge.completedDays)]
+        .filter(dayKey => countRestDays || !isRestDayForDate(dayKey))
+        .sort()
+        .reverse();
+    if (sorted.length === 0) {
+        AppData.streak = 0;
+        return;
+    }
+
     const todayKey = getTodayKey();
     const today = new Date(todayKey + 'T12:00:00');
     const latestCompletedDate = new Date(sorted[0] + 'T12:00:00');
@@ -1917,15 +1939,29 @@ function calculateStreak() {
 
     let currentDate = latestCompletedDate;
     let streak = 1;
+    const streakDates = new Set([sorted[0]]);
 
     for (let i = 1; i < sorted.length; i++) {
         const prevDate = new Date(sorted[i] + 'T12:00:00');
         if (isStreakGapAllowed(prevDate, currentDate)) {
             streak++;
+            streakDates.add(sorted[i]);
             currentDate = prevDate;
             continue;
         }
         break;
+    }
+
+    if (countRestDays) {
+        for (let offset = 0; offset <= Math.floor((today - currentDate) / (1000 * 60 * 60 * 24)); offset++) {
+            const date = new Date(currentDate);
+            date.setDate(date.getDate() + offset);
+            const dayKey = normalizeDateKey(date);
+            if (isRestDayForDate(dayKey)) {
+                streakDates.add(dayKey);
+            }
+        }
+        streak = streakDates.size;
     }
 
     AppData.streak = streak;
@@ -3865,6 +3901,7 @@ function initSettings() {
     countRestDays.addEventListener('change', (e) => {
         AppData.settings.countRestDays = e.target.checked;
         saveData();
+        updateAllDisplays();
     });
     
     // Sound toggle
@@ -4477,7 +4514,9 @@ function showNotification(message, type = 'success') {
     notification.textContent = translateAppText(message);
     
     const colors = {
-        'success': '#4caf50',
+        'success': typeof getComputedStyle === 'function'
+            ? getComputedStyle(document.body).getPropertyValue('--primary-color').trim() || '#4caf50'
+            : '#4caf50',
         'error': '#f44336',
         'warning': '#ff9800'
     };
@@ -4697,6 +4736,7 @@ function exportDataAsHTML() {
         ...Object.keys(data.completedWorkouts || {}),
         ...Object.keys(data.runLog || {}),
         ...Object.keys(data.workoutFocus || {}),
+        ...Object.keys(data.reflections || {}),
         ...(Array.isArray(data.challenge?.completedDays) ? data.challenge.completedDays : [])
     ]);
     const historyRows = Array.from(historyDates).sort().reverse().map(dateKey => {
@@ -4706,6 +4746,8 @@ function exportDataAsHTML() {
         const workouts = normalizeCompletedWorkoutEntries(data.completedWorkouts?.[dateKey]).length;
         const run = data.runLog?.[dateKey];
         const focusParts = Array.isArray(data.workoutFocus?.[dateKey]) ? data.workoutFocus[dateKey] : [];
+        const reflection = data.reflections?.[dateKey];
+        const hasReflection = typeof reflection === 'string' ? Boolean(reflection) : Boolean(reflection?.answer);
         return `
             <tr>
                 <td>${formatDate(dateKey)}</td>
@@ -4715,12 +4757,29 @@ function exportDataAsHTML() {
                 <td>${workouts}</td>
                 <td>${run ? `${Number(run.distance || 0).toFixed(1)} km / ${Number(run.duration || 0)} min` : '—'}</td>
                 <td>${escapeReportHtml(focusParts.length > 0 ? focusParts.join(', ') : '—')}</td>
+                <td>${hasReflection ? tr('Tak') : '—'}</td>
             </tr>
+        `;
+    }).join('');
+    const reflectionEntries = Object.entries(data.reflections || {})
+        .filter(([, reflection]) => typeof reflection === 'string'
+            ? Boolean(reflection)
+            : reflection && (reflection.answer || reflection.question))
+        .sort(([dateA], [dateB]) => dateB.localeCompare(dateA));
+    const reflectionRows = reflectionEntries.map(([dateKey, reflection]) => {
+        const question = typeof reflection === 'string' ? '' : reflection.question;
+        const answer = typeof reflection === 'string' ? reflection : reflection.answer;
+        return `
+            <article class="report-reflection-entry">
+                <div class="report-reflection-date">${formatDate(dateKey)}</div>
+                ${question ? `<h3>${escapeReportHtml(question)}</h3>` : ''}
+                ${answer ? `<p>${escapeReportHtml(answer).replace(/\n/g, '<br>')}</p>` : ''}
+            </article>
         `;
     }).join('');
 
     const challengeActivityLog = Array.isArray(data.challenge?.activityLog) ? data.challenge.activityLog : [];
-    const activityLogRows = challengeActivityLog.slice(0, 25).map(entry => `
+    const activityLogRows = challengeActivityLog.map(entry => `
         <div style="background: color-mix(in srgb, var(--report-primary) 8%, white); padding: 0.85rem 1rem; border-radius: 10px; border-left: 4px solid var(--report-primary); margin-bottom: 0.5rem;">
             <div style="font-weight: 700; color: var(--report-primary); margin-bottom: 0.2rem;">${formatDate(entry.dateKey || entry.timestamp ? new Date(entry.timestamp || entry.dateKey).toISOString().slice(0,10) : '')}</div>
             <div style="color: #666;">${escapeReportHtml(entry.summary || entry.type || 'Aktywność')}</div>
@@ -4732,7 +4791,7 @@ function exportDataAsHTML() {
         : tr('Brak historii aktywności');
 
     const settingsSummaryCards = `
-        <section>
+        <section data-report-order="10">
             <h2>${tr('Ustawienia aplikacji')}</h2>
             <div class="stats-grid">
                 <div class="stat-card"><div class="stat-value">${tr(data.settings.language || 'pl').toUpperCase()}</div><div class="stat-label">${tr('Język')}</div></div>
@@ -4796,13 +4855,78 @@ function exportDataAsHTML() {
         ? (Object.keys(moodCounts).reduce((sum, mood) => sum + parseInt(mood) * moodCounts[mood], 0) / moodEntries.length).toFixed(1)
         : 0;
     const latestHistoryDate = Array.from(historyDates).sort().reverse()[0] || null;
+    const challengeCompletedDays = Array.isArray(data.challenge?.completedDays) ? data.challenge.completedDays.length : 0;
+    const challengeRemainingDays = Math.max(challengeTotalDays - elapsedChallengeDays, 0);
+    const trackedTaskDays = Object.values(data.completedTasks || {}).map(value =>
+        Array.isArray(value) ? new Set(value).size : Number(value) || 0
+    );
+    const taskCompletionDays = {
+        complete: trackedTaskDays.filter(count => data.tasks.length > 0 && count >= data.tasks.length).length,
+        partial: trackedTaskDays.filter(count => count > 0 && count < data.tasks.length).length,
+        missed: trackedTaskDays.filter(count => count === 0).length
+    };
+    const chartColors = ['var(--report-primary)', '#86bca8', '#e3b36b', '#8b91c9', '#85b8cb', '#d98bb3'];
+    const renderPieChart = (title, segments, centerValue, centerLabel) => {
+        const total = segments.reduce((sum, segment) => sum + segment.value, 0);
+        if (total === 0) {
+            return `
+                <article class="report-chart-card">
+                    <h3>${title}</h3>
+                    <p class="report-chart-empty">${tr('Brak danych do wyświetlenia')}</p>
+                </article>
+            `;
+        }
+
+        let offset = 0;
+        const slices = segments.filter(segment => segment.value > 0).map((segment, index) => {
+            const percentage = segment.value / total * 100;
+            const slice = `<circle cx="21" cy="21" r="15.9155" fill="none" stroke="${segment.color || chartColors[index % chartColors.length]}" stroke-width="6.5" stroke-dasharray="${percentage} ${100 - percentage}" stroke-dashoffset="${-offset}" transform="rotate(-90 21 21)"></circle>`;
+            offset += percentage;
+            return slice;
+        }).join('');
+        const legend = segments.filter(segment => segment.value > 0).map((segment, index) => {
+            const percentage = Math.round(segment.value / total * 100);
+            const color = segment.color || chartColors[index % chartColors.length];
+            return `
+                <li>
+                    <span class="report-chart-key" style="--chart-key-color: ${color}"></span>
+                    <span class="report-chart-label">${segment.label}</span>
+                    <strong>${formatNumber(segment.value)} <small>(${percentage}%)</small></strong>
+                </li>
+            `;
+        }).join('');
+
+        return `
+            <article class="report-chart-card">
+                <h3>${title}</h3>
+                <div class="report-chart-content">
+                    <div class="report-donut-wrap">
+                        <svg class="report-donut" viewBox="0 0 42 42" role="img" aria-label="${title}">
+                            <circle cx="21" cy="21" r="15.9155" fill="none" stroke="#edf0f3" stroke-width="6.5"></circle>
+                            ${slices}
+                        </svg>
+                        <div class="report-donut-center">
+                            <strong>${centerValue}</strong>
+                            <span>${centerLabel}</span>
+                        </div>
+                    </div>
+                    <ul class="report-chart-legend">${legend}</ul>
+                </div>
+            </article>
+        `;
+    };
+    const stepGoal = Number(data.settings.stepsGoal) || 0;
+    const studyGoal = Number(data.settings.studyGoal) || 0;
+    const moodChartSegments = [1, 2, 3, 4, 5].map((mood, index) => ({
+        label: `${moodEmojis[mood]} ${localizedMoodLabel(mood)}`,
+        value: moodCounts[mood] || 0,
+        color: chartColors[index]
+    }));
     const heroCards = [
-        { value: elapsedChallengeDays, label: tr('Dni, które minęły') },
-        { value: `${completionRate}%`, label: tr('Postęp wyzwania') },
+        { value: `${elapsedChallengeDays}/${challengeTotalDays}`, label: tr('Dni wyzwania') },
+        { value: challengeCompletedDays, label: tr('Dni zaliczone') },
         { value: `${currentStreak} 🔥`, label: tr('Aktualna passa') },
-        { value: `${totalSteps.toLocaleString(locale)}`, label: tr('Łącznie kroków') },
-        { value: `${totalWorkouts}`, label: tr('Treningi ukończone') },
-        { value: `${unlockedBadges}/${totalBadges}`, label: tr('Odznaki zdobyte') }
+        { value: `${completionRate}%`, label: tr('Upływ wyzwania') }
     ];
     
     // Generate HTML
@@ -4829,44 +4953,45 @@ function exportDataAsHTML() {
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, var(--report-background-start), var(--report-background-end));
-            padding: 2rem;
-            color: #333;
+            padding: 1.5rem;
+            color: #27313b;
         }
         
         .container {
-            max-width: 1000px;
+            max-width: 1080px;
             margin: 0 auto;
-            background: white;
-            border-radius: 20px;
-            padding: 2.5rem;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            background: #fff;
+            border-radius: 24px;
+            padding: 2rem;
+            box-shadow: 0 18px 50px rgba(29, 39, 53, 0.12);
         }
         
         header {
-            text-align: center;
-            margin-bottom: 3rem;
-            padding-bottom: 2rem;
-            border-bottom: 3px solid var(--report-primary);
+            text-align: left;
+            margin-bottom: 1.2rem;
+            padding: 0.4rem 0 1rem;
+            border-bottom: 2px solid color-mix(in srgb, var(--report-primary) 24%, white);
         }
         
         h1 {
-            font-size: 3rem;
+            font-size: clamp(1.8rem, 4vw, 2.6rem);
             color: var(--report-primary);
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.35rem;
+            letter-spacing: -0.035em;
         }
         
         .date {
-            color: #666;
+            color: #697586;
             font-size: 1rem;
         }
 
         .report-hero {
-            background: linear-gradient(135deg, var(--report-primary), color-mix(in srgb, var(--report-primary) 55%, white));
+            background: linear-gradient(135deg, var(--report-primary), color-mix(in srgb, var(--report-primary) 65%, #263447));
             color: white;
-            border-radius: 18px;
-            padding: 1.5rem;
-            margin: 1.5rem 0 2rem 0;
-            box-shadow: 0 12px 24px color-mix(in srgb, var(--report-primary) 22%, transparent);
+            border-radius: 20px;
+            padding: 1.4rem;
+            margin: 1rem 0 1.4rem;
+            box-shadow: 0 12px 26px color-mix(in srgb, var(--report-primary) 22%, transparent);
         }
 
         .report-hero-top {
@@ -4896,20 +5021,20 @@ function exportDataAsHTML() {
 
         .report-hero-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 0.75rem;
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            gap: 0.65rem;
         }
 
         .report-hero-card {
             background: rgba(255, 255, 255, 0.16);
             border: 1px solid rgba(255, 255, 255, 0.26);
-            border-radius: 14px;
-            padding: 0.9rem;
+            border-radius: 13px;
+            padding: 0.85rem;
             backdrop-filter: blur(6px);
         }
 
         .report-hero-value {
-            font-size: 1.5rem;
+            font-size: 1.65rem;
             font-weight: 800;
             line-height: 1.1;
         }
@@ -4922,41 +5047,155 @@ function exportDataAsHTML() {
         
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 1rem;
-            margin-bottom: 3rem;
+            grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
+            gap: 0.75rem;
+            margin-bottom: 1.4rem;
         }
         
         .stat-card {
-            background: linear-gradient(135deg, var(--report-primary), color-mix(in srgb, var(--report-primary) 55%, white));
-            color: white;
-            padding: 1.5rem;
-            border-radius: 15px;
-            text-align: center;
-            box-shadow: 0 4px 10px color-mix(in srgb, var(--report-primary) 30%, transparent);
+            background: color-mix(in srgb, var(--report-primary) 7%, white);
+            color: #27313b;
+            padding: 1rem;
+            border: 1px solid color-mix(in srgb, var(--report-primary) 16%, white);
+            border-top: 3px solid var(--report-primary);
+            border-radius: 13px;
+            text-align: left;
         }
         
         .stat-value {
-            font-size: 2.5rem;
-            font-weight: bold;
-            margin-bottom: 0.5rem;
+            font-size: 1.75rem;
+            line-height: 1.15;
+            font-weight: 800;
+            margin-bottom: 0.3rem;
+            color: var(--report-primary);
         }
         
         .stat-label {
-            font-size: 0.9rem;
-            opacity: 0.9;
+            color: #586575;
+            font-size: 0.82rem;
+            line-height: 1.35;
         }
         
         section {
-            margin-bottom: 3rem;
+            margin-bottom: 1.8rem;
         }
         
         h2 {
-            font-size: 1.8rem;
+            font-size: 1.35rem;
+            color: #27313b;
+            margin-bottom: 0.9rem;
+            padding: 0 0 0.55rem;
+            border-bottom: 2px solid color-mix(in srgb, var(--report-primary) 26%, white);
+        }
+
+        .report-charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+            gap: 0.85rem;
+        }
+
+        .report-chart-card {
+            min-width: 0;
+            padding: 1rem;
+            border: 1px solid #e9edf2;
+            border-radius: 16px;
+            background: #fff;
+            break-inside: avoid;
+        }
+
+        .report-chart-card h3 {
+            margin: 0 0 0.75rem;
             color: var(--report-primary);
-            margin-bottom: 1.5rem;
-            padding-bottom: 0.5rem;
-            border-bottom: 2px solid color-mix(in srgb, var(--report-primary) 30%, white);
+            font-size: 1rem;
+        }
+
+        .report-chart-content {
+            display: grid;
+            grid-template-columns: 130px minmax(0, 1fr);
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .report-donut-wrap {
+            position: relative;
+            width: 130px;
+            height: 130px;
+        }
+
+        .report-donut {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .report-donut-center {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
+        .report-donut-center strong {
+            max-width: 90px;
+            color: #27313b;
+            font-size: 1.1rem;
+            line-height: 1.15;
+            overflow-wrap: anywhere;
+        }
+
+        .report-donut-center span {
+            margin-top: 0.2rem;
+            color: #697586;
+            font-size: 0.68rem;
+        }
+
+        .report-chart-legend {
+            display: grid;
+            gap: 0.5rem;
+            padding: 0;
+            margin: 0;
+            list-style: none;
+        }
+
+        .report-chart-legend li {
+            display: grid;
+            grid-template-columns: 0.65rem minmax(0, 1fr) auto;
+            align-items: center;
+            gap: 0.4rem;
+            color: #495464;
+            font-size: 0.76rem;
+            line-height: 1.3;
+        }
+
+        .report-chart-key {
+            width: 0.6rem;
+            height: 0.6rem;
+            border-radius: 50%;
+            background: var(--chart-key-color);
+        }
+
+        .report-chart-legend strong {
+            white-space: nowrap;
+            color: #27313b;
+            font-size: 0.76rem;
+        }
+
+        .report-chart-legend small {
+            color: #697586;
+            font-size: 0.68rem;
+            font-weight: 500;
+        }
+
+        .report-chart-empty {
+            min-height: 5rem;
+            display: grid;
+            place-items: center;
+            color: #697586;
+            background: #f7f8fa;
+            border-radius: 12px;
         }
         
         .badge-grid {
@@ -4966,16 +5205,16 @@ function exportDataAsHTML() {
         }
         
         .badge-item {
-            background: #f8f9fa;
-            padding: 1rem;
+            background: #f7f8fa;
+            padding: 0.8rem;
             border-radius: 12px;
             text-align: center;
-            border: 2px solid #e9ecef;
+            border: 1px solid #e4e8ee;
         }
         
         .badge-item.unlocked {
-            background: linear-gradient(135deg, color-mix(in srgb, var(--report-primary) 8%, white), #ffffff);
-            border-color: var(--report-primary);
+            background: linear-gradient(135deg, color-mix(in srgb, var(--report-primary) 9%, white), #ffffff);
+            border-color: color-mix(in srgb, var(--report-primary) 48%, white);
         }
         
         .badge-icon {
@@ -4994,11 +5233,12 @@ function exportDataAsHTML() {
         }
         
         .task-item {
-            background: #f8f9fa;
-            padding: 1rem;
+            background: #f7f8fa;
+            padding: 0.75rem 0.9rem;
             border-radius: 10px;
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.4rem;
             border-left: 4px solid var(--report-primary);
+            break-inside: avoid;
         }
         
         .mood-stats {
@@ -5043,32 +5283,78 @@ function exportDataAsHTML() {
         .report-table {
             width: 100%;
             border-collapse: collapse;
-            min-width: 900px;
+            min-width: 0;
             background: white;
-            border-radius: 14px;
+            border-radius: 12px;
             overflow: hidden;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+            font-size: 0.84rem;
         }
 
         .report-table th,
         .report-table td {
-            padding: 0.8rem;
+            padding: 0.65rem;
             border-bottom: 1px solid color-mix(in srgb, var(--report-primary) 18%, white);
             vertical-align: top;
+            overflow-wrap: anywhere;
         }
 
         .report-table th {
-            background: color-mix(in srgb, var(--report-primary) 8%, white);
+            background: color-mix(in srgb, var(--report-primary) 9%, white);
             font-weight: 700;
+            color: #27313b;
+        }
+
+        .report-table thead {
+            display: table-header-group;
+        }
+
+        .report-table tr {
+            break-inside: avoid;
+            page-break-inside: avoid;
         }
 
         .report-note {
             background: color-mix(in srgb, var(--report-primary) 5%, white);
             border-left: 4px solid var(--report-primary);
-            color: #6a4c59;
+            color: #465160;
             padding: 1rem 1.2rem;
             border-radius: 12px;
             line-height: 1.5;
+        }
+
+        .report-reflections {
+            display: grid;
+            gap: 0.75rem;
+        }
+
+        .report-reflection-entry {
+            padding: 1rem 1.2rem;
+            border: 1px solid color-mix(in srgb, var(--report-primary) 24%, white);
+            border-left: 4px solid var(--report-primary);
+            border-radius: 12px;
+            background: color-mix(in srgb, var(--report-primary) 5%, white);
+            break-inside: avoid;
+            page-break-inside: avoid;
+        }
+
+        .report-reflection-date {
+            margin-bottom: 0.4rem;
+            color: var(--report-primary);
+            font-size: 0.82rem;
+            font-weight: 700;
+        }
+
+        .report-reflection-entry h3 {
+            margin: 0 0 0.35rem;
+            color: #27313b;
+            font-size: 0.98rem;
+        }
+
+        .report-reflection-entry p {
+            margin: 0;
+            color: #465160;
+            line-height: 1.5;
+            overflow-wrap: anywhere;
         }
         
         footer {
@@ -5076,7 +5362,7 @@ function exportDataAsHTML() {
             margin-top: 3rem;
             padding-top: 2rem;
             border-top: 2px solid color-mix(in srgb, var(--report-primary) 30%, white);
-            color: #666;
+            color: #697586;
         }
         
         @media print {
@@ -5089,6 +5375,7 @@ function exportDataAsHTML() {
                 background: white;
                 padding: 0;
                 color-adjust: exact;
+                print-color-adjust: exact;
                 -webkit-print-color-adjust: exact;
             }
             
@@ -5117,17 +5404,52 @@ function exportDataAsHTML() {
             }
             
             section {
+                margin-bottom: 1.25rem;
+            }
+
+            .report-chart-card,
+            .stat-card,
+            .badge-item,
+            .report-hero,
+            .task-item {
                 page-break-inside: avoid;
                 break-inside: avoid;
-                margin-bottom: 1.6rem;
+            }
+
+            .report-charts-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 0.55rem;
+            }
+
+            .report-chart-card {
+                padding: 0.65rem;
+            }
+
+            .report-chart-content {
+                grid-template-columns: 95px minmax(0, 1fr);
+                gap: 0.4rem;
+            }
+
+            .report-donut-wrap {
+                width: 95px;
+                height: 95px;
+            }
+
+            .report-chart-legend li,
+            .report-chart-legend strong {
+                font-size: 0.66rem;
+            }
+
+            .report-chart-legend small {
+                font-size: 0.6rem;
             }
             
             h2 {
                 page-break-after: avoid;
             }
             
-            .badge-grid, .gallery-grid {
-                grid-template-columns: repeat(6, 1fr);
+            .badge-grid {
+                grid-template-columns: repeat(5, 1fr);
                 gap: 0.5rem;
             }
 
@@ -5135,11 +5457,13 @@ function exportDataAsHTML() {
                 min-width: 0;
                 width: 100%;
                 box-shadow: none;
+                table-layout: fixed;
+                font-size: 7.5pt;
             }
 
             .report-table th,
             .report-table td {
-                padding: 0.55rem;
+                padding: 0.35rem;
             }
             
             .badge-item {
@@ -5155,6 +5479,17 @@ function exportDataAsHTML() {
                 page-break-before: avoid;
             }
         }
+
+        @media (max-width: 640px) {
+            body { padding: 0.5rem; }
+            .container { padding: 1rem; border-radius: 16px; }
+            .report-hero-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .report-charts-grid { grid-template-columns: 1fr; }
+            .report-chart-content { grid-template-columns: 115px minmax(0, 1fr); }
+            .report-donut-wrap { width: 115px; height: 115px; }
+            .report-table { font-size: 0.72rem; }
+            .report-table th, .report-table td { padding: 0.4rem; }
+        }
     </style>
 </head>
 <body>
@@ -5164,11 +5499,11 @@ function exportDataAsHTML() {
             <p class="date">${tr('Raport wygenerowany:')} ${now}</p>
         </header>
 
-        <section class="report-hero">
+        <section class="report-hero" data-report-order="0">
             <div class="report-hero-top">
                 <div>
-                    <div class="report-hero-title">${tr('Wszystkie informacje ze strony')}</div>
-                    <div class="report-hero-subtitle">${tr('Raport zawiera teraz wszystkie dane z aplikacji')}</div>
+                    <div class="report-hero-title">${tr('Podsumowanie wyzwania')}</div>
+                    <div class="report-hero-subtitle">${tr('Najważniejsze wyniki i postęp w jednym miejscu')}</div>
                 </div>
                 <div class="report-note" style="background: rgba(255,255,255,0.16); border-left-color: rgba(255,255,255,0.65); color: white; max-width: 320px;">
                     ${latestHistoryDate ? `${tr('Ostatni zapis')}: ${formatDate(latestHistoryDate)}` : tr('Brak historii aktywności')}
@@ -5185,16 +5520,16 @@ function exportDataAsHTML() {
             </div>
         </section>
         
-        <section>
+        <section data-report-order="1">
             <h2>${tr('📊 Podsumowanie')}</h2>
             <div class="stats-grid">
                 <div class="stat-card">
                     <div class="stat-value">${elapsedChallengeDays}</div>
-                    <div class="stat-label">${tr('Dni, które minęły')}</div>
+                    <div class="stat-label">${tr('Dni wyzwania')}</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-value">${completionRate}%</div>
-                    <div class="stat-label">${tr('Postęp wyzwania')}</div>
+                    <div class="stat-value">${challengeCompletedDays}</div>
+                    <div class="stat-label">${tr('Dni zaliczone')}</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-value">${currentStreak} 🔥</div>
@@ -5232,17 +5567,74 @@ function exportDataAsHTML() {
                     <div class="stat-value">${unlockedBadges}</div>
                     <div class="stat-label">${tr('Odznaki zdobyte')} 🏆</div>
                 </div>
+                <div class="stat-card">
+                    <div class="stat-value">${avgMood}/5</div>
+                    <div class="stat-label">${tr('Średni nastrój')}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${bestRun.distance.toFixed(1)} km</div>
+                    <div class="stat-label">${tr('Najdłuższy bieg')}</div>
+                </div>
             </div>
         </section>
-        
-        <section>
+
+        <section class="report-charts-section" data-report-order="2">
+            <h2>${tr('📈 Statystyki i wykresy')}</h2>
+            <div class="report-charts-grid">
+                ${renderPieChart(
+                    tr('Postęp wyzwania'),
+                    [
+                        { label: tr('Dni, które minęły'), value: elapsedChallengeDays },
+                        { label: tr('Dni pozostałe'), value: challengeRemainingDays, color: '#dfe4ea' }
+                    ],
+                    `${completionRate}%`,
+                    tr('czasu')
+                )}
+                ${renderPieChart(
+                    tr('Realizacja zadań'),
+                    [
+                        { label: tr('Wszystkie zadania'), value: taskCompletionDays.complete },
+                        { label: tr('Częściowo wykonane'), value: taskCompletionDays.partial },
+                        { label: tr('Bez wykonanych zadań'), value: taskCompletionDays.missed }
+                    ],
+                    formatNumber(trackedTaskDays.length),
+                    tr('dni')
+                )}
+                ${renderPieChart(
+                    tr('Rozkład nastroju'),
+                    moodChartSegments,
+                    formatNumber(moodEntries.length),
+                    tr('zapisów')
+                )}
+                ${renderPieChart(
+                    tr('Cel kroków'),
+                    [
+                        { label: tr('Zrealizowano'), value: Math.min(totalSteps, stepGoal) },
+                        { label: tr('Pozostało do celu'), value: Math.max(stepGoal - totalSteps, 0), color: '#dfe4ea' }
+                    ],
+                    stepGoal > 0 ? `${Math.min(Math.round(totalSteps / stepGoal * 100), 100)}%` : '—',
+                    tr('celu')
+                )}
+                ${renderPieChart(
+                    tr('Cel nauki'),
+                    [
+                        { label: tr('Zrealizowano'), value: Math.min(totalStudyHours, studyGoal) },
+                        { label: tr('Pozostało do celu'), value: Math.max(studyGoal - totalStudyHours, 0), color: '#dfe4ea' }
+                    ],
+                    studyGoal > 0 ? `${Math.min(Math.round(totalStudyHours / studyGoal * 100), 100)}%` : '—',
+                    tr('celu')
+                )}
+            </div>
+        </section>
+
+        <section data-report-order="12">
             <h2>${tr('🏆 Odznaki')} (${unlockedBadges}/${totalBadges})</h2>
             <div class="badge-grid">
                 ${generateBadgesHTML(data.badges)}
             </div>
         </section>
 
-        <section>
+        <section data-report-order="7">
             <h2>${tr('🎁 Cele i nagrody')}</h2>
             <p>${tr('Główny cel')}: <strong>${escapeReportHtml(data.rewardsGoal || '—')}</strong></p>
             ${reportRewards.length > 0 ? `
@@ -5271,7 +5663,7 @@ function exportDataAsHTML() {
             ` : `<p>${tr('Nie dodano jeszcze celów i nagród.')}</p>`}
         </section>
         
-        <section>
+        <section data-report-order="3">
             <h2>${tr('📝 Zadania')}</h2>
             ${data.weeklyTasks && data.weeklyTasks.enabled ? `
                 <p style="margin-bottom: 1rem; color: #666;">${tr('Zadania są dostosowane do dnia tygodnia:')}</p>
@@ -5306,7 +5698,7 @@ function exportDataAsHTML() {
         </section>
         
         ${data.settings && data.settings.workoutsEnabled ? `
-        <section>
+        <section data-report-order="4">
             <h2>${tr('💪 Treningi')}</h2>
             <div class="stats-grid">
                 <div class="stat-card"><div class="stat-value">${totalWorkouts}</div><div class="stat-label">${tr('Treningów ukończonych')}</div></div>
@@ -5373,7 +5765,7 @@ function exportDataAsHTML() {
         </section>
         ` : ''}
 
-        <section>
+        <section data-report-order="5">
             <h2>${tr('🗂️ Historia aktywności')}</h2>
             ${historyRows ? `
                 <div style="overflow-x: auto;">
@@ -5387,6 +5779,7 @@ function exportDataAsHTML() {
                                 <th style="text-align: left;">${tr('Workouty')}</th>
                                 <th style="text-align: left;">${tr('Bieg')}</th>
                                 <th style="text-align: left;">${tr('Partie ciała')}</th>
+                                <th style="text-align: left;">${tr('Refleksja')}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -5397,8 +5790,17 @@ function exportDataAsHTML() {
             ` : `<p style="color: #666;">${tr('Brak historii aktywności')}</p>`}
         </section>
 
+        ${reflectionEntries.length > 0 ? `
+        <section data-report-order="6">
+            <h2>${tr('💭 Refleksje')}</h2>
+            <div class="report-reflections">
+                ${reflectionRows}
+            </div>
+        </section>
+        ` : ''}
+
         ${challengeActivityLog.length > 0 ? `
-        <section>
+        <section data-report-order="8">
             <h2>${tr('🧩 Zmiany w trakcie wyzwania')}</h2>
             ${activityLogRows}
         </section>
@@ -5406,20 +5808,8 @@ function exportDataAsHTML() {
 
         ${settingsSummaryCards}
         
-        <section>
-            <h2>${tr('😊 Statystyki nastroju')}</h2>
-            <div class="mood-stats">
-                ${Object.entries(moodCounts).map(([mood, count]) => `
-                    <div class="mood-item">
-                        <div class="mood-emoji">${mood}</div>
-                        <div>${count} ${tr('dni')}</div>
-                    </div>
-                `).join('')}
-            </div>
-        </section>
-        
         ${data.gallery.length > 0 ? `
-        <section>
+        <section data-report-order="9">
             <h2>${tr('📸 Galeria')} (${data.gallery.length} ${tr('zdjęć')})</h2>
             <div class="gallery-grid">
                 ${data.gallery.slice(0, 12).map(photo => `
@@ -5433,7 +5823,7 @@ function exportDataAsHTML() {
         ` : ''}
         
         ${data.settings && data.settings.rules && data.settings.rules.length > 0 ? `
-        <section>
+        <section data-report-order="11">
             <h2>${tr('📜 Zasady wyzwania')}</h2>
             <div style="display: grid; gap: 1rem;">
                 ${data.settings.rules.map(rule => `
@@ -5458,13 +5848,24 @@ function exportDataAsHTML() {
     `;
     
     function translateReportHtmlString(sourceHtml) {
+        if (typeof DOMParser !== 'function') return sourceHtml;
+
+        const parser = new DOMParser();
+        const documentFragment = parser.parseFromString(sourceHtml, 'text/html');
+        const reportContainer = documentFragment.querySelector('.container');
+        if (reportContainer) {
+            const orderedSections = Array.from(reportContainer.children)
+                .filter(child => child.hasAttribute('data-report-order'))
+                .sort((a, b) => Number(a.dataset.reportOrder) - Number(b.dataset.reportOrder));
+            const reportFooter = Array.from(reportContainer.children).find(child => child.tagName === 'FOOTER');
+            orderedSections.forEach(section => reportContainer.insertBefore(section, reportFooter || null));
+        }
+
         if (!window.AppI18N || typeof window.AppI18N.translateExact !== 'function') {
-            return sourceHtml;
+            return '<!DOCTYPE html>\n' + documentFragment.documentElement.outerHTML;
         }
 
         const language = window.AppI18N.getCurrentLanguage ? window.AppI18N.getCurrentLanguage() : 'pl';
-        const parser = new DOMParser();
-        const documentFragment = parser.parseFromString(sourceHtml, 'text/html');
         const walker = document.createTreeWalker(documentFragment.documentElement, NodeFilter.SHOW_TEXT, null);
         let node;
 
@@ -5575,9 +5976,7 @@ function exportDataAsHTML() {
         }).join('');
     }
     
-    if (window.AppI18N) {
-        html = translateReportHtmlString(html);
-    }
+    html = translateReportHtmlString(html);
 
     // Create and download the HTML file
     const blob = new Blob([html], { type: 'text/html' });

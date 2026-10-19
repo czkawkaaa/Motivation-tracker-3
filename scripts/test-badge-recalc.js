@@ -120,7 +120,7 @@ const context = {
 };
 
 vm.createContext(context);
-const app = vm.runInContext(`(function() { ${source}; return { AppData, loadData, checkBadges, getAllBadgeIds, getBadgeStats }; })()`, context);
+const app = vm.runInContext(`(function() { ${source}; return { AppData, loadData, checkBadges, getAllBadgeIds, getBadgeStats, calculateStreak }; })()`, context);
 
 assert.ok(app.AppData, 'AppData should exist');
 assert.equal(app.getAllBadgeIds().length, 55, 'the full badge catalog should contain 55 badge IDs');
@@ -173,6 +173,31 @@ storage.data = JSON.stringify({
 
 app.loadData();
 assert.equal(app.AppData.streak, 3, 'streak should be calculated from completedDays history on load');
+
+app.AppData.challenge.startDate = '2026-08-29';
+app.AppData.challenge.completedDays = ['2026-08-31', '2026-08-29'];
+app.AppData.settings.restDays = ['0'];
+app.AppData.settings.countRestDays = false;
+app.calculateStreak();
+assert.equal(app.AppData.streak, 2, 'a rest day should preserve but not increase the streak when the setting is disabled');
+
+app.AppData.settings.countRestDays = true;
+app.calculateStreak();
+assert.equal(app.AppData.streak, 3, 'a rest day between completed days should increase the streak when enabled');
+
+app.AppData.challenge.completedDays = ['2026-08-31', '2026-08-30', '2026-08-29'];
+app.AppData.settings.countRestDays = false;
+app.calculateStreak();
+assert.equal(app.AppData.streak, 2, 'a previously recorded rest day should stop counting when the setting is disabled');
+
+app.AppData.challenge.completedDays = ['2026-08-30'];
+app.AppData.settings.restDays = ['1'];
+app.calculateStreak();
+assert.equal(app.AppData.streak, 1, 'a rest day today should preserve but not increase the streak when disabled');
+
+app.AppData.settings.countRestDays = true;
+app.calculateStreak();
+assert.equal(app.AppData.streak, 2, 'a rest day today should increase the streak when enabled');
 
 storage.data = JSON.stringify({
   challenge: {

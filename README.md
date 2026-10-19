@@ -75,13 +75,14 @@ https://czkawkaaa.github.io/Motivation-tracker-3/
 - I wiele więcej!
 
 ### ⚙️ Ustawienia
-- **12 motywów kolorystycznych** (Pink, Ocean, Mint, Lavender, Strawberry, Yellow, Orange, Red, Blue, Purple, Dark Mode, Transformers 🤖⚡)
+- **28 motywów kolorystycznych**, w tym siedem nowych palet: Misty Greens, Subdued Succulent, Turkish Delight, Bold Ballerinas, Foggy Fairytale, Neon Doll i Autumn Muse
 - 15 czcionek do wyboru (10 podstawowych + 5 kawaii)
 - Konfiguracja wyzwania (długość, cele)
-- Ustawienie dni odpoczynku
+- Ustawienie wielu dni odpoczynku oraz wybór, czy odpoczynek ma zwiększać streak
 - **Zarządzanie workoutami**
 - **PWA / instalacja na telefonie** z ikonami i wsparciem dla Androida
-- **Eksport pełnego raportu z wszystkimi statystykami do PDF**
+- Popupy, powiadomienia i raport korzystają z kolorów aktywnego motywu
+- **Eksport uporządkowanego raportu do wydruku lub PDF**
 
 ### 📱 PWA / instalacja na telefonie
 - Aplikacja może być zainstalowana na telefonie jako PWA
@@ -89,19 +90,32 @@ https://czkawkaaa.github.io/Motivation-tracker-3/
 - Obsługa zachowania mobilnego i instalacji bez sztucznie wprowadzających opcji widżetów
 
 ### 📥 Eksport do PDF
-- Kompletny raport ze statystykami:
+- Czytelny raport zaczynający się od najważniejszego podsumowania, a następnie przechodzący do statystyk i szczegółów:
   - Wszystkie odznaki (zdobyte i niezdobyte)
   - Statystyki kroków, treningów, biegów i partii ciała
-  - Zadania, perfekcyjne dni i historia aktywności
-  - Nastroje, galeria zdjęć i zasady wyzwania
+  - Zadania, perfekcyjne dni, pełna historia aktywności i refleksje
+  - Wykresy pierścieniowe postępu wyzwania, zadań, nastroju, kroków i nauki
+  - Nastroje, cele i nagrody, galeria zdjęć oraz zasady wyzwania
   - Ustawienia aplikacji oraz podsumowanie danych
-- Raport generuje się w wybranym języku: polski, angielski lub włoski
+- Odznaki znajdują się pod koniec raportu; kolory raportu dopasowują się do wybranego motywu
+- Raport jest generowany jako HTML przygotowany do druku; z okna drukowania można wybrać „Zapisz jako PDF”
 - Otwiera się automatycznie w nowej karcie i jest przygotowany do druku
 - Wystarczy użyć Ctrl+P / Cmd+P i wybrać Zapisz jako PDF
 
 ### 🌍 Wielojęzyczność
 - Interfejs działa w 3 językach: polski, angielski i włoski
-- Ustawienie języka wpływa też na raporty PDF i drobne komunikaty aplikacji
+- Ustawienie języka wpływa też na raport, opcje motywów i komunikaty aplikacji
+- **Znane ograniczenie:** tłumaczenia nie obejmują jeszcze każdego tekstu. Część interfejsu jest tłumaczona przez dopasowanie całych fraz, więc nieznane lub dynamicznie utworzone teksty mogą pozostać po polsku albo być niekompletne. Zgłoszenia użytkowników wskazują, że jakość i kompletność tłumaczeń wymagają osobnego przeglądu. Nowe palety kolorów mają uzupełnione nazwy po angielsku i włosku, ale nie oznacza to zakończenia audytu całej aplikacji.
+
+## 🆕 Ostatnie zmiany (11–19 października 2026)
+
+- **Cele i nagrody:** można zapisać cel główny, podzielić go na mniejsze kamienie milowe, przypisać nagrody, edytować wpisy i zapisać datę osiągnięcia.
+- **Dni odpoczynku i streak:** dni odpoczynku są widoczne w kalendarzu jako ukończone i chronią ciągłość streaka. Ustawienie „Liczyć dni odpoczynku jako ukończone” decyduje wyłącznie o tym, czy odpoczynek zwiększa licznik streaka.
+- **Motywy:** dodano siedem palet kolorów. Popupy, powiadomienia, baner, kolor paska przeglądarki i raport korzystają z wybranego motywu.
+- **Raport:** przebudowano kolejność i czytelność sekcji; dodano podsumowanie, statystyki, wykresy, historię refleksji oraz szczegóły celów i nagród. Odznaki są umieszczone pod koniec.
+- **Workouty i synchronizacja:** rozwijano obsługę własnych ćwiczeń oraz stabilność scalania danych między urządzeniem i Firebase.
+- **Nawigacja i odporność aplikacji:** poprawiono działanie nawigacji, w tym sytuację, gdy dźwięk nie jest dostępny, oraz przywrócono poprawną strukturę widoków.
+- **Tłumaczenia — ważny obszar do poprawy:** obsługa polskiego, angielskiego i włoskiego już istnieje, ale nie wszystkie widoki, teksty dynamiczne i nowe funkcje mają kompletne, naturalne tłumaczenia. To znane ograniczenie i priorytet do dalszego audytu; pojedyncze uzupełnienia nie rozwiązują problemu w całej aplikacji.
 
 ### 🔄 Synchronizacja z Firebase
 - Logowanie przez Google

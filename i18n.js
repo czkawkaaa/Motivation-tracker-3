@@ -979,6 +979,14 @@
     function translateOptions(language) {
         const themeSelect = document.getElementById('themeSelect');
         if (themeSelect) {
+            const newPalettesGroup = themeSelect.querySelector('optgroup');
+            if (newPalettesGroup) {
+                newPalettesGroup.label = pick({
+                    pl: '✨ Nowe palety kolorów',
+                    en: '✨ New color palettes',
+                    it: '✨ Nuove palette di colori'
+                }, language);
+            }
             const optionMap = {
                 pink: { pl: 'Kawaii Pink 🎀', en: 'Kawaii Pink 🎀', it: 'Rosa kawaii 🎀' },
                 ocean: { pl: 'Ocean Blue 🌊', en: 'Ocean Blue 🌊', it: 'Blu oceano 🌊' },
@@ -1000,7 +1008,14 @@
                 'rose-garden': { pl: 'Rose Garden 🌷', en: 'Rose Garden 🌷', it: 'Rose Garden 🌷' },
                 bloom: { pl: 'Wiosenny Rozkwit 🌼', en: 'Spring Bloom 🌼', it: 'Fioritura primaverile 🌼' },
                 bluebell: { pl: 'Dzwonek 🪻', en: 'Bluebell 🪻', it: 'Campanula 🪻' },
-                'cherry-cream': { pl: 'Wiśniowy Krem 🍒', en: 'Cherry Cream 🍒', it: 'Crema alla ciliegia 🍒' }
+                'cherry-cream': { pl: 'Wiśniowy Krem 🍒', en: 'Cherry Cream 🍒', it: 'Crema alla ciliegia 🍒' },
+                'misty-greens': { pl: 'Misty Greens 🍃', en: 'Misty Greens 🍃', it: 'Verdi velati 🍃' },
+                'subdued-succulent': { pl: 'Subdued Succulent 🪴', en: 'Subdued Succulent 🪴', it: 'Succulente dai toni tenui 🪴' },
+                'turkish-delight': { pl: 'Turkish Delight ☕', en: 'Turkish Delight ☕', it: 'Delizia turca ☕' },
+                'bold-ballerinas': { pl: 'Bold Ballerinas 🩰', en: 'Bold Ballerinas 🩰', it: 'Ballerine audaci 🩰' },
+                'foggy-fairytale': { pl: 'Foggy Fairytale 🦢', en: 'Foggy Fairytale 🦢', it: 'Fiaba nella nebbia 🦢' },
+                'neon-doll': { pl: 'Neon Doll 💖', en: 'Neon Doll 💖', it: 'Bambola neon 💖' },
+                'autumn-muse': { pl: 'Autumn Muse 🍂', en: 'Autumn Muse 🍂', it: 'Ispirazione autunnale 🍂' }
             };
             Array.from(themeSelect.options).forEach(option => {
                 option.textContent = pick(optionMap[option.value], language) || option.textContent;

@@ -150,6 +150,24 @@ app.AppData.rewards = [{
   completedAt: '2026-09-15'
 }];
 app.AppData.rewardsGoal = 'Cel <główny>';
+app.AppData.challenge.startDate = '2026-09-01';
+app.AppData.challenge.currentDay = 7;
+app.AppData.challenge.totalDays = 75;
+app.AppData.challenge.completedDays = ['2026-09-01', '2026-09-02'];
+app.AppData.mood = { '2026-09-01': 5, '2026-09-02': 4, '2026-09-03': 3 };
+app.AppData.completedTasks = {
+  '2026-09-01': [0, 1, 2],
+  '2026-09-02': [0],
+  '2026-09-03': []
+};
+app.AppData.steps = { '2026-09-01': 8500, '2026-09-02': 6000 };
+app.AppData.studyHours = { '2026-09-01': 2, '2026-09-02': 1.5 };
+app.AppData.reflections = {
+  '2026-09-04': { question: 'Co poszło dobrze?', answer: '<script>alert(1)</script>\nUdało mi się odpocząć.' },
+  '2026-09-03': 'Starsza notatka'
+};
+app.AppData.settings.stepsGoal = 15000;
+app.AppData.settings.studyGoal = 10;
 context.window.AppI18N = null;
 app.exportDataAsHTML();
 assert.ok(exportedHtml.includes('&lt;img src=x onerror=&quot;alert(1)&quot;&gt;'), 'report should escape custom goal text');
@@ -159,5 +177,16 @@ assert.ok(exportedHtml.includes('15.09.2026'), 'report should include the format
 assert.ok(exportedHtml.includes('--report-primary: #4fc3f7;'), 'report accents should use the active theme color');
 assert.ok(exportedHtml.includes('--report-background-start: #f0fbff;'), 'report background should use the active theme');
 assert.ok(!exportedHtml.includes('#ff9ac2'), 'report should not keep the default pink styling when another theme is active');
+assert.ok(exportedHtml.includes('class="report-charts-section"'), 'report should include a statistics and charts section');
+assert.ok(exportedHtml.includes('<svg class="report-donut"'), 'report should render print-friendly inline pie charts');
+assert.ok(exportedHtml.includes('Rozkład nastroju'), 'report charts should include mood distribution');
+assert.ok(exportedHtml.includes('Realizacja zadań'), 'report charts should include task completion breakdown');
+assert.ok(exportedHtml.includes('Cel kroków') && exportedHtml.includes('Cel nauki'), 'report charts should include progress toward activity goals');
+assert.ok(exportedHtml.includes('data-report-order="12"'), 'badge details should be ordered at the end of the report');
+assert.ok(exportedHtml.includes('data-report-order="6"') && exportedHtml.includes('Co poszło dobrze?'), 'report should include reflections after activity history');
+assert.ok(exportedHtml.includes('&lt;script&gt;alert(1)&lt;/script&gt;<br>Udało mi się odpocząć.'), 'report should escape reflection text and preserve its line breaks');
+assert.ok(exportedHtml.includes('Starsza notatka'), 'report should retain older plain-text reflections');
+assert.ok(exportedHtml.includes('<th style="text-align: left;">Refleksja</th>'), 'activity history should show which days include a reflection');
+assert.ok(source.includes("sort((a, b) => Number(a.dataset.reportOrder) - Number(b.dataset.reportOrder))"), 'report sections should be sorted into summary-first order');
 
 console.log('rewards feature tests passed');
