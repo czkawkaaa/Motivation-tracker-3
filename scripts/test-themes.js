@@ -40,8 +40,24 @@ for (const [name, english, italian] of [
   assert.ok(i18n.includes(`it: '${italian}'`), `${name} should have an Italian theme label`);
 }
 
-assert.ok(i18n.includes("en: '✨ New color palettes'"), 'new theme group should have an English label');
-assert.ok(i18n.includes("it: '✨ Nuove palette di colori'"), 'new theme group should have an Italian label');
+assert.ok(!html.includes('✨ Nowe palety kolorów'), 'theme list should not call out new color palettes');
+assert.ok(!i18n.includes('New color palettes'), 'theme translations should not include a new palettes label');
+
+for (const [name, colors] of Object.entries(themes)) {
+  for (const selector of [`.theme-${name} .app-header {`, `.theme-${name} .btn-primary {`]) {
+    const ruleStart = css.indexOf(selector);
+    const ruleEnd = css.indexOf('}', ruleStart);
+    assert.notEqual(ruleStart, -1, `${name} should style ${selector}`);
+    const gradient = css.slice(ruleStart, ruleEnd).match(/background:\s*linear-gradient\([^)]*\)/);
+    assert.ok(gradient, `${name} ${selector} should combine multiple colors`);
+    const gradientColors = gradient[0].match(/#[\da-f]{6}/gi) || [];
+    assert.ok(gradientColors.length >= 2, `${name} ${selector} should use at least two palette colors`);
+    assert.ok(
+      gradientColors.every(color => colors.includes(color.toUpperCase())),
+      `${name} ${selector} should only use colors from its source palette`
+    );
+  }
+}
 
 for (const selector of [
   '.reflection-modal-content',

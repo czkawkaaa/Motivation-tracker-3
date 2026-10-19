@@ -979,14 +979,6 @@
     function translateOptions(language) {
         const themeSelect = document.getElementById('themeSelect');
         if (themeSelect) {
-            const newPalettesGroup = themeSelect.querySelector('optgroup');
-            if (newPalettesGroup) {
-                newPalettesGroup.label = pick({
-                    pl: '✨ Nowe palety kolorów',
-                    en: '✨ New color palettes',
-                    it: '✨ Nuove palette di colori'
-                }, language);
-            }
             const optionMap = {
                 pink: { pl: 'Kawaii Pink 🎀', en: 'Kawaii Pink 🎀', it: 'Rosa kawaii 🎀' },
                 ocean: { pl: 'Ocean Blue 🌊', en: 'Ocean Blue 🌊', it: 'Blu oceano 🌊' },

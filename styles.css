@@ -416,11 +416,11 @@
 }
 
 .theme-misty-greens .app-header {
-    background: #028c6a;
+    background: linear-gradient(120deg, #028c6a, #7bc5ae);
 }
 
 .theme-misty-greens .btn-primary {
-    background: #028c6a;
+    background: linear-gradient(135deg, #028c6a, #003e19);
 }
 
 .theme-subdued-succulent {
@@ -438,11 +438,11 @@
 }
 
 .theme-subdued-succulent .app-header {
-    background: #1d6a96;
+    background: linear-gradient(120deg, #1d6a96, #85b8cb);
 }
 
 .theme-subdued-succulent .btn-primary {
-    background: #1d6a96;
+    background: linear-gradient(135deg, #1d6a96, #283b42);
 }
 
 .theme-turkish-delight {
@@ -461,11 +461,11 @@
 }
 
 .theme-turkish-delight .app-header {
-    background: #40686a;
+    background: linear-gradient(120deg, #40686a, #b78338);
 }
 
 .theme-turkish-delight .btn-primary {
-    background: #915c4c;
+    background: linear-gradient(135deg, #915c4c, #2f1812);
 }
 
 .theme-bold-ballerinas {
@@ -483,11 +483,11 @@
 }
 
 .theme-bold-ballerinas .app-header {
-    background: #706fab;
+    background: linear-gradient(120deg, #706fab, #6a92cc, #ffa289);
 }
 
 .theme-bold-ballerinas .btn-primary {
-    background: #50293c;
+    background: linear-gradient(135deg, #6a92cc, #50293c);
 }
 
 .theme-foggy-fairytale {
@@ -505,11 +505,11 @@
 }
 
 .theme-foggy-fairytale .app-header {
-    background: #3a5a69;
+    background: linear-gradient(120deg, #d5c5e9, #3a5a69, #030923);
 }
 
 .theme-foggy-fairytale .btn-primary {
-    background: #3a5a69;
+    background: linear-gradient(135deg, #3a5a69, #030923);
 }
 
 .theme-neon-doll {
@@ -527,11 +527,11 @@
 }
 
 .theme-neon-doll .app-header {
-    background: #2c0136;
+    background: linear-gradient(120deg, #2c0136, #a1268e, #9d1e31);
 }
 
 .theme-neon-doll .btn-primary {
-    background: #a1268e;
+    background: linear-gradient(135deg, #a1268e, #9d1e31);
 }
 
 .theme-autumn-muse {
@@ -550,11 +550,11 @@
 }
 
 .theme-autumn-muse .app-header {
-    background: #92617e;
+    background: linear-gradient(120deg, #92617e, #cc5b3b, #982827);
 }
 
 .theme-autumn-muse .btn-primary {
-    background: #982827;
+    background: linear-gradient(135deg, #982827, #3c1832);
 }
 
 /* Podstawowe style body */

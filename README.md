@@ -1,168 +1,63 @@
-# 🌸 Kawaii Quest - Motivation Tracker
+# 🌸 Kawaii Quest — Motivation Tracker
 
-**Motywacyjna aplikacja stworzona przez Wiktorię Radomską**
+**Aplikacja motywacyjna stworzona przez Wiktorię Radomską**
 
-## 🚀 Demo Online
-**Link do działającej strony:** 
-https://czkawkaaa.github.io/Motivation-tracker-3/
----
+Kawaii Quest to konfigurowalny tracker wyzwań i codziennych nawyków. Nie narzuca jednego zestawu zadań ani nie wymaga realizowania gotowego planu 75 Hard — możesz dopasować wyzwanie, zadania i zasady do siebie.
 
-## ✨ Funkcje
+**Wersja online:** https://czkawkaaa.github.io/Motivation-tracker-3/
 
-### 📊 Dashboard
-- **8 dziennych zadań** dopasowanych do zasad wyzwania:
-  - Codzienny trening
-  - Spacer minimum 20 minut
-  - Rozciąganie
-  - Sen - minimum 7 godzin
-  - 10 minut czytania lub słuchania książki
-  - Jeden zdrowy posiłek domowy
-  - Zero słodzonych napojów
-  - Picie większej ilości wody
-- Śledzenie kroków i nastroju
-- Moduł nauki z celem godzinowym
-- **System workoutów** z YouTube
-- Rotujące cytaty motywacyjne (40+ cytatów!)
-- Konfetti po ukończeniu wszystkich zadań
+## Co można śledzić
 
-### 📅 Kalendarz
-- Wizualizacja 75-dniowego wyzwania
-- Oznaczenia ukończonych dni
-- Śledzenie streaku (pasmy dni z rzędu)
-- Wsparcie dla dni odpoczynku
+- **Wyzwanie:** własna nazwa i długość od 1 do 365 dni. Wyzwanie rozpoczyna się po zaakceptowaniu zasad.
+- **Codzienne zadania:** edytuj listę zadań, dodawaj i usuwaj pozycje oraz zmieniaj ich kolejność.
+- **Zadania według dni tygodnia:** opcjonalnie ustawiaj osobny zestaw zadań na każdy dzień tygodnia.
+- **Zasady:** edytuj treść zasad w ustawieniach i zapoznaj się z nimi przed rozpoczęciem wyzwania. Zasady nie są narzuconą listą reguł 75 Hard.
+- **Dni odpoczynku:** wybierz jeden lub więcej dni odpoczynku i zdecyduj, czy mają być wliczane do streaka.
+- **Postępy:** zapisuj kroki, nastrój i czas nauki; włączaj lub wyłączaj sekcje kroków, nauki i workoutów oraz ustawiaj cele.
+- **Refleksje:** zapisuj odpowiedzi i wracaj do nich w kalendarzu.
 
-### 📈 Statystyki
-- Wykresy postępów kroków i nauki
-- Śledzenie nastrojów
-- Historia osiągnięć
-- **Pełne statystyki treningów**
+## Pozostałe funkcje
 
-### 📸 Galeria
-- Dodawanie zdjęć postępów
-- Powiększanie i usuwanie zdjęć
-- Lightbox z nawigacją
+- **Kalendarz** z historią dni, aktywności, streaka i refleksji.
+- **Statystyki** postępów, nastroju, kroków, nauki i aktywności treningowej.
+- **Workouty:** planuj treningi, dodawaj linki do filmów z YouTube lub własne ćwiczenia, kategoryzuj aktywności, zapisuj biegi i ćwiczone partie ciała. Możesz też ustawić różne treningi na poszczególne dni tygodnia.
+- **Cele i nagrody:** zapisz cel główny, podziel go na mniejsze etapy, przypisz im nagrody i oznaczaj osiągnięcia.
+- **Galeria** zdjęć postępów.
+- **Odznaki** przyznawane za wybrane aktywności i osiągnięcia.
+- **Raport postępów:** wygeneruj raport HTML, a następnie użyj drukowania w przeglądarce, by zapisać go jako PDF.
+- **Personalizacja:** wybierz motyw, czcionkę i język interfejsu.
+- **PWA:** aplikację można zainstalować na urządzeniu z poziomu obsługiwanej przeglądarki.
 
-### 🏆 Odznaki - 40+ do zdobycia!
-**Kategorie odznak:**
+## Dane i synchronizacja
 
-**💪 Treningi (6 odznak):**
-- Początkujący atleta → One Punch (100 treningów!)
-- Żelazne zaangażowanie (7-dniowa passa)
-- Wojownik weekendu
+Postępy są zapisywane lokalnie w przeglądarce. Aplikacja udostępnia również logowanie przez Google i synchronizację przez Firebase, aby korzystać z danych na różnych urządzeniach. Synchronizacja wymaga działającej konfiguracji Firebase i reguł Firestore; dane lokalne pozostają oddzielne od konta przeglądarki.
 
-**🎨 Motywy (6 odznak):**
-- Optimus Prime 🤖 (motyw Transformers)
-- Bumblebee 🐝 (motyw żółty)
-- Mroczny rycerz 🌙 (dark mode)
-- Megatron (czerwony/fioletowy)
-- Iron Man (czerwony + 30-dniowy streak)
-- Odkrywca stylów (wszystkie motywy)
+W ustawieniach dostępny jest **raport HTML do wydruku/PDF**. To raport postępów, a nie pełna kopia zapasowa danych do zaimportowania.
 
-**🎮 Anime & Popkultura (4 odznaki):**
-- Ultra Instinct 👊⚡ (Dragon Ball - 50 dni)
-- Plus Ultra! ⚡💪 (My Hero Academia - 60 dni)
-- One Punch 🥊 (One Punch Man - 100 treningów)
-- Rocky Balboa 🥊 (500k kroków)
+## Uruchomienie i wdrożenie
 
-**🔥 Streaki:**
-- Od 3 do 60+ dni z rzędu
-- No Days Off (21 dni)
+Aplikacja jest statyczną stroną internetową. Do lokalnego uruchomienia użyj lokalnego serwera HTTP — na przykład rozszerzenia Live Server w VS Code — i otwórz w przeglądarce plik `index.html`. Serwer jest potrzebny m.in. do poprawnego działania modułów JavaScript i service workera.
 
-**📊 Inne osiągnięcia:**
-- Kroki, nastroje, zadania, galeria
-- Perfekcjonista, Król powrotu
-- Mistrz konsystencji, Kolekcjoner legend
-- I wiele więcej!
+Aby opublikować własną kopię przez GitHub Pages:
 
-### ⚙️ Ustawienia
-- **28 motywów kolorystycznych**, w tym siedem nowych palet: Misty Greens, Subdued Succulent, Turkish Delight, Bold Ballerinas, Foggy Fairytale, Neon Doll i Autumn Muse
-- 15 czcionek do wyboru (10 podstawowych + 5 kawaii)
-- Konfiguracja wyzwania (długość, cele)
-- Ustawienie wielu dni odpoczynku oraz wybór, czy odpoczynek ma zwiększać streak
-- **Zarządzanie workoutami**
-- **PWA / instalacja na telefonie** z ikonami i wsparciem dla Androida
-- Popupy, powiadomienia i raport korzystają z kolorów aktywnego motywu
-- **Eksport uporządkowanego raportu do wydruku lub PDF**
+1. Wypchnij repozytorium na GitHuba.
+2. Otwórz **Settings → Pages**.
+3. Wybierz wdrażanie z gałęzi `main` i katalogu `/(root)`.
+4. Zapisz ustawienia i otwórz adres Pages przypisany do repozytorium.
 
-### 📱 PWA / instalacja na telefonie
-- Aplikacja może być zainstalowana na telefonie jako PWA
-- Działa jako pełna aplikacja webowa z wygodnym dostępem na urządzeniu mobilnym
-- Obsługa zachowania mobilnego i instalacji bez sztucznie wprowadzających opcji widżetów
+Przy własnym wdrożeniu z synchronizacją Firebase skonfiguruj projekt Firebase, logowanie Google, Firestore, autoryzowane domeny i `firebase-config.js`.
 
-### 📥 Eksport do PDF
-- Czytelny raport zaczynający się od najważniejszego podsumowania, a następnie przechodzący do statystyk i szczegółów:
-  - Wszystkie odznaki (zdobyte i niezdobyte)
-  - Statystyki kroków, treningów, biegów i partii ciała
-  - Zadania, perfekcyjne dni, pełna historia aktywności i refleksje
-  - Wykresy pierścieniowe postępu wyzwania, zadań, nastroju, kroków i nauki
-  - Nastroje, cele i nagrody, galeria zdjęć oraz zasady wyzwania
-  - Ustawienia aplikacji oraz podsumowanie danych
-- Odznaki znajdują się pod koniec raportu; kolory raportu dopasowują się do wybranego motywu
-- Raport jest generowany jako HTML przygotowany do druku; z okna drukowania można wybrać „Zapisz jako PDF”
-- Otwiera się automatycznie w nowej karcie i jest przygotowany do druku
-- Wystarczy użyć Ctrl+P / Cmd+P i wybrać Zapisz jako PDF
+## Technologie
 
-### 🌍 Wielojęzyczność
-- Interfejs działa w 3 językach: polski, angielski i włoski
-- Ustawienie języka wpływa też na raport, opcje motywów i komunikaty aplikacji
-- **Znane ograniczenie:** tłumaczenia nie obejmują jeszcze każdego tekstu. Część interfejsu jest tłumaczona przez dopasowanie całych fraz, więc nieznane lub dynamicznie utworzone teksty mogą pozostać po polsku albo być niekompletne. Zgłoszenia użytkowników wskazują, że jakość i kompletność tłumaczeń wymagają osobnego przeglądu. Nowe palety kolorów mają uzupełnione nazwy po angielsku i włosku, ale nie oznacza to zakończenia audytu całej aplikacji.
+- HTML, CSS i JavaScript (bez frameworka aplikacyjnego)
+- Firebase Authentication i Cloud Firestore
+- `localStorage` do lokalnego zapisu danych
+- Service worker i manifest PWA
 
-## 🆕 Ostatnie zmiany (11–19 października 2026)
+## Języki
 
-- **Cele i nagrody:** można zapisać cel główny, podzielić go na mniejsze kamienie milowe, przypisać nagrody, edytować wpisy i zapisać datę osiągnięcia.
-- **Dni odpoczynku i streak:** dni odpoczynku są widoczne w kalendarzu jako ukończone i chronią ciągłość streaka. Ustawienie „Liczyć dni odpoczynku jako ukończone” decyduje wyłącznie o tym, czy odpoczynek zwiększa licznik streaka.
-- **Motywy:** dodano siedem palet kolorów. Popupy, powiadomienia, baner, kolor paska przeglądarki i raport korzystają z wybranego motywu.
-- **Raport:** przebudowano kolejność i czytelność sekcji; dodano podsumowanie, statystyki, wykresy, historię refleksji oraz szczegóły celów i nagród. Odznaki są umieszczone pod koniec.
-- **Workouty i synchronizacja:** rozwijano obsługę własnych ćwiczeń oraz stabilność scalania danych między urządzeniem i Firebase.
-- **Nawigacja i odporność aplikacji:** poprawiono działanie nawigacji, w tym sytuację, gdy dźwięk nie jest dostępny, oraz przywrócono poprawną strukturę widoków.
-- **Tłumaczenia — ważny obszar do poprawy:** obsługa polskiego, angielskiego i włoskiego już istnieje, ale nie wszystkie widoki, teksty dynamiczne i nowe funkcje mają kompletne, naturalne tłumaczenia. To znane ograniczenie i priorytet do dalszego audytu; pojedyncze uzupełnienia nie rozwiązują problemu w całej aplikacji.
-
-### 🔄 Synchronizacja z Firebase
-- Logowanie przez Google
-- Automatyczna synchronizacja między urządzeniami
-- Bezpieczne przechowywanie danych w chmurze
-- Inteligentne mergowanie danych
-
-### 🎯 Ukończenie Wyzwania
-- Po ukończeniu 75 dni: modal gratulacyjny
-- **Pobranie raportu z osiągnięciami**
-- Możliwość rozpoczęcia nowego wyzwania
+Ustawienia oferują język polski, angielski i włoski. Nie wszystkie teksty i komunikaty muszą być przetłumaczone we wszystkich widokach.
 
 ---
 
-## 🛠️ Technologie
-- HTML5
-- CSS3 (z CSS Variables dla motywów)
-- Vanilla JavaScript
-- Firebase (Auth + Firestore)
-- localStorage do przechowywania danych
-- Service Worker (PWA)
-- Google Fonts
-
----
-
-## 📦 Jak włączyć GitHub Pages
-
-1. Przejdź do repozytorium: https://github.com/czkawkaaa/Motivation-tracker-3
-2. Kliknij **Settings** (Ustawienia)
-3. W lewym menu wybierz **Pages**
-4. W sekcji **Source** wybierz:
-   - Branch: `main`
-   - Folder: `/ (root)`
-5. Kliknij **Save**
-6. Po chwili strona będzie dostępna pod adresem: https://czkawkaaa.github.io/Motivation-tracker-3/
-
----
-
-## 🎯 Zasady Wyzwania 75 Hard
-
-1. **Ruch** - Codzienny trening, spacer minimum 20 minut i rozciąganie
-2. **Dieta** - Jeden zdrowy posiłek domowy dziennie, zero słodzonych napojów
-3. **Woda** - Picie większej ilości wody niż dotychczas
-4. **Sen** - Minimum 7 godzin snu
-5. **Rozwój** - 10 minut czytania lub słuchania książki
-
----
-
-## 💖 Made with Love
 Stworzone z 💖 przez Wiktorię Radomską
